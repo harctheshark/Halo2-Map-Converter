@@ -1,0 +1,7182 @@
+{
+ "scnr|/Skies": {
+  "n": 3,
+  "align": 8,
+  "consistent": {
+   "4": 3,
+   "8": 3,
+   "16": 2,
+   "32": 2,
+   "64": 1
+  }
+ },
+ "scnr|/Object Names": {
+  "n": 5,
+  "align": 8,
+  "consistent": {
+   "4": 5,
+   "8": 5,
+   "16": 2
+  }
+ },
+ "scnr|/Scenery": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "scnr|/Scenery Palette": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 2,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "scnr|/Vehicles": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2
+  }
+ },
+ "scnr|/Sound Scenery": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "scnr|/Sound Scenery Palette": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "scnr|/Light Volumes": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "scnr|/Light Volumes Palette": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "scnr|/Player Starting Locations": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1
+  }
+ },
+ "scnr|/Kill Trigger Volumes": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "scnr|/Netgame Flags": {
+  "n": 2,
+  "align": 8,
+  "consistent": {
+   "4": 2,
+   "8": 2
+  }
+ },
+ "scnr|/Netgame Equipment": {
+  "n": 2,
+  "align": 8,
+  "consistent": {
+   "4": 2,
+   "8": 2
+  }
+ },
+ "scnr|/Starting Equipment": {
+  "n": 2,
+  "align": 8,
+  "consistent": {
+   "4": 2,
+   "8": 2
+  }
+ },
+ "scnr|/Decals": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2
+  }
+ },
+ "scnr|/Decals Palette": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scnr|/Script String Data [data]": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3
+  }
+ },
+ "scnr|/Scripting Data": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3,
+   "16": 1
+  }
+ },
+ "scnr|/Structure BSPs": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3
+  }
+ },
+ "scnr|/Scenario Kill Triggers": {
+  "n": 1,
+  "align": 16,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scnr|/Script Expressions": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scnr|/Background Sound Palette": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scnr|/Sound Environment Palette": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "scnr|/Scenario Cluster Data": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1
+  }
+ },
+ "scnr|/Scenario Cluster Data/Background Sounds": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 3,
+   "32": 2,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "scnr|/Scenario Cluster Data/Sound Environments": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "scnr|/Scenario Cluster Data/Cluster Centroids": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scnr|/Scenario Cluster Data/Weather Properties": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scnr|/Spawn Data": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 4,
+   "32": 2,
+   "64": 2,
+   "128": 2,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "scnr|/Spawn Data/Dynamic Spawn Overloads": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "scnr|/Spawn Data/Static Respawn Zones": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "scnr|/Spawn Data/Static Initial Spawn Zones": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "scnr|/Crates": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2,
+   "32": 2
+  }
+ },
+ "scnr|/Crates Palette": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 1
+  }
+ },
+ "scnr|/Planar Fog Palette": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "scnr|/Decorator Palette": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2
+  }
+ },
+ "scnr|/Structure BSP Lighting": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 2,
+   "32": 2,
+   "64": 1
+  }
+ },
+ "scnr|/Level Data": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 2
+  }
+ },
+ "scnr|/Level Data/Multiplayer": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scnr|/Simulation Definition Table": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 3,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "sky |/Cube Map": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "sky |/Atmospheric Fog": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "sky |/Secondary Fog": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "sky |/Lights": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2,
+   "32": 2,
+   "64": 2,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "sky |/Lights/Radiosity": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mode|/Compression Info": {
+  "n": 516,
+  "align": 4,
+  "consistent": {
+   "4": 516,
+   "8": 273,
+   "16": 139,
+   "32": 69,
+   "64": 33,
+   "128": 15,
+   "256": 5,
+   "512": 4,
+   "1024": 3,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "mode|/Regions": {
+  "n": 516,
+  "align": 4,
+  "consistent": {
+   "4": 516,
+   "8": 273,
+   "16": 134,
+   "32": 60,
+   "64": 30,
+   "128": 17,
+   "256": 8,
+   "512": 3,
+   "1024": 3,
+   "2048": 1
+  }
+ },
+ "mode|/Regions/Permutations": {
+  "n": 853,
+  "align": 4,
+  "consistent": {
+   "4": 853,
+   "8": 469,
+   "16": 236,
+   "32": 134,
+   "64": 49,
+   "128": 26,
+   "256": 18,
+   "512": 7,
+   "1024": 3,
+   "2048": 2
+  }
+ },
+ "mode|/Sections": {
+  "n": 516,
+  "align": 4,
+  "consistent": {
+   "4": 516,
+   "8": 273,
+   "16": 134,
+   "32": 61,
+   "64": 31,
+   "128": 19,
+   "256": 10,
+   "512": 6,
+   "1024": 3,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "mode|/Sections/Resources": {
+  "n": 3993,
+  "align": 4,
+  "consistent": {
+   "4": 3993,
+   "8": 1875,
+   "16": 1167,
+   "32": 496,
+   "64": 176,
+   "128": 93,
+   "256": 47,
+   "512": 23,
+   "1024": 11,
+   "2048": 6,
+   "4096": 1
+  }
+ },
+ "mode|/Invalid Section Pair Bits": {
+  "n": 230,
+  "align": 4,
+  "consistent": {
+   "4": 230,
+   "8": 108,
+   "16": 53,
+   "32": 23,
+   "64": 12,
+   "128": 8,
+   "256": 4,
+   "512": 4,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "mode|/Section Groups": {
+  "n": 516,
+  "align": 4,
+  "consistent": {
+   "4": 516,
+   "8": 265,
+   "16": 153,
+   "32": 71,
+   "64": 33,
+   "128": 17,
+   "256": 6,
+   "512": 3,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "mode|/Nodes": {
+  "n": 516,
+  "align": 4,
+  "consistent": {
+   "4": 516,
+   "8": 251,
+   "16": 132,
+   "32": 60,
+   "64": 28,
+   "128": 12,
+   "256": 2
+  }
+ },
+ "mode|/Materials": {
+  "n": 516,
+  "align": 4,
+  "consistent": {
+   "4": 516,
+   "8": 249,
+   "16": 130,
+   "32": 68,
+   "64": 28,
+   "128": 16,
+   "256": 4,
+   "512": 1
+  }
+ },
+ "shad|/Runtime Properties": {
+  "n": 774,
+  "align": 4,
+  "consistent": {
+   "4": 774,
+   "8": 397,
+   "16": 195,
+   "32": 98,
+   "64": 48,
+   "128": 25,
+   "256": 11,
+   "512": 7,
+   "1024": 3,
+   "2048": 2,
+   "4096": 2
+  }
+ },
+ "shad|/Postprocess Definition": {
+  "n": 1375,
+  "align": 4,
+  "consistent": {
+   "4": 1375,
+   "8": 715,
+   "16": 358,
+   "32": 177,
+   "64": 99,
+   "128": 50,
+   "256": 26,
+   "512": 13,
+   "1024": 9,
+   "2048": 6,
+   "4096": 2
+  }
+ },
+ "shad|/Postprocess Definition/Bitmaps": {
+  "n": 1096,
+  "align": 4,
+  "consistent": {
+   "4": 1096,
+   "8": 531,
+   "16": 268,
+   "32": 119,
+   "64": 54,
+   "128": 22,
+   "256": 11,
+   "512": 7,
+   "1024": 3,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "shad|/Postprocess Definition/Vertex Constants": {
+  "n": 832,
+  "align": 4,
+  "consistent": {
+   "4": 832,
+   "8": 438,
+   "16": 229,
+   "32": 115,
+   "64": 49,
+   "128": 29,
+   "256": 12,
+   "512": 9,
+   "1024": 5,
+   "2048": 1
+  }
+ },
+ "shad|/Postprocess Definition/Levels Of Detail": {
+  "n": 116,
+  "align": 4,
+  "consistent": {
+   "4": 116,
+   "8": 58,
+   "16": 32,
+   "32": 12,
+   "64": 4,
+   "128": 4,
+   "256": 3,
+   "512": 1,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "shad|/Postprocess Definition/Layers": {
+  "n": 132,
+  "align": 4,
+  "consistent": {
+   "4": 132,
+   "8": 67,
+   "16": 34,
+   "32": 14,
+   "64": 7,
+   "128": 2,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "shad|/Postprocess Definition/Passes": {
+  "n": 107,
+  "align": 4,
+  "consistent": {
+   "4": 107,
+   "8": 54,
+   "16": 23,
+   "32": 10,
+   "64": 7,
+   "128": 4,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "shad|/Postprocess Definition/Implementations": {
+  "n": 244,
+  "align": 4,
+  "consistent": {
+   "4": 244,
+   "8": 114,
+   "16": 51,
+   "32": 32,
+   "64": 14,
+   "128": 9,
+   "256": 3
+  }
+ },
+ "shad|/Postprocess Definition/Overlays": {
+  "n": 357,
+  "align": 4,
+  "consistent": {
+   "4": 357,
+   "8": 193,
+   "16": 104,
+   "32": 52,
+   "64": 28,
+   "128": 18,
+   "256": 9,
+   "512": 6,
+   "1024": 3,
+   "2048": 1
+  }
+ },
+ "shad|/Postprocess Definition/Overlays/Function [data]": {
+  "n": 626,
+  "align": 4,
+  "consistent": {
+   "4": 626,
+   "8": 316,
+   "16": 156,
+   "32": 72,
+   "64": 35,
+   "128": 17,
+   "256": 10,
+   "512": 6,
+   "1024": 4,
+   "2048": 2
+  }
+ },
+ "shad|/Postprocess Definition/Overlay References": {
+  "n": 146,
+  "align": 4,
+  "consistent": {
+   "4": 146,
+   "8": 69,
+   "16": 41,
+   "32": 25,
+   "64": 12,
+   "128": 8,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "shad|/Postprocess Definition/Animated Parameters": {
+  "n": 103,
+  "align": 4,
+  "consistent": {
+   "4": 103,
+   "8": 47,
+   "16": 25,
+   "32": 11,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "shad|/Postprocess Definition/Animated Parameter References": {
+  "n": 197,
+  "align": 4,
+  "consistent": {
+   "4": 197,
+   "8": 85,
+   "16": 43,
+   "32": 23,
+   "64": 9,
+   "128": 3,
+   "256": 2
+  }
+ },
+ "shad|/Postprocess Definition/Bitmap Properties": {
+  "n": 105,
+  "align": 4,
+  "consistent": {
+   "4": 105,
+   "8": 53,
+   "16": 33,
+   "32": 9,
+   "64": 4,
+   "128": 2,
+   "256": 2,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "shad|/Postprocess Definition/Color Properties": {
+  "n": 39,
+  "align": 4,
+  "consistent": {
+   "4": 39,
+   "8": 18,
+   "16": 8,
+   "32": 4,
+   "64": 3
+  }
+ },
+ "shad|/Predicted Resources": {
+  "n": 1094,
+  "align": 4,
+  "consistent": {
+   "4": 1094,
+   "8": 566,
+   "16": 285,
+   "32": 145,
+   "64": 83,
+   "128": 44,
+   "256": 21,
+   "512": 10,
+   "1024": 6,
+   "2048": 2
+  }
+ },
+ "stem|/Postprocess Definition": {
+  "n": 326,
+  "align": 4,
+  "consistent": {
+   "4": 326,
+   "8": 161,
+   "16": 87,
+   "32": 38,
+   "64": 17,
+   "128": 12,
+   "256": 7,
+   "512": 3,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "stem|/Postprocess Definition/Levels Of Detail": {
+  "n": 103,
+  "align": 4,
+  "consistent": {
+   "4": 103,
+   "8": 59,
+   "16": 25,
+   "32": 12,
+   "64": 5,
+   "128": 3,
+   "256": 3,
+   "512": 2,
+   "1024": 1
+  }
+ },
+ "stem|/Postprocess Definition/Passes": {
+  "n": 315,
+  "align": 4,
+  "consistent": {
+   "4": 315,
+   "8": 145,
+   "16": 70,
+   "32": 36,
+   "64": 16,
+   "128": 12,
+   "256": 6,
+   "512": 4,
+   "1024": 3,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "stem|/Postprocess Definition/Implementations": {
+  "n": 251,
+  "align": 4,
+  "consistent": {
+   "4": 251,
+   "8": 144,
+   "16": 75,
+   "32": 33,
+   "64": 15,
+   "128": 7,
+   "256": 5,
+   "512": 3,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "stem|/Postprocess Definition/Remappings": {
+  "n": 262,
+  "align": 4,
+  "consistent": {
+   "4": 262,
+   "8": 130,
+   "16": 62,
+   "32": 36,
+   "64": 18,
+   "128": 10,
+   "256": 5,
+   "512": 4,
+   "1024": 3,
+   "2048": 3,
+   "4096": 1
+  }
+ },
+ "spas|/Postprocess Definition": {
+  "n": 363,
+  "align": 4,
+  "consistent": {
+   "4": 363,
+   "8": 172,
+   "16": 78,
+   "32": 34,
+   "64": 13,
+   "128": 6
+  }
+ },
+ "spas|/Postprocess Definition/Implementations": {
+  "n": 363,
+  "align": 4,
+  "consistent": {
+   "4": 363,
+   "8": 172,
+   "16": 94,
+   "32": 50,
+   "64": 26,
+   "128": 9,
+   "256": 4,
+   "512": 2,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "spas|/Postprocess Definition/Implementations/Pixel Shader": {
+  "n": 711,
+  "align": 4,
+  "consistent": {
+   "4": 711,
+   "8": 360,
+   "16": 186,
+   "32": 96,
+   "64": 43,
+   "128": 27,
+   "256": 15,
+   "512": 6,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "spas|/Postprocess Definition/Implementations/Pixel Shader/Compiled Shader [data]": {
+  "n": 6634,
+  "align": 4,
+  "consistent": {
+   "4": 6634,
+   "8": 3330,
+   "16": 1695,
+   "32": 835,
+   "64": 421,
+   "128": 188,
+   "256": 98,
+   "512": 55,
+   "1024": 27,
+   "2048": 17,
+   "4096": 5
+  }
+ },
+ "spas|/Postprocess Definition/Textures": {
+  "n": 151,
+  "align": 4,
+  "consistent": {
+   "4": 151,
+   "8": 76,
+   "16": 35,
+   "32": 20,
+   "64": 7,
+   "128": 5,
+   "256": 2,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "spas|/Postprocess Definition/Render States": {
+  "n": 186,
+  "align": 4,
+  "consistent": {
+   "4": 186,
+   "8": 89,
+   "16": 53,
+   "32": 25,
+   "64": 14,
+   "128": 7,
+   "256": 4,
+   "512": 2,
+   "1024": 2
+  }
+ },
+ "spas|/Postprocess Definition/Texture States": {
+  "n": 152,
+  "align": 4,
+  "consistent": {
+   "4": 152,
+   "8": 79,
+   "16": 37,
+   "32": 19,
+   "64": 7,
+   "128": 3,
+   "256": 2
+  }
+ },
+ "vrtx|/Geometry Classifications DX11": {
+  "n": 363,
+  "align": 4,
+  "consistent": {
+   "4": 363,
+   "8": 171,
+   "16": 78,
+   "32": 33,
+   "64": 17,
+   "128": 9,
+   "256": 6,
+   "512": 3,
+   "1024": 2
+  }
+ },
+ "vrtx|/Geometry Classifications DX11/Compiled Shader [data]": {
+  "n": 1553,
+  "align": 4,
+  "consistent": {
+   "4": 1553,
+   "8": 785,
+   "16": 397,
+   "32": 193,
+   "64": 100,
+   "128": 47,
+   "256": 24,
+   "512": 10,
+   "1024": 6,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "bitm|/Bitmaps": {
+  "n": 3403,
+  "align": 4,
+  "consistent": {
+   "4": 3403,
+   "8": 1729,
+   "16": 881,
+   "32": 424,
+   "64": 206,
+   "128": 106,
+   "256": 49,
+   "512": 19,
+   "1024": 14,
+   "2048": 11,
+   "4096": 4
+  }
+ },
+ "shad|/Postprocess Definition/Pixel Constants": {
+  "n": 807,
+  "align": 4,
+  "consistent": {
+   "4": 807,
+   "8": 413,
+   "16": 207,
+   "32": 118,
+   "64": 66,
+   "128": 30,
+   "256": 18,
+   "512": 12,
+   "1024": 5,
+   "2048": 3
+  }
+ },
+ "stem|/Postprocess Definition/Layers": {
+  "n": 10,
+  "align": 4,
+  "consistent": {
+   "4": 10,
+   "8": 5,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "lens|/Reflections": {
+  "n": 152,
+  "align": 4,
+  "consistent": {
+   "4": 152,
+   "8": 78,
+   "16": 42,
+   "32": 23,
+   "64": 15,
+   "128": 4,
+   "256": 2
+  }
+ },
+ "scen|/Predicted Resources": {
+  "n": 31,
+  "align": 4,
+  "consistent": {
+   "4": 31,
+   "8": 13,
+   "16": 6,
+   "32": 3,
+   "64": 3,
+   "128": 2,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "hlmt|/Materials": {
+  "n": 284,
+  "align": 4,
+  "consistent": {
+   "4": 284,
+   "8": 115,
+   "16": 67,
+   "32": 36,
+   "64": 18,
+   "128": 11,
+   "256": 5,
+   "512": 1
+  }
+ },
+ "hlmt|/Collision Regions": {
+  "n": 217,
+  "align": 4,
+  "consistent": {
+   "4": 217,
+   "8": 101,
+   "16": 56,
+   "32": 28,
+   "64": 17,
+   "128": 8,
+   "256": 2,
+   "512": 2
+  }
+ },
+ "hlmt|/Collision Regions/Permutations": {
+  "n": 194,
+  "align": 4,
+  "consistent": {
+   "4": 194,
+   "8": 93,
+   "16": 55,
+   "32": 33,
+   "64": 17,
+   "128": 8,
+   "256": 5,
+   "512": 2,
+   "1024": 2,
+   "2048": 1
+  }
+ },
+ "hlmt|/Nodes": {
+  "n": 386,
+  "align": 4,
+  "consistent": {
+   "4": 386,
+   "8": 185,
+   "16": 94,
+   "32": 48,
+   "64": 23,
+   "128": 8,
+   "256": 2,
+   "512": 2
+  }
+ },
+ "hlmt|/Model Object Data": {
+  "n": 315,
+  "align": 4,
+  "consistent": {
+   "4": 315,
+   "8": 171,
+   "16": 89,
+   "32": 50,
+   "64": 26,
+   "128": 12,
+   "256": 6,
+   "512": 3,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "spas|/Postprocess Definition/Implementations/Pixel Shader Switch Extern Map": {
+  "n": 38,
+  "align": 4,
+  "consistent": {
+   "4": 38,
+   "8": 15,
+   "16": 7,
+   "32": 3,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "spas|/Postprocess Definition/Implementations/Pixel Shader Index Block": {
+  "n": 17,
+  "align": 4,
+  "consistent": {
+   "4": 17,
+   "8": 9,
+   "16": 5,
+   "32": 3,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "spas|/Postprocess Definition/Externs": {
+  "n": 167,
+  "align": 4,
+  "consistent": {
+   "4": 167,
+   "8": 85,
+   "16": 48,
+   "32": 21,
+   "64": 12,
+   "128": 6,
+   "256": 2
+  }
+ },
+ "coll|/Materials": {
+  "n": 368,
+  "align": 4,
+  "consistent": {
+   "4": 368,
+   "8": 176,
+   "16": 105,
+   "32": 61,
+   "64": 36,
+   "128": 21,
+   "256": 10,
+   "512": 6,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "coll|/Regions": {
+  "n": 368,
+  "align": 4,
+  "consistent": {
+   "4": 368,
+   "8": 193,
+   "16": 98,
+   "32": 46,
+   "64": 23,
+   "128": 16,
+   "256": 6,
+   "512": 2
+  }
+ },
+ "coll|/Regions/Permutations": {
+  "n": 576,
+  "align": 4,
+  "consistent": {
+   "4": 576,
+   "8": 387,
+   "16": 309,
+   "32": 138,
+   "64": 70,
+   "128": 37,
+   "256": 17,
+   "512": 7,
+   "1024": 4,
+   "2048": 4,
+   "4096": 2
+  }
+ },
+ "coll|/Regions/Permutations/BSPs": {
+  "n": 1018,
+  "align": 4,
+  "consistent": {
+   "4": 1018,
+   "8": 721,
+   "16": 623,
+   "32": 313,
+   "64": 164,
+   "128": 82,
+   "256": 44,
+   "512": 22,
+   "1024": 14,
+   "2048": 6,
+   "4096": 5
+  }
+ },
+ "coll|/Regions/Permutations/BSPs/BSP 3D Nodes": {
+  "n": 1675,
+  "align": 8,
+  "consistent": {
+   "4": 995,
+   "8": 1675,
+   "16": 928,
+   "32": 446,
+   "64": 223,
+   "128": 120,
+   "256": 61,
+   "512": 35,
+   "1024": 19,
+   "2048": 6,
+   "4096": 3
+  }
+ },
+ "coll|/Regions/Permutations/BSPs/Planes": {
+  "n": 1675,
+  "align": 16,
+  "consistent": {
+   "4": 826,
+   "8": 826,
+   "16": 1675,
+   "32": 831,
+   "64": 436,
+   "128": 222,
+   "256": 115,
+   "512": 60,
+   "1024": 35,
+   "2048": 20,
+   "4096": 8
+  }
+ },
+ "coll|/Regions/Permutations/BSPs/Leaves": {
+  "n": 1675,
+  "align": 16,
+  "consistent": {
+   "4": 1675,
+   "8": 1675,
+   "16": 1675,
+   "32": 870,
+   "64": 438,
+   "128": 220,
+   "256": 100,
+   "512": 54,
+   "1024": 26,
+   "2048": 13,
+   "4096": 8
+  }
+ },
+ "coll|/Regions/Permutations/BSPs/BSP 2D References": {
+  "n": 1675,
+  "align": 4,
+  "consistent": {
+   "4": 1675,
+   "8": 1046,
+   "16": 430,
+   "32": 227,
+   "64": 111,
+   "128": 59,
+   "256": 35,
+   "512": 21,
+   "1024": 14,
+   "2048": 4,
+   "4096": 2
+  }
+ },
+ "coll|/Regions/Permutations/BSPs/BSP2D Nodes": {
+  "n": 383,
+  "align": 16,
+  "consistent": {
+   "4": 163,
+   "8": 252,
+   "16": 383,
+   "32": 192,
+   "64": 92,
+   "128": 57,
+   "256": 33,
+   "512": 21,
+   "1024": 13,
+   "2048": 6,
+   "4096": 5
+  }
+ },
+ "coll|/Regions/Permutations/BSPs/Surfaces": {
+  "n": 1675,
+  "align": 8,
+  "consistent": {
+   "4": 1332,
+   "8": 1675,
+   "16": 1229,
+   "32": 608,
+   "64": 295,
+   "128": 145,
+   "256": 65,
+   "512": 30,
+   "1024": 13,
+   "2048": 5,
+   "4096": 3
+  }
+ },
+ "coll|/Regions/Permutations/BSPs/Edges": {
+  "n": 1675,
+  "align": 8,
+  "consistent": {
+   "4": 1675,
+   "8": 1675,
+   "16": 1218,
+   "32": 621,
+   "64": 328,
+   "128": 164,
+   "256": 81,
+   "512": 35,
+   "1024": 18,
+   "2048": 13,
+   "4096": 6
+  }
+ },
+ "coll|/Regions/Permutations/BSPs/Vertices": {
+  "n": 1675,
+  "align": 16,
+  "consistent": {
+   "4": 605,
+   "8": 903,
+   "16": 1675,
+   "32": 787,
+   "64": 416,
+   "128": 225,
+   "256": 115,
+   "512": 51,
+   "1024": 22,
+   "2048": 13,
+   "4096": 11
+  }
+ },
+ "coll|/Pathfinding Spheres": {
+  "n": 286,
+  "align": 16,
+  "consistent": {
+   "4": 286,
+   "8": 286,
+   "16": 286,
+   "32": 148,
+   "64": 69,
+   "128": 37,
+   "256": 20,
+   "512": 11,
+   "1024": 4,
+   "2048": 2,
+   "4096": 2
+  }
+ },
+ "coll|/Nodes": {
+  "n": 368,
+  "align": 4,
+  "consistent": {
+   "4": 368,
+   "8": 115,
+   "16": 88,
+   "32": 43,
+   "64": 24,
+   "128": 18,
+   "256": 11,
+   "512": 5,
+   "1024": 3,
+   "2048": 1
+  }
+ },
+ "jmad|/Skeleton Nodes": {
+  "n": 240,
+  "align": 4,
+  "consistent": {
+   "4": 240,
+   "8": 119,
+   "16": 56,
+   "32": 31,
+   "64": 12,
+   "128": 4,
+   "256": 3,
+   "512": 2
+  }
+ },
+ "jmad|/Animations": {
+  "n": 241,
+  "align": 4,
+  "consistent": {
+   "4": 241,
+   "8": 105,
+   "16": 37,
+   "32": 21,
+   "64": 12,
+   "128": 7,
+   "256": 3,
+   "512": 2,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "jmad|/Animations/Resource [data]": {
+  "n": 10300,
+  "align": 16,
+  "consistent": {
+   "4": 2711,
+   "8": 4984,
+   "16": 10300,
+   "32": 5135,
+   "64": 2570,
+   "128": 1326,
+   "256": 654,
+   "512": 310,
+   "1024": 145,
+   "2048": 70,
+   "4096": 32
+  }
+ },
+ "jmad|/Weapon List": {
+  "n": 33,
+  "align": 4,
+  "consistent": {
+   "4": 33,
+   "8": 17,
+   "16": 6,
+   "32": 4,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "phmo|/Rigid Bodies": {
+  "n": 286,
+  "align": 16,
+  "consistent": {
+   "4": 189,
+   "8": 223,
+   "16": 286,
+   "32": 136,
+   "64": 59,
+   "128": 37,
+   "256": 24,
+   "512": 7,
+   "1024": 3,
+   "2048": 1
+  }
+ },
+ "phmo|/Materials": {
+  "n": 290,
+  "align": 4,
+  "consistent": {
+   "4": 290,
+   "8": 286,
+   "16": 286,
+   "32": 136,
+   "64": 73,
+   "128": 35,
+   "256": 20,
+   "512": 10,
+   "1024": 6,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "phmo|/Polyhedra": {
+  "n": 225,
+  "align": 16,
+  "consistent": {
+   "4": 11,
+   "8": 219,
+   "16": 225,
+   "32": 114,
+   "64": 58,
+   "128": 25,
+   "256": 12,
+   "512": 6,
+   "1024": 2
+  }
+ },
+ "phmo|/Polyhedron Plane Equations": {
+  "n": 225,
+  "align": 16,
+  "consistent": {
+   "4": 225,
+   "8": 225,
+   "16": 225,
+   "32": 118,
+   "64": 52,
+   "128": 30,
+   "256": 16,
+   "512": 6,
+   "1024": 5,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "phmo|/Regions": {
+  "n": 290,
+  "align": 4,
+  "consistent": {
+   "4": 290,
+   "8": 272,
+   "16": 252,
+   "32": 125,
+   "64": 63,
+   "128": 32,
+   "256": 15,
+   "512": 8,
+   "1024": 6,
+   "2048": 4,
+   "4096": 3
+  }
+ },
+ "phmo|/Regions/Permutations": {
+  "n": 335,
+  "align": 4,
+  "consistent": {
+   "4": 335,
+   "8": 60,
+   "16": 27,
+   "32": 16,
+   "64": 6,
+   "128": 1
+  }
+ },
+ "phmo|/Regions/Permutations/Rigid Bodies": {
+  "n": 349,
+  "align": 4,
+  "consistent": {
+   "4": 349,
+   "8": 275,
+   "16": 33,
+   "32": 17,
+   "64": 9,
+   "128": 6,
+   "256": 5,
+   "512": 3,
+   "1024": 1
+  }
+ },
+ "phmo|/Nodes": {
+  "n": 229,
+  "align": 4,
+  "consistent": {
+   "4": 229,
+   "8": 36,
+   "16": 26,
+   "32": 17,
+   "64": 11,
+   "128": 3,
+   "256": 3,
+   "512": 1,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "shad|/Postprocess Definition/Value Properties": {
+  "n": 29,
+  "align": 4,
+  "consistent": {
+   "4": 29,
+   "8": 16,
+   "16": 7,
+   "32": 6,
+   "64": 5
+  }
+ },
+ "coll|/Regions/Permutations/BSP Physics": {
+  "n": 4,
+  "align": 16,
+  "consistent": {
+   "4": 4,
+   "8": 4,
+   "16": 4,
+   "32": 1
+  }
+ },
+ "coll|/Regions/Permutations/BSP Physics/MOPP Code Data [data]": {
+  "n": 4,
+  "align": 16,
+  "consistent": {
+   "4": 4,
+   "8": 4,
+   "16": 4,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "scen|/Attachments": {
+  "n": 15,
+  "align": 4,
+  "consistent": {
+   "4": 15,
+   "8": 6,
+   "16": 3,
+   "32": 2,
+   "64": 2,
+   "128": 1,
+   "256": 1,
+   "512": 1,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "lens|/Brightness": {
+  "n": 22,
+  "align": 4,
+  "consistent": {
+   "4": 22,
+   "8": 11,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "lens|/Brightness/Function [data]": {
+  "n": 18,
+  "align": 4,
+  "consistent": {
+   "4": 18,
+   "8": 9,
+   "16": 7,
+   "32": 3
+  }
+ },
+ "mode|/Materials/Properties": {
+  "n": 16,
+  "align": 4,
+  "consistent": {
+   "4": 16,
+   "8": 5,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "ssce|/Attachments": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 7,
+   "16": 3,
+   "32": 2,
+   "64": 1
+  }
+ },
+ "lsnd|/Tracks": {
+  "n": 532,
+  "align": 4,
+  "consistent": {
+   "4": 532,
+   "8": 262,
+   "16": 118,
+   "32": 65,
+   "64": 34,
+   "128": 14,
+   "256": 6,
+   "512": 5
+  }
+ },
+ "itmc|/Item Permutations": {
+  "n": 38,
+  "align": 4,
+  "consistent": {
+   "4": 38,
+   "8": 19,
+   "16": 9,
+   "32": 5,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "vehc|/Vehicle Permutations": {
+  "n": 10,
+  "align": 4,
+  "consistent": {
+   "4": 10,
+   "8": 4,
+   "16": 3,
+   "32": 1
+  }
+ },
+ "lsnd|/Detail Sounds": {
+  "n": 24,
+  "align": 4,
+  "consistent": {
+   "4": 24,
+   "8": 13,
+   "16": 6,
+   "32": 5,
+   "64": 3,
+   "128": 2
+  }
+ },
+ "bloc|/Attachments": {
+  "n": 16,
+  "align": 4,
+  "consistent": {
+   "4": 16,
+   "8": 10,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "bloc|/Predicted Resources": {
+  "n": 198,
+  "align": 4,
+  "consistent": {
+   "4": 198,
+   "8": 138,
+   "16": 40,
+   "32": 20,
+   "64": 4,
+   "128": 3,
+   "256": 1,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "mode|/Marker Groups": {
+  "n": 370,
+  "align": 4,
+  "consistent": {
+   "4": 370,
+   "8": 171,
+   "16": 90,
+   "32": 40,
+   "64": 22,
+   "128": 11,
+   "256": 5,
+   "512": 1,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "mode|/Marker Groups/Markers": {
+  "n": 3049,
+  "align": 4,
+  "consistent": {
+   "4": 3049,
+   "8": 1553,
+   "16": 777,
+   "32": 383,
+   "64": 181,
+   "128": 94,
+   "256": 52,
+   "512": 24,
+   "1024": 13,
+   "2048": 7,
+   "4096": 2
+  }
+ },
+ "phmo|/Phantom Types": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3
+  }
+ },
+ "phmo|/Pills": {
+  "n": 20,
+  "align": 16,
+  "consistent": {
+   "8": 18,
+   "16": 20,
+   "32": 12,
+   "64": 7,
+   "128": 2
+  }
+ },
+ "phmo|/Lists": {
+  "n": 41,
+  "align": 16,
+  "consistent": {
+   "4": 41,
+   "8": 41,
+   "16": 41,
+   "32": 21,
+   "64": 10,
+   "128": 7,
+   "256": 5,
+   "512": 1
+  }
+ },
+ "phmo|/Phantoms": {
+  "n": 3,
+  "align": 16,
+  "consistent": {
+   "4": 3,
+   "8": 3,
+   "16": 3,
+   "32": 1
+  }
+ },
+ "effe|/Locations": {
+  "n": 366,
+  "align": 4,
+  "consistent": {
+   "4": 366,
+   "8": 201,
+   "16": 91,
+   "32": 42,
+   "64": 21,
+   "128": 10,
+   "256": 3,
+   "512": 3,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "effe|/Events": {
+  "n": 1711,
+  "align": 4,
+  "consistent": {
+   "4": 1711,
+   "8": 862,
+   "16": 435,
+   "32": 214,
+   "64": 114,
+   "128": 58,
+   "256": 31,
+   "512": 15,
+   "1024": 5,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "effe|/Events/Particle Systems": {
+  "n": 1808,
+  "align": 4,
+  "consistent": {
+   "4": 1808,
+   "8": 887,
+   "16": 450,
+   "32": 229,
+   "64": 122,
+   "128": 71,
+   "256": 49,
+   "512": 28,
+   "1024": 14,
+   "2048": 4,
+   "4096": 2
+  }
+ },
+ "effe|/Events/Particle Systems/Emitters": {
+  "n": 3940,
+  "align": 4,
+  "consistent": {
+   "4": 3940,
+   "8": 1904,
+   "16": 965,
+   "32": 491,
+   "64": 261,
+   "128": 142,
+   "256": 63,
+   "512": 33,
+   "1024": 14,
+   "2048": 7,
+   "4096": 2
+  }
+ },
+ "effe|/Events/Particle Systems/Emitters/Function [data]": {
+  "n": 6708,
+  "align": 4,
+  "consistent": {
+   "4": 6708,
+   "8": 3344,
+   "16": 1655,
+   "32": 785,
+   "64": 367,
+   "128": 194,
+   "256": 94,
+   "512": 48,
+   "1024": 26,
+   "2048": 15,
+   "4096": 7
+  }
+ },
+ "pmov|/Movements": {
+  "n": 201,
+  "align": 4,
+  "consistent": {
+   "4": 201,
+   "8": 113,
+   "16": 47,
+   "32": 28,
+   "64": 13,
+   "128": 9,
+   "256": 5,
+   "512": 2
+  }
+ },
+ "pmov|/Movements/Parameters": {
+  "n": 242,
+  "align": 4,
+  "consistent": {
+   "4": 242,
+   "8": 118,
+   "16": 61,
+   "32": 33,
+   "64": 14,
+   "128": 4,
+   "256": 2,
+   "512": 1,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "pmov|/Movements/Parameters/Function [data]": {
+  "n": 275,
+  "align": 4,
+  "consistent": {
+   "4": 275,
+   "8": 142,
+   "16": 64,
+   "32": 31,
+   "64": 16,
+   "128": 6,
+   "256": 1,
+   "512": 1,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "phmo|/Node Edges": {
+  "n": 31,
+  "align": 4,
+  "consistent": {
+   "4": 31,
+   "8": 18,
+   "16": 6,
+   "32": 3,
+   "64": 2,
+   "128": 2,
+   "256": 2,
+   "512": 1,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "phmo|/Node Edges/Constraints": {
+  "n": 139,
+  "align": 4,
+  "consistent": {
+   "4": 139,
+   "8": 69,
+   "16": 33,
+   "32": 17,
+   "64": 8,
+   "128": 3,
+   "256": 1
+  }
+ },
+ "phmo|/Boxes": {
+  "n": 55,
+  "align": 16,
+  "consistent": {
+   "4": 12,
+   "8": 48,
+   "16": 55,
+   "32": 32,
+   "64": 20,
+   "128": 8,
+   "256": 4,
+   "512": 3,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "phmo|/List Shapes": {
+  "n": 11,
+  "align": 8,
+  "consistent": {
+   "4": 11,
+   "8": 11,
+   "16": 3,
+   "32": 1
+  }
+ },
+ "phmo|/MOPPs": {
+  "n": 11,
+  "align": 8,
+  "consistent": {
+   "4": 11,
+   "8": 11,
+   "16": 3,
+   "32": 2,
+   "64": 1
+  }
+ },
+ "phmo|/MOPP Codes [data]": {
+  "n": 11,
+  "align": 16,
+  "consistent": {
+   "4": 8,
+   "8": 8,
+   "16": 11,
+   "32": 5,
+   "64": 1
+  }
+ },
+ "phmo|/Ragdoll Constraints": {
+  "n": 18,
+  "align": 8,
+  "consistent": {
+   "4": 18,
+   "8": 18,
+   "16": 16,
+   "32": 6,
+   "64": 4,
+   "128": 2,
+   "256": 1,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "phmo|/Limited Hinge Constraints": {
+  "n": 22,
+  "align": 4,
+  "consistent": {
+   "4": 22,
+   "8": 8,
+   "16": 4,
+   "32": 2,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "bloc|/AI Properties": {
+  "n": 24,
+  "align": 4,
+  "consistent": {
+   "4": 24,
+   "8": 17,
+   "16": 5,
+   "32": 2
+  }
+ },
+ "bloc|/Change Colors": {
+  "n": 21,
+  "align": 4,
+  "consistent": {
+   "4": 21,
+   "8": 11,
+   "16": 1
+  }
+ },
+ "bloc|/Change Colors/Initial Permutations": {
+  "n": 26,
+  "align": 4,
+  "consistent": {
+   "4": 26,
+   "8": 16,
+   "16": 4
+  }
+ },
+ "hlmt|/Variants": {
+  "n": 97,
+  "align": 4,
+  "consistent": {
+   "4": 97,
+   "8": 3
+  }
+ },
+ "hlmt|/Variants/Regions": {
+  "n": 221,
+  "align": 4,
+  "consistent": {
+   "4": 221,
+   "8": 58,
+   "16": 23,
+   "32": 15,
+   "64": 9,
+   "128": 4,
+   "256": 1
+  }
+ },
+ "hlmt|/Variants/Regions/Permutations": {
+  "n": 533,
+  "align": 4,
+  "consistent": {
+   "4": 533,
+   "8": 223,
+   "16": 109,
+   "32": 47,
+   "64": 25,
+   "128": 7,
+   "256": 3,
+   "512": 3,
+   "1024": 1
+  }
+ },
+ "hlmt|/Variants/Regions/Permutations/States": {
+  "n": 321,
+  "align": 4,
+  "consistent": {
+   "4": 321,
+   "8": 121,
+   "16": 64,
+   "32": 26,
+   "64": 10,
+   "128": 4,
+   "256": 1
+  }
+ },
+ "hlmt|/New Damage Info": {
+  "n": 106,
+  "align": 4,
+  "consistent": {
+   "4": 106,
+   "8": 42,
+   "16": 20,
+   "32": 10,
+   "64": 2,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "hlmt|/New Damage Info/Damage Sections": {
+  "n": 96,
+  "align": 4,
+  "consistent": {
+   "4": 96,
+   "8": 38,
+   "16": 21,
+   "32": 8,
+   "64": 7,
+   "128": 3,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "hlmt|/New Damage Info/Damage Sections/Instant Responses": {
+  "n": 296,
+  "align": 4,
+  "consistent": {
+   "4": 296,
+   "8": 79,
+   "16": 69,
+   "32": 32,
+   "64": 16,
+   "128": 12,
+   "256": 5,
+   "512": 2,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "hlmt|/New Damage Info/Nodes": {
+  "n": 50,
+  "align": 4,
+  "consistent": {
+   "4": 50,
+   "8": 17,
+   "16": 12,
+   "32": 7,
+   "64": 3
+  }
+ },
+ "phmo|/Polyhedron Four Vectors": {
+  "n": 72,
+  "align": 16,
+  "consistent": {
+   "4": 72,
+   "8": 72,
+   "16": 72,
+   "32": 33,
+   "64": 17,
+   "128": 10,
+   "256": 5,
+   "512": 2,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "effe|/Events/Parts": {
+  "n": 677,
+  "align": 4,
+  "consistent": {
+   "4": 677,
+   "8": 370,
+   "16": 179,
+   "32": 92,
+   "64": 44,
+   "128": 23,
+   "256": 13,
+   "512": 7,
+   "1024": 5,
+   "2048": 1
+  }
+ },
+ "DECR|/Shaders": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 9,
+   "16": 3,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "DECR|/Classes": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 9,
+   "16": 5,
+   "32": 3,
+   "64": 2,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "DECR|/Classes/Permutations": {
+  "n": 17,
+  "align": 4,
+  "consistent": {
+   "4": 17,
+   "8": 6,
+   "16": 3,
+   "32": 1
+  }
+ },
+ "bitm|/Sequences": {
+  "n": 620,
+  "align": 4,
+  "consistent": {
+   "4": 620,
+   "8": 314,
+   "16": 169,
+   "32": 79,
+   "64": 44,
+   "128": 22,
+   "256": 12,
+   "512": 6,
+   "1024": 1
+  }
+ },
+ "bitm|/Sequences/Sprites": {
+  "n": 851,
+  "align": 4,
+  "consistent": {
+   "4": 851,
+   "8": 475,
+   "16": 245,
+   "32": 114,
+   "64": 61,
+   "128": 26,
+   "256": 14,
+   "512": 3,
+   "1024": 3,
+   "2048": 1
+  }
+ },
+ "ltmp|/Lightmap Groups": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Section Palette": {
+  "n": 2,
+  "align": 128,
+  "consistent": {
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 2,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Clusters": {
+  "n": 2,
+  "align": 128,
+  "consistent": {
+   "4": 2,
+   "8": 2,
+   "16": 2,
+   "32": 2,
+   "64": 2,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Cluster Render Info": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Poop Definitions": {
+  "n": 2,
+  "align": 8,
+  "consistent": {
+   "4": 2,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Geometry Buckets": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Geometry Buckets/Resources": {
+  "n": 35,
+  "align": 4,
+  "consistent": {
+   "4": 35,
+   "8": 19,
+   "16": 19,
+   "32": 8,
+   "64": 4,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Instance Render Info": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Instance Bucket Refs": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2
+  }
+ },
+ "ltmp|/Lightmap Groups/Instance Bucket Refs/Section Offsets": {
+  "n": 277,
+  "align": 4,
+  "consistent": {
+   "4": 277,
+   "8": 139,
+   "16": 70,
+   "32": 34,
+   "64": 16,
+   "128": 8,
+   "256": 4,
+   "512": 2
+  }
+ },
+ "ltmp|/Lightmap Groups/Scenery Object Info": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Scenery Object Bucket Refs": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "ltmp|/Lightmap Groups/Scenery Object Bucket Refs/Section Offsets": {
+  "n": 18,
+  "align": 4,
+  "consistent": {
+   "4": 18,
+   "8": 9,
+   "16": 4,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "sbsp|/Collision Materials": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 2,
+   "32": 2
+  }
+ },
+ "sbsp|/Collision BSP": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3,
+   "16": 3,
+   "32": 3,
+   "64": 2,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "sbsp|/Collision BSP/BSP3D Nodes": {
+  "n": 5,
+  "align": 8,
+  "consistent": {
+   "4": 3,
+   "8": 5,
+   "16": 4,
+   "32": 4,
+   "64": 2,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "sbsp|/Collision BSP/Planes": {
+  "n": 5,
+  "align": 16,
+  "consistent": {
+   "4": 3,
+   "8": 3,
+   "16": 5
+  }
+ },
+ "sbsp|/Collision BSP/Leaves": {
+  "n": 5,
+  "align": 16,
+  "consistent": {
+   "4": 5,
+   "8": 5,
+   "16": 5,
+   "32": 3,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "sbsp|/Collision BSP/BSP2D References": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3
+  }
+ },
+ "sbsp|/Collision BSP/BSP2D Nodes": {
+  "n": 2,
+  "align": 16,
+  "consistent": {
+   "16": 2,
+   "32": 1
+  }
+ },
+ "sbsp|/Collision BSP/Surfaces": {
+  "n": 5,
+  "align": 16,
+  "consistent": {
+   "4": 3,
+   "8": 5,
+   "16": 5,
+   "32": 1
+  }
+ },
+ "sbsp|/Collision BSP/Edges": {
+  "n": 5,
+  "align": 8,
+  "consistent": {
+   "4": 5,
+   "8": 5,
+   "16": 4,
+   "32": 4,
+   "64": 1
+  }
+ },
+ "sbsp|/Collision BSP/Vertices": {
+  "n": 5,
+  "align": 16,
+  "consistent": {
+   "4": 3,
+   "8": 4,
+   "16": 5,
+   "32": 2,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "sbsp|/Leaves": {
+  "n": 5,
+  "align": 16,
+  "consistent": {
+   "4": 5,
+   "8": 5,
+   "16": 5,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "sbsp|/Surface References": {
+  "n": 5,
+  "align": 8,
+  "consistent": {
+   "4": 5,
+   "8": 5,
+   "16": 3,
+   "32": 2,
+   "64": 1
+  }
+ },
+ "sbsp|/Cluster Data [data]": {
+  "n": 5,
+  "align": 8,
+  "consistent": {
+   "4": 5,
+   "8": 5
+  }
+ },
+ "sbsp|/Cluster Portals": {
+  "n": 3,
+  "align": 8,
+  "consistent": {
+   "4": 3,
+   "8": 3,
+   "16": 1
+  }
+ },
+ "sbsp|/Cluster Portals/Vertices": {
+  "n": 445,
+  "align": 4,
+  "consistent": {
+   "4": 445,
+   "8": 174,
+   "16": 81,
+   "32": 42,
+   "64": 21,
+   "128": 12,
+   "256": 6,
+   "512": 4
+  }
+ },
+ "sbsp|/Fog Planes": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2,
+   "32": 2,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "sbsp|/Detail Objects": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 2,
+   "32": 2,
+   "64": 1
+  }
+ },
+ "sbsp|/Clusters": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "sbsp|/Clusters/Resources": {
+  "n": 205,
+  "align": 4,
+  "consistent": {
+   "4": 205,
+   "8": 147,
+   "16": 120,
+   "32": 65,
+   "64": 31,
+   "128": 16,
+   "256": 7,
+   "512": 3,
+   "1024": 3,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "sbsp|/Clusters/Predicted Resources": {
+  "n": 205,
+  "align": 4,
+  "consistent": {
+   "4": 205,
+   "8": 147,
+   "16": 120,
+   "32": 55,
+   "64": 34,
+   "128": 22,
+   "256": 12,
+   "512": 5,
+   "1024": 3,
+   "2048": 2
+  }
+ },
+ "sbsp|/Clusters/Portals": {
+  "n": 203,
+  "align": 4,
+  "consistent": {
+   "4": 203,
+   "8": 147,
+   "16": 82,
+   "32": 45,
+   "64": 22,
+   "128": 12,
+   "256": 6,
+   "512": 2,
+   "1024": 1
+  }
+ },
+ "sbsp|/Clusters/Instanced Geometry Indices": {
+  "n": 117,
+  "align": 4,
+  "consistent": {
+   "4": 117,
+   "8": 67,
+   "16": 36,
+   "32": 17,
+   "64": 11,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "sbsp|/Clusters/Collision MOPP Codes [data]": {
+  "n": 95,
+  "align": 16,
+  "consistent": {
+   "4": 27,
+   "8": 48,
+   "16": 95,
+   "32": 53,
+   "64": 28,
+   "128": 20,
+   "256": 10,
+   "512": 4,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "sbsp|/Materials": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5
+  }
+ },
+ "sbsp|/Materials/Properties": {
+  "n": 225,
+  "align": 4,
+  "consistent": {
+   "4": 225
+  }
+ },
+ "sbsp|/Sky Owner Cluster": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5
+  }
+ },
+ "sbsp|/Background Sound Palette": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2
+  }
+ },
+ "sbsp|/Sound Environment Palette": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2
+  }
+ },
+ "sbsp|/Runtime Decals": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Compression Info": {
+  "n": 140,
+  "align": 4,
+  "consistent": {
+   "4": 140,
+   "8": 138,
+   "16": 84,
+   "32": 45,
+   "64": 24,
+   "128": 14,
+   "256": 7,
+   "512": 6,
+   "1024": 5,
+   "2048": 3,
+   "4096": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Resources": {
+  "n": 140,
+  "align": 4,
+  "consistent": {
+   "4": 140,
+   "8": 138,
+   "16": 54,
+   "32": 24,
+   "64": 12,
+   "128": 8,
+   "256": 5,
+   "512": 2,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/BSP3D Nodes": {
+  "n": 92,
+  "align": 8,
+  "consistent": {
+   "4": 90,
+   "8": 92,
+   "16": 33,
+   "32": 19,
+   "64": 10,
+   "128": 3,
+   "256": 1,
+   "512": 1,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Planes": {
+  "n": 92,
+  "align": 16,
+  "consistent": {
+   "4": 39,
+   "8": 39,
+   "16": 92,
+   "32": 42,
+   "64": 17,
+   "128": 6,
+   "256": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Leaves": {
+  "n": 92,
+  "align": 16,
+  "consistent": {
+   "4": 92,
+   "8": 92,
+   "16": 92,
+   "32": 52,
+   "64": 22,
+   "128": 10,
+   "256": 3,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/BSP2D References": {
+  "n": 92,
+  "align": 4,
+  "consistent": {
+   "4": 92,
+   "8": 46,
+   "16": 15,
+   "32": 8,
+   "64": 4,
+   "128": 4,
+   "256": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/BSP2D Nodes": {
+  "n": 82,
+  "align": 16,
+  "consistent": {
+   "4": 19,
+   "8": 39,
+   "16": 82,
+   "32": 48,
+   "64": 23,
+   "128": 7,
+   "256": 5,
+   "512": 4
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Surfaces": {
+  "n": 92,
+  "align": 8,
+  "consistent": {
+   "4": 88,
+   "8": 92,
+   "16": 90,
+   "32": 52,
+   "64": 24,
+   "128": 15,
+   "256": 9,
+   "512": 3,
+   "1024": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Edges": {
+  "n": 92,
+  "align": 8,
+  "consistent": {
+   "4": 92,
+   "8": 92,
+   "16": 58,
+   "32": 23,
+   "64": 8,
+   "128": 6,
+   "256": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Vertices": {
+  "n": 92,
+  "align": 16,
+  "consistent": {
+   "4": 33,
+   "8": 43,
+   "16": 92,
+   "32": 53,
+   "64": 27,
+   "128": 11,
+   "256": 6,
+   "512": 3
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/BSP Physics": {
+  "n": 92,
+  "align": 16,
+  "consistent": {
+   "4": 92,
+   "8": 92,
+   "16": 92,
+   "32": 52,
+   "64": 26,
+   "128": 13,
+   "256": 7,
+   "512": 4
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/BSP Physics/MOPP Code Data [data]": {
+  "n": 92,
+  "align": 16,
+  "consistent": {
+   "4": 92,
+   "8": 92,
+   "16": 92,
+   "32": 52,
+   "64": 26,
+   "128": 11,
+   "256": 6,
+   "512": 2,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Render Leaves": {
+  "n": 92,
+  "align": 16,
+  "consistent": {
+   "4": 92,
+   "8": 92,
+   "16": 92,
+   "32": 51,
+   "64": 25,
+   "128": 18,
+   "256": 10,
+   "512": 5
+  }
+ },
+ "sbsp|/Instanced Geometry Definitions/Surface References": {
+  "n": 92,
+  "align": 8,
+  "consistent": {
+   "4": 92,
+   "8": 92,
+   "16": 46,
+   "32": 27,
+   "64": 14,
+   "128": 6,
+   "256": 3,
+   "512": 3,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "sbsp|/Instanced Geometry Instances": {
+  "n": 3,
+  "align": 8,
+  "consistent": {
+   "4": 3,
+   "8": 3,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "sbsp|/Ambience Sound Clusters": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "sbsp|/Ambience Sound Clusters/Enclosing Portal Designators": {
+  "n": 45,
+  "align": 4,
+  "consistent": {
+   "4": 45,
+   "8": 29,
+   "16": 15,
+   "32": 8,
+   "64": 3,
+   "128": 1
+  }
+ },
+ "sbsp|/Ambience Sound Clusters/Interior Cluster Indices": {
+  "n": 47,
+  "align": 4,
+  "consistent": {
+   "4": 47,
+   "8": 22,
+   "16": 12,
+   "32": 5,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "sbsp|/Reverb Sound Clusters": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3,
+   "16": 2
+  }
+ },
+ "sbsp|/Reverb Sound Clusters/Enclosing Portal Designators": {
+  "n": 59,
+  "align": 4,
+  "consistent": {
+   "4": 59,
+   "8": 29,
+   "16": 13,
+   "32": 8,
+   "64": 5
+  }
+ },
+ "sbsp|/Reverb Sound Clusters/Interior Cluster Indices": {
+  "n": 61,
+  "align": 4,
+  "consistent": {
+   "4": 61,
+   "8": 27,
+   "16": 11,
+   "32": 5,
+   "64": 3,
+   "128": 2,
+   "256": 1,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "sbsp|/Transparent Planes": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "sbsp|/Debug Info": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1
+  }
+ },
+ "sbsp|/Debug Info/Clusters": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "sbsp|/Debug Info/Clusters/Visible Fog Plane Indices": {
+  "n": 145,
+  "align": 4,
+  "consistent": {
+   "4": 145,
+   "8": 72,
+   "16": 35,
+   "32": 18,
+   "64": 9,
+   "128": 3,
+   "256": 2
+  }
+ },
+ "sbsp|/Debug Info/Clusters/Fog Plane Indices": {
+  "n": 37,
+  "align": 4,
+  "consistent": {
+   "4": 37,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "sbsp|/Debug Info/Fog Planes": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "sbsp|/Debug Info/Fog Planes/Lines": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "sbsp|/Debug Info/Fog Planes/Intersected Cluster Indices": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "sbsp|/Debug Info/Fog Planes/Infinite Extent Cluster Indices": {
+  "n": 2,
+  "align": 8,
+  "consistent": {
+   "4": 2,
+   "8": 2
+  }
+ },
+ "sbsp|/Debug Info/Fog Zones": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "sbsp|/Debug Info/Fog Zones/Lines": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "sbsp|/Debug Info/Fog Zones/Bounding Fog Plane Indices": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "sbsp|/MOPP Codes [data]": {
+  "n": 5,
+  "align": 16,
+  "consistent": {
+   "4": 1,
+   "8": 3,
+   "16": 5,
+   "32": 3,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "sbsp|/Breakable Surface MOPP Codes [data]": {
+  "n": 2,
+  "align": 32,
+  "consistent": {
+   "4": 2,
+   "8": 2,
+   "16": 2,
+   "32": 2
+  }
+ },
+ "sbsp|/Breakable Surface Key Table": {
+  "n": 2,
+  "align": 128,
+  "consistent": {
+   "4": 2,
+   "8": 2,
+   "16": 2,
+   "32": 2,
+   "64": 2,
+   "128": 2,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "sbsp|/Water Definitions": {
+  "n": 2,
+  "align": 64,
+  "consistent": {
+   "4": 2,
+   "8": 2,
+   "16": 2,
+   "32": 2,
+   "64": 2
+  }
+ },
+ "sbsp|/Water Definitions/Resources": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2
+  }
+ },
+ "sbsp|/Portal=>Device Mapping": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3,
+   "16": 3,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "sbsp|/Audibility": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3,
+   "16": 3,
+   "32": 2
+  }
+ },
+ "sbsp|/Audibility/AI Deafening PAS": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2,
+   "32": 2
+  }
+ },
+ "sbsp|/Audibility/Cluster Distances": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "sbsp|/Object Fake Lightprobes": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "sbsp|/Decorators": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "sbsp|/Decorators/Cache Blocks": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "sbsp|/Decorators/Cache Blocks/Resources": {
+  "n": 82,
+  "align": 4,
+  "consistent": {
+   "4": 82,
+   "8": 41,
+   "16": 41,
+   "32": 29,
+   "64": 26,
+   "128": 13,
+   "256": 6,
+   "512": 3,
+   "1024": 2,
+   "2048": 1
+  }
+ },
+ "sbsp|/Decorators/Groups": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "sbsp|/Decorators/Cells": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1
+  }
+ },
+ "ugh!|/Codecs": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 3,
+   "32": 3,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "ugh!|/Playback Parameters": {
+  "n": 5,
+  "align": 8,
+  "consistent": {
+   "4": 5,
+   "8": 5,
+   "16": 2
+  }
+ },
+ "ugh!|/Scales": {
+  "n": 5,
+  "align": 8,
+  "consistent": {
+   "4": 5,
+   "8": 5,
+   "16": 3,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "ugh!|/Import Names": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1
+  }
+ },
+ "ugh!|/Pitch Range Parameters": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "ugh!|/Pitch Ranges": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3
+  }
+ },
+ "ugh!|/Permutations": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 4,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "ugh!|/Permutations/Localized Chunks Info": {
+  "n": 39008,
+  "align": 4,
+  "consistent": {
+   "4": 39008,
+   "8": 38919,
+   "16": 19461,
+   "32": 9732,
+   "64": 4866,
+   "128": 2433,
+   "256": 1216,
+   "512": 608,
+   "1024": 304,
+   "2048": 151,
+   "4096": 76
+  }
+ },
+ "ugh!|/Custom Playbacks": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4,
+   "16": 1
+  }
+ },
+ "ugh!|/Custom Playbacks/Filter": {
+  "n": 37,
+  "align": 4,
+  "consistent": {
+   "4": 37,
+   "8": 2,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "ugh!|/Remastered Sound": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1
+  }
+ },
+ "ugh!|/Runtime Permutation Flags": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 1
+  }
+ },
+ "ugh!|/Permutation Chunks": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 2
+  }
+ },
+ "ugh!|/Permutation Chunks/Languages": {
+  "n": 33,
+  "align": 4,
+  "consistent": {
+   "4": 33,
+   "8": 16,
+   "16": 16,
+   "32": 5,
+   "64": 3,
+   "128": 2
+  }
+ },
+ "matg|/Havok Cleanup Resources": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Collision Damage": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Sound Globals": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/AI Globals": {
+  "n": 4,
+  "align": 256,
+  "consistent": {
+   "4": 4,
+   "8": 4,
+   "16": 4,
+   "32": 4,
+   "64": 4,
+   "128": 4,
+   "256": 4
+  }
+ },
+ "matg|/AI Globals/Gravemind Properties": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4
+  }
+ },
+ "matg|/Damage Table": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Damage Table/Damage Groups": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Damage Table/Damage Groups/Armor Modifiers": {
+  "n": 84,
+  "align": 8,
+  "consistent": {
+   "4": 84,
+   "8": 84
+  }
+ },
+ "matg|/Anniversary Globals": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4
+  }
+ },
+ "matg|/Sounds": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4
+  }
+ },
+ "matg|/Camera": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4
+  }
+ },
+ "matg|/Player Control": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Player Control/Look Function": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Difficulty": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Grenades": {
+  "n": 3,
+  "align": 8,
+  "consistent": {
+   "4": 3,
+   "8": 3
+  }
+ },
+ "matg|/Rasterizer Data": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4,
+   "16": 3,
+   "32": 3
+  }
+ },
+ "matg|/Rasterizer Data/Global Vertex Shaders": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4,
+   "16": 1
+  }
+ },
+ "matg|/Interface Tags": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4,
+   "16": 3
+  }
+ },
+ "matg|/Multiplayer Information": {
+  "n": 3,
+  "align": 8,
+  "consistent": {
+   "4": 3,
+   "8": 3
+  }
+ },
+ "matg|/Player Information": {
+  "n": 4,
+  "align": 16,
+  "consistent": {
+   "4": 4,
+   "8": 4,
+   "16": 4,
+   "32": 3
+  }
+ },
+ "matg|/Player Representation": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "matg|/Falling Damage": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Old Materials": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Materials": {
+  "n": 4,
+  "align": 8,
+  "consistent": {
+   "4": 4,
+   "8": 4
+  }
+ },
+ "matg|/Multiplayer UI": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "matg|/Profile Colors": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Runtime Level Data": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "matg|/Runtime Level Data/Campaign Levels": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4
+  }
+ },
+ "sncl|/Sound Classes": {
+  "n": 8,
+  "align": 4,
+  "consistent": {
+   "4": 8,
+   "8": 4,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "sncl|/Sound Classes/Function [data]": {
+  "n": 8,
+  "align": 4,
+  "consistent": {
+   "4": 8
+  }
+ },
+ "sncl|/Sound Classes/Ext Ducking": {
+  "n": 52,
+  "align": 4,
+  "consistent": {
+   "4": 52,
+   "8": 28,
+   "16": 11,
+   "32": 5,
+   "64": 2,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "scnr|/Bipeds": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "scnr|/Biped Palette": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "scnr|/Vehicle Palette": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "scnr|/Equipment": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "scnr|/Equipment Palette": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "scnr|/Weapons": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "scnr|/Weapon Palette": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "prt3|/Shader Parameters": {
+  "n": 393,
+  "align": 4,
+  "consistent": {
+   "4": 393,
+   "8": 186,
+   "16": 94,
+   "32": 48,
+   "64": 22,
+   "128": 9,
+   "256": 4,
+   "512": 2,
+   "1024": 2,
+   "2048": 2
+  }
+ },
+ "prt3|/Function [data]": {
+  "n": 848,
+  "align": 4,
+  "consistent": {
+   "4": 848,
+   "8": 419,
+   "16": 206,
+   "32": 94,
+   "64": 50,
+   "128": 24,
+   "256": 9,
+   "512": 5,
+   "1024": 4,
+   "2048": 2
+  }
+ },
+ "prt3|/Postprocess Definition": {
+  "n": 523,
+  "align": 4,
+  "consistent": {
+   "4": 523,
+   "8": 263,
+   "16": 135,
+   "32": 76,
+   "64": 37,
+   "128": 23,
+   "256": 12,
+   "512": 5,
+   "1024": 3,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "prt3|/Postprocess Definition/Bitmaps": {
+  "n": 392,
+  "align": 4,
+  "consistent": {
+   "4": 392,
+   "8": 192,
+   "16": 92,
+   "32": 48,
+   "64": 23,
+   "128": 13,
+   "256": 5,
+   "512": 2,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "prt3|/Postprocess Definition/Vertex Constants": {
+  "n": 9,
+  "align": 4,
+  "consistent": {
+   "4": 9,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "prt3|/Postprocess Definition/Passes": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 5,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "prt3|/Postprocess Definition/Implementations": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2
+  }
+ },
+ "prt3|/Postprocess Definition/Bitmap Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2
+  }
+ },
+ "lens|/Color": {
+  "n": 18,
+  "align": 4,
+  "consistent": {
+   "4": 18,
+   "8": 8,
+   "16": 6,
+   "32": 3,
+   "64": 2,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "lens|/Color/Function [data]": {
+  "n": 15,
+  "align": 4,
+  "consistent": {
+   "4": 15,
+   "8": 6,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "ligh|/Brightness Animation": {
+  "n": 13,
+  "align": 4,
+  "consistent": {
+   "4": 13,
+   "8": 6,
+   "16": 3,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "ligh|/Brightness Animation/Function [data]": {
+  "n": 9,
+  "align": 4,
+  "consistent": {
+   "4": 9,
+   "8": 4,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "prt3|/Postprocess Definition/Levels Of Detail": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "bipd|/AI Properties": {
+  "n": 29,
+  "align": 4,
+  "consistent": {
+   "4": 29,
+   "8": 15,
+   "16": 7,
+   "32": 6,
+   "64": 3,
+   "128": 1
+  }
+ },
+ "bipd|/Functions": {
+  "n": 19,
+  "align": 4,
+  "consistent": {
+   "4": 19,
+   "8": 8,
+   "16": 4,
+   "32": 1
+  }
+ },
+ "bipd|/Functions/Default Function [data]": {
+  "n": 49,
+  "align": 4,
+  "consistent": {
+   "4": 49,
+   "8": 24,
+   "16": 13,
+   "32": 6,
+   "64": 3,
+   "128": 3,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "bipd|/Attachments": {
+  "n": 22,
+  "align": 4,
+  "consistent": {
+   "4": 22,
+   "8": 11,
+   "16": 5
+  }
+ },
+ "bipd|/Change Colors": {
+  "n": 25,
+  "align": 4,
+  "consistent": {
+   "4": 25,
+   "8": 13,
+   "16": 6,
+   "32": 3
+  }
+ },
+ "bipd|/Change Colors/Initial Permutations": {
+  "n": 51,
+  "align": 4,
+  "consistent": {
+   "4": 51,
+   "8": 26,
+   "16": 13,
+   "32": 6,
+   "64": 3,
+   "128": 1
+  }
+ },
+ "bipd|/Predicted Resources": {
+  "n": 29,
+  "align": 4,
+  "consistent": {
+   "4": 29,
+   "8": 16,
+   "16": 6,
+   "32": 3
+  }
+ },
+ "bipd|/Camera Tracks": {
+  "n": 29,
+  "align": 4,
+  "consistent": {
+   "4": 29,
+   "8": 16,
+   "16": 11,
+   "32": 5,
+   "64": 2
+  }
+ },
+ "bipd|/New HUD Interfaces": {
+  "n": 16,
+  "align": 4,
+  "consistent": {
+   "4": 16,
+   "8": 7,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "bipd|/Dead Sphere Shapes": {
+  "n": 29,
+  "align": 16,
+  "consistent": {
+   "4": 7,
+   "8": 11,
+   "16": 29,
+   "32": 13,
+   "64": 8,
+   "128": 4,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "bipd|/Pill Shapes": {
+  "n": 28,
+  "align": 16,
+  "consistent": {
+   "4": 28,
+   "8": 28,
+   "16": 28,
+   "32": 13,
+   "64": 5,
+   "128": 4,
+   "256": 3,
+   "512": 1
+  }
+ },
+ "bipd|/Contact Points": {
+  "n": 28,
+  "align": 16,
+  "consistent": {
+   "4": 28,
+   "8": 28,
+   "16": 28,
+   "32": 13,
+   "64": 5,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "hlmt|/Targets": {
+  "n": 68,
+  "align": 4,
+  "consistent": {
+   "4": 68,
+   "8": 31,
+   "16": 14,
+   "32": 8,
+   "64": 5,
+   "128": 1
+  }
+ },
+ "jmad|/Sound References": {
+  "n": 115,
+  "align": 4,
+  "consistent": {
+   "4": 115,
+   "8": 56,
+   "16": 38,
+   "32": 25,
+   "64": 10,
+   "128": 2,
+   "256": 2,
+   "512": 2,
+   "1024": 1
+  }
+ },
+ "jmad|/Effect References": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 7,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "jmad|/Blend Screens": {
+  "n": 75,
+  "align": 4,
+  "consistent": {
+   "4": 75,
+   "8": 48,
+   "16": 19,
+   "32": 7,
+   "64": 4,
+   "128": 2,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "jmad|/Animations/Frame Events": {
+  "n": 1015,
+  "align": null,
+  "consistent": {
+   "4": 1000,
+   "8": 569,
+   "16": 304,
+   "32": 148,
+   "64": 70,
+   "128": 34,
+   "256": 15,
+   "512": 8,
+   "1024": 3,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "jmad|/Animations/Sound Events": {
+  "n": 1291,
+  "align": null,
+  "consistent": {
+   "4": 1281,
+   "8": 730,
+   "16": 338,
+   "32": 163,
+   "64": 89,
+   "128": 49,
+   "256": 28,
+   "512": 11,
+   "1024": 6,
+   "2048": 4,
+   "4096": 3
+  }
+ },
+ "jmad|/Animations/Object-Space Parent Nodes": {
+  "n": 104,
+  "align": 4,
+  "consistent": {
+   "4": 104,
+   "8": 96,
+   "16": 49,
+   "32": 22,
+   "64": 14,
+   "128": 7,
+   "256": 6,
+   "512": 2,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "jmad|/Animations/Effect Events": {
+  "n": 19,
+  "align": 4,
+  "consistent": {
+   "4": 19,
+   "8": 13,
+   "16": 6,
+   "32": 2,
+   "64": 1
+  }
+ },
+ "jmad|/Modes": {
+  "n": 215,
+  "align": null,
+  "consistent": {
+   "4": 205,
+   "8": 95,
+   "16": 69,
+   "32": 38,
+   "64": 15,
+   "128": 9,
+   "256": 5,
+   "512": 4,
+   "1024": 3,
+   "2048": 2
+  }
+ },
+ "jmad|/Modes/Weapon Class": {
+  "n": 913,
+  "align": 4,
+  "consistent": {
+   "4": 913,
+   "8": 476,
+   "16": 252,
+   "32": 134,
+   "64": 68,
+   "128": 39,
+   "256": 14,
+   "512": 10,
+   "1024": 4,
+   "2048": 2,
+   "4096": 1
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon Type": {
+  "n": 1899,
+  "align": 4,
+  "consistent": {
+   "4": 1899,
+   "8": 940,
+   "16": 444,
+   "32": 221,
+   "64": 116,
+   "128": 62,
+   "256": 30,
+   "512": 16,
+   "1024": 8,
+   "2048": 3,
+   "4096": 1
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon Type/Death and Damage": {
+  "n": 23,
+  "align": 4,
+  "consistent": {
+   "4": 23,
+   "8": 14,
+   "16": 7,
+   "32": 4,
+   "64": 1
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon Type/Death and Damage/Directions": {
+  "n": 83,
+  "align": 4,
+  "consistent": {
+   "4": 83,
+   "8": 29,
+   "16": 19,
+   "32": 10,
+   "64": 6,
+   "128": 3,
+   "256": 1
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon Type/Death and Damage/Directions/Regions": {
+  "n": 278,
+  "align": 4,
+  "consistent": {
+   "4": 278,
+   "8": 140,
+   "16": 71,
+   "32": 33,
+   "64": 13,
+   "128": 8,
+   "256": 5,
+   "512": 1
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon ik": {
+  "n": 51,
+  "align": 4,
+  "consistent": {
+   "4": 51,
+   "8": 18,
+   "16": 11,
+   "32": 4,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon Type/Actions": {
+  "n": 1480,
+  "align": 4,
+  "consistent": {
+   "4": 1480,
+   "8": 733,
+   "16": 422,
+   "32": 203,
+   "64": 97,
+   "128": 52,
+   "256": 22,
+   "512": 10,
+   "1024": 3,
+   "2048": 2,
+   "4096": 2
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon Type/Overlays": {
+  "n": 1660,
+  "align": 4,
+  "consistent": {
+   "4": 1660,
+   "8": 766,
+   "16": 377,
+   "32": 185,
+   "64": 95,
+   "128": 48,
+   "256": 22,
+   "512": 13,
+   "1024": 6,
+   "2048": 3,
+   "4096": 1
+  }
+ },
+ "jmad|/Modes/Mode ik": {
+  "n": 51,
+  "align": 4,
+  "consistent": {
+   "4": 51,
+   "8": 32,
+   "16": 16,
+   "32": 8,
+   "64": 4,
+   "128": 4,
+   "256": 1
+  }
+ },
+ "garb|/Predicted Resources": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 1
+  }
+ },
+ "foot|/Effects": {
+  "n": 222,
+  "align": 4,
+  "consistent": {
+   "4": 222,
+   "8": 113,
+   "16": 60,
+   "32": 30,
+   "64": 11,
+   "128": 5,
+   "256": 4,
+   "512": 3,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "foot|/Effects/Sounds": {
+  "n": 490,
+  "align": 4,
+  "consistent": {
+   "4": 490,
+   "8": 243,
+   "16": 116,
+   "32": 57,
+   "64": 29,
+   "128": 16,
+   "256": 7,
+   "512": 4,
+   "1024": 2,
+   "2048": 1
+  }
+ },
+ "PRTM|/Function [data]": {
+  "n": 92,
+  "align": 4,
+  "consistent": {
+   "4": 92,
+   "8": 46,
+   "16": 23,
+   "32": 15,
+   "64": 8,
+   "128": 4,
+   "256": 3,
+   "512": 1,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "PRTM|/Models": {
+  "n": 23,
+  "align": 4,
+  "consistent": {
+   "4": 23,
+   "8": 17,
+   "16": 7,
+   "32": 3
+  }
+ },
+ "PRTM|/Raw Vertices": {
+  "n": 23,
+  "align": 4,
+  "consistent": {
+   "4": 23,
+   "8": 17,
+   "16": 10,
+   "32": 5,
+   "64": 3,
+   "128": 2
+  }
+ },
+ "PRTM|/Indices": {
+  "n": 23,
+  "align": 4,
+  "consistent": {
+   "4": 23,
+   "8": 17,
+   "16": 13,
+   "32": 5,
+   "64": 3,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "PRTM|/Resources": {
+  "n": 23,
+  "align": 4,
+  "consistent": {
+   "4": 23,
+   "8": 17,
+   "16": 11,
+   "32": 7,
+   "64": 5,
+   "128": 4,
+   "256": 3,
+   "512": 1
+  }
+ },
+ "udlg|/Vocalizations": {
+  "n": 39,
+  "align": 4,
+  "consistent": {
+   "4": 39,
+   "8": 23,
+   "16": 17,
+   "32": 2,
+   "64": 1
+  }
+ },
+ "adlg|/Vocalizations": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "adlg|/Vocalizations/Responses": {
+  "n": 92,
+  "align": 4,
+  "consistent": {
+   "4": 92,
+   "8": 46,
+   "16": 23,
+   "32": 12,
+   "64": 7,
+   "128": 2
+  }
+ },
+ "adlg|/Patterns": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "adlg|/Dialogue Data": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "adlg|/Involuntary Data": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "foot|/Effects/Effects": {
+  "n": 159,
+  "align": 4,
+  "consistent": {
+   "4": 159,
+   "8": 67,
+   "16": 36,
+   "32": 23,
+   "64": 13,
+   "128": 5,
+   "256": 5,
+   "512": 3,
+   "1024": 2
+  }
+ },
+ "MGS2|/Volumes": {
+  "n": 49,
+  "align": 4,
+  "consistent": {
+   "4": 49,
+   "8": 25,
+   "16": 8,
+   "32": 6,
+   "64": 3,
+   "128": 1
+  }
+ },
+ "MGS2|/Volumes/Function [data]": {
+  "n": 172,
+  "align": 4,
+  "consistent": {
+   "4": 172,
+   "8": 88,
+   "16": 46,
+   "32": 28,
+   "64": 15,
+   "128": 6,
+   "256": 4,
+   "512": 4,
+   "1024": 3
+  }
+ },
+ "MGS2|/Volumes/Unknown": {
+  "n": 46,
+  "align": 4,
+  "consistent": {
+   "4": 46,
+   "8": 22,
+   "16": 8,
+   "32": 4,
+   "64": 3,
+   "128": 1
+  }
+ },
+ "trak|/Control Points": {
+  "n": 52,
+  "align": 4,
+  "consistent": {
+   "4": 52,
+   "8": 24,
+   "16": 11,
+   "32": 6,
+   "64": 5,
+   "128": 2,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "jpt!|/Player Responses": {
+  "n": 259,
+  "align": 4,
+  "consistent": {
+   "4": 259,
+   "8": 142,
+   "16": 84,
+   "32": 41,
+   "64": 22,
+   "128": 12,
+   "256": 8,
+   "512": 7,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "jpt!|/Player Responses/Low Frequency Vibration Function [data]": {
+  "n": 108,
+  "align": 4,
+  "consistent": {
+   "4": 108,
+   "8": 48,
+   "16": 26,
+   "32": 16,
+   "64": 7,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "jpt!|/Player Responses/High Frequency Vibration Function [data]": {
+  "n": 108,
+  "align": 4,
+  "consistent": {
+   "4": 108,
+   "8": 60,
+   "16": 24,
+   "32": 8,
+   "64": 4,
+   "128": 2,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "nhdt|/Bitmap Widgets": {
+  "n": 93,
+  "align": 4,
+  "consistent": {
+   "4": 93,
+   "8": 58,
+   "16": 30,
+   "32": 11,
+   "64": 6,
+   "128": 3
+  }
+ },
+ "nhdt|/Text Widgets": {
+  "n": 47,
+  "align": 4,
+  "consistent": {
+   "4": 47,
+   "8": 23,
+   "16": 11,
+   "32": 7,
+   "64": 5,
+   "128": 2,
+   "256": 2,
+   "512": 1,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon Type/Transitions": {
+  "n": 212,
+  "align": 4,
+  "consistent": {
+   "4": 212,
+   "8": 103,
+   "16": 42,
+   "32": 22,
+   "64": 14,
+   "128": 8,
+   "256": 6,
+   "512": 3,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "jmad|/Modes/Weapon Class/Weapon Type/Transitions/Destinations": {
+  "n": 665,
+  "align": 4,
+  "consistent": {
+   "4": 665,
+   "8": 338,
+   "16": 177,
+   "32": 79,
+   "64": 39,
+   "128": 20,
+   "256": 6,
+   "512": 2,
+   "1024": 1
+  }
+ },
+ "vehi|/AI Properties": {
+  "n": 55,
+  "align": 4,
+  "consistent": {
+   "4": 55,
+   "8": 29,
+   "16": 11,
+   "32": 5,
+   "64": 4,
+   "128": 1
+  }
+ },
+ "vehi|/Functions": {
+  "n": 46,
+  "align": 4,
+  "consistent": {
+   "4": 46,
+   "8": 27,
+   "16": 14,
+   "32": 8,
+   "64": 4,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "vehi|/Functions/Default Function [data]": {
+  "n": 124,
+  "align": 4,
+  "consistent": {
+   "4": 124,
+   "8": 65,
+   "16": 32,
+   "32": 18,
+   "64": 7,
+   "128": 4,
+   "256": 3,
+   "512": 1
+  }
+ },
+ "vehi|/Attachments": {
+  "n": 46,
+  "align": 4,
+  "consistent": {
+   "4": 46,
+   "8": 19,
+   "16": 12,
+   "32": 5,
+   "64": 2,
+   "128": 2,
+   "256": 2
+  }
+ },
+ "vehi|/Widgets": {
+  "n": 11,
+  "align": 4,
+  "consistent": {
+   "4": 11,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "vehi|/Predicted Resources": {
+  "n": 68,
+  "align": 4,
+  "consistent": {
+   "4": 68,
+   "8": 34,
+   "16": 14,
+   "32": 6,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "vehi|/Powered Seats": {
+  "n": 35,
+  "align": 4,
+  "consistent": {
+   "4": 35,
+   "8": 20,
+   "16": 10,
+   "32": 3,
+   "64": 2,
+   "128": 2,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "vehi|/Weapons": {
+  "n": 56,
+  "align": 4,
+  "consistent": {
+   "4": 56,
+   "8": 26,
+   "16": 16,
+   "32": 7,
+   "64": 4,
+   "128": 3,
+   "256": 2
+  }
+ },
+ "vehi|/Seats": {
+  "n": 68,
+  "align": 4,
+  "consistent": {
+   "4": 68,
+   "8": 34,
+   "16": 14,
+   "32": 7,
+   "64": 2,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "vehi|/Seats/Camera Tracks": {
+  "n": 175,
+  "align": 4,
+  "consistent": {
+   "4": 175,
+   "8": 99,
+   "16": 47,
+   "32": 24,
+   "64": 12,
+   "128": 5,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "vehi|/Seats/Unit HUD Interface": {
+  "n": 71,
+  "align": 4,
+  "consistent": {
+   "4": 71,
+   "8": 30,
+   "16": 17,
+   "32": 9,
+   "64": 5,
+   "128": 3,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "vehi|/Gears": {
+  "n": 9,
+  "align": 4,
+  "consistent": {
+   "4": 9,
+   "8": 5,
+   "16": 4,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "vehi|/Friction Points": {
+  "n": 9,
+  "align": 4,
+  "consistent": {
+   "4": 9,
+   "8": 5,
+   "16": 3,
+   "32": 3,
+   "64": 2
+  }
+ },
+ "vehi|/Phantom Shapes": {
+  "n": 68,
+  "align": 16,
+  "consistent": {
+   "4": 17,
+   "8": 30,
+   "16": 68,
+   "32": 37,
+   "64": 20,
+   "128": 9,
+   "256": 6,
+   "512": 1,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "hlmt|/Variants/Objects": {
+  "n": 27,
+  "align": 4,
+  "consistent": {
+   "4": 27,
+   "8": 19,
+   "16": 9,
+   "32": 5,
+   "64": 4,
+   "128": 2,
+   "256": 2,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "hlmt|/New Damage Info/Damage Seats": {
+  "n": 50,
+  "align": 4,
+  "consistent": {
+   "4": 50,
+   "8": 14,
+   "16": 13,
+   "32": 6,
+   "64": 4,
+   "128": 2
+  }
+ },
+ "hlmt|/New Damage Info/Damage Constraints": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "jmad|/Vehicle Suspension": {
+  "n": 15,
+  "align": 4,
+  "consistent": {
+   "4": 15,
+   "8": 12,
+   "16": 3,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "prt3|/Postprocess Definition/Pixel Constants": {
+  "n": 7,
+  "align": 4,
+  "consistent": {
+   "4": 7,
+   "8": 5,
+   "16": 3,
+   "32": 1
+  }
+ },
+ "effe|/Events/Accelerations": {
+  "n": 101,
+  "align": 4,
+  "consistent": {
+   "4": 101,
+   "8": 53,
+   "16": 24,
+   "32": 12,
+   "64": 6
+  }
+ },
+ "jmad|/Object Overlays": {
+  "n": 6,
+  "align": 8,
+  "consistent": {
+   "4": 6,
+   "8": 6,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "weap|/Attachments": {
+  "n": 71,
+  "align": 4,
+  "consistent": {
+   "4": 71,
+   "8": 39,
+   "16": 21,
+   "32": 12,
+   "64": 7,
+   "128": 5,
+   "256": 1
+  }
+ },
+ "weap|/First Person": {
+  "n": 72,
+  "align": 4,
+  "consistent": {
+   "4": 72,
+   "8": 46,
+   "16": 27,
+   "32": 13,
+   "64": 10,
+   "128": 5,
+   "256": 3,
+   "512": 2,
+   "1024": 1
+  }
+ },
+ "weap|/Predicted Resources": {
+  "n": 169,
+  "align": 4,
+  "consistent": {
+   "4": 169,
+   "8": 102,
+   "16": 55,
+   "32": 26,
+   "64": 9,
+   "128": 5,
+   "256": 3,
+   "512": 1
+  }
+ },
+ "weap|/New Triggers": {
+  "n": 47,
+  "align": 4,
+  "consistent": {
+   "4": 47,
+   "8": 29,
+   "16": 16,
+   "32": 6,
+   "64": 4
+  }
+ },
+ "weap|/Barrels": {
+  "n": 110,
+  "align": 4,
+  "consistent": {
+   "4": 110,
+   "8": 53,
+   "16": 31,
+   "32": 14,
+   "64": 8,
+   "128": 5,
+   "256": 3,
+   "512": 1
+  }
+ },
+ "weap|/Barrels/Firing Effects": {
+  "n": 111,
+  "align": 4,
+  "consistent": {
+   "4": 111,
+   "8": 61,
+   "16": 34,
+   "32": 15,
+   "64": 10,
+   "128": 7,
+   "256": 4,
+   "512": 2,
+   "1024": 1
+  }
+ },
+ "nhdt|/Bitmap Widgets/Effect": {
+  "n": 39,
+  "align": 4,
+  "consistent": {
+   "4": 39,
+   "8": 23,
+   "16": 9,
+   "32": 6,
+   "64": 6,
+   "128": 3,
+   "256": 1
+  }
+ },
+ "nhdt|/Bitmap Widgets/Effect/Function [data]": {
+  "n": 47,
+  "align": 4,
+  "consistent": {
+   "4": 47,
+   "8": 26,
+   "16": 13,
+   "32": 9,
+   "64": 4,
+   "128": 3,
+   "256": 1
+  }
+ },
+ "proj|/Attachments": {
+  "n": 89,
+  "align": 4,
+  "consistent": {
+   "4": 89,
+   "8": 43,
+   "16": 21,
+   "32": 9,
+   "64": 4,
+   "128": 3,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "proj|/Material Responses": {
+  "n": 77,
+  "align": 4,
+  "consistent": {
+   "4": 77,
+   "8": 35,
+   "16": 16,
+   "32": 6,
+   "64": 5,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "cont|/Point States": {
+  "n": 82,
+  "align": 4,
+  "consistent": {
+   "4": 82,
+   "8": 36,
+   "16": 18,
+   "32": 8,
+   "64": 4,
+   "128": 2,
+   "256": 1,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "ant!|/Vertices": {
+  "n": 9,
+  "align": 4,
+  "consistent": {
+   "4": 9,
+   "8": 2,
+   "16": 2,
+   "32": 2
+  }
+ },
+ "weap|/Functions": {
+  "n": 26,
+  "align": 4,
+  "consistent": {
+   "4": 26,
+   "8": 13,
+   "16": 10,
+   "32": 5,
+   "64": 3
+  }
+ },
+ "weap|/Functions/Default Function [data]": {
+  "n": 7,
+  "align": 4,
+  "consistent": {
+   "4": 7,
+   "8": 2,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "vehi|/Change Colors": {
+  "n": 18,
+  "align": 4,
+  "consistent": {
+   "4": 18,
+   "8": 8,
+   "16": 3,
+   "32": 2,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "vehi|/Change Colors/Initial Permutations": {
+  "n": 24,
+  "align": 4,
+  "consistent": {
+   "4": 24,
+   "8": 11,
+   "16": 4,
+   "32": 3,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "vehi|/Camera Tracks": {
+  "n": 26,
+  "align": 4,
+  "consistent": {
+   "4": 26,
+   "8": 17,
+   "16": 7,
+   "32": 6,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "vehi|/New HUD Interfaces": {
+  "n": 15,
+  "align": 4,
+  "consistent": {
+   "4": 15,
+   "8": 8,
+   "16": 4,
+   "32": 2,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "bloc|/Functions": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 2
+  }
+ },
+ "MGS2|/Volumes/Aspect": {
+  "n": 36,
+  "align": 4,
+  "consistent": {
+   "4": 36,
+   "8": 15,
+   "16": 5,
+   "32": 2,
+   "64": 2,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "proj|/Predicted Resources": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 8,
+   "16": 5,
+   "32": 4,
+   "64": 4,
+   "128": 4
+  }
+ },
+ "vehi|/Anti Gravity Points": {
+  "n": 15,
+  "align": 4,
+  "consistent": {
+   "4": 15,
+   "8": 8,
+   "16": 3,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "proj|/Widgets": {
+  "n": 7,
+  "align": 4,
+  "consistent": {
+   "4": 7,
+   "8": 4,
+   "16": 2,
+   "32": 2,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "phmo|/Spheres": {
+  "n": 9,
+  "align": 16,
+  "consistent": {
+   "8": 8,
+   "16": 9,
+   "32": 5,
+   "64": 2
+  }
+ },
+ "char|/General Properties": {
+  "n": 8,
+  "align": 4,
+  "consistent": {
+   "4": 8,
+   "8": 2
+  }
+ },
+ "char|/Weapons Properties": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 4,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "char|/Firing Pattern Properties": {
+  "n": 7,
+  "align": 4,
+  "consistent": {
+   "4": 7,
+   "8": 3,
+   "16": 2,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "char|/Firing Pattern Properties/Firing Patterns": {
+  "n": 129,
+  "align": 4,
+  "consistent": {
+   "4": 129,
+   "8": 75,
+   "16": 72,
+   "32": 36
+  }
+ },
+ "char|/Vehicle Properties": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 3
+  }
+ },
+ "char|/Campaign Metagame Bucket": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "char|/Vitality Properties": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 4,
+   "16": 4,
+   "32": 3,
+   "64": 3,
+   "128": 1
+  }
+ },
+ "char|/Placement Properties": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "char|/Perception Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "char|/Look Properties": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "char|/Movement Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "char|/Ready Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2
+  }
+ },
+ "char|/Engage Properties": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "char|/Charge Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 2,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "char|/Evasion Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 2,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "char|/Cover Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 2,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "char|/Retreat Properties": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "char|/Search Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "char|/Pre-Search Properties": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2
+  }
+ },
+ "char|/Idle Properties": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "char|/Vocalization Properties": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2
+  }
+ },
+ "char|/Grenades Properties": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "styl|/Behavior List": {
+  "n": 9,
+  "align": 4,
+  "consistent": {
+   "4": 9,
+   "8": 7,
+   "16": 6,
+   "32": 3,
+   "64": 2,
+   "128": 2
+  }
+ },
+ "weap|/Magazines": {
+  "n": 47,
+  "align": 4,
+  "consistent": {
+   "4": 47,
+   "8": 29,
+   "16": 9,
+   "32": 3,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "MGS2|/Volumes/Aspect/Function [data]": {
+  "n": 20,
+  "align": 4,
+  "consistent": {
+   "4": 20,
+   "8": 12,
+   "16": 8,
+   "32": 6,
+   "64": 4,
+   "128": 3,
+   "256": 1
+  }
+ },
+ "eqip|/Predicted Resources": {
+  "n": 36,
+  "align": 4,
+  "consistent": {
+   "4": 36,
+   "8": 21,
+   "16": 13,
+   "32": 8,
+   "64": 5,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "prt3|/Attached Particle Systems": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 5,
+   "16": 1
+  }
+ },
+ "prt3|/Attached Particle Systems/Emitters": {
+  "n": 10,
+  "align": 4,
+  "consistent": {
+   "4": 10,
+   "8": 8,
+   "16": 5,
+   "32": 3
+  }
+ },
+ "weap|/Predicted Bitmaps": {
+  "n": 50,
+  "align": 4,
+  "consistent": {
+   "4": 50,
+   "8": 29,
+   "16": 12,
+   "32": 4,
+   "64": 3,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "weap|/Magazines/Magazine Equipment": {
+  "n": 22,
+  "align": 4,
+  "consistent": {
+   "4": 22,
+   "8": 11,
+   "16": 7,
+   "32": 3,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "proj|/Change Colors": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "proj|/Change Colors/Functions": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "nhdt|/Screen Effect Widgets": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "weap|/AI Properties": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 4,
+   "16": 3,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "proj|/Functions": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 2,
+   "32": 2
+  }
+ },
+ "jmad|/Inheritance List": {
+  "n": 18,
+  "align": 4,
+  "consistent": {
+   "4": 18,
+   "8": 2
+  }
+ },
+ "jmad|/Inheritance List/Node Map": {
+  "n": 18,
+  "align": 4,
+  "consistent": {
+   "4": 18,
+   "8": 2
+  }
+ },
+ "jmad|/Inheritance List/Node Map Flags": {
+  "n": 18,
+  "align": 4,
+  "consistent": {
+   "4": 18,
+   "8": 4
+  }
+ },
+ "weap|/Widgets": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 5,
+   "16": 1
+  }
+ },
+ "weap|/Change Colors": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 4,
+   "16": 4,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "weap|/Change Colors/Initial Permutations": {
+  "n": 15,
+  "align": 4,
+  "consistent": {
+   "4": 15,
+   "8": 13,
+   "16": 13,
+   "32": 8,
+   "64": 4,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "clwd|/Vertices": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "clwd|/Indices": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "clwd|/Strip Indices": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3
+  }
+ },
+ "clwd|/Links": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 1
+  }
+ },
+ "mode|/Section Groups/Compound Nodes": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "tdtl|/Arcs": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "tdtl|/Arcs/Roughness Function [data]": {
+  "n": 3,
+  "align": 8,
+  "consistent": {
+   "4": 3,
+   "8": 3,
+   "16": 2
+  }
+ },
+ "tdtl|/Arcs/Cores": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "tdtl|/Arcs/Cores/Thickness [data]": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6
+  }
+ },
+ "tdtl|/Arcs/Cores/Color [data]": {
+  "n": 6,
+  "align": 8,
+  "consistent": {
+   "4": 6,
+   "8": 6,
+   "16": 3,
+   "32": 2,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "tdtl|/Arcs/Cores/Brightness/Facing [data]": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "tdtl|/Arcs/Cores/Along-Axis Scale [data]": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 3,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "tdtl|/Arcs/Range-Collision Scale [data]": {
+  "n": 3,
+  "align": 8,
+  "consistent": {
+   "4": 3,
+   "8": 3,
+   "16": 2,
+   "32": 2
+  }
+ },
+ "tdtl|/Arcs/Brightness-Collision Scale [data]": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "prt3|/Attached Particle Systems/Emitters/Function [data]": {
+  "n": 36,
+  "align": 4,
+  "consistent": {
+   "4": 36,
+   "8": 18,
+   "16": 9,
+   "32": 5,
+   "64": 2
+  }
+ },
+ "ligh|/Color Animation": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "ligh|/Color Animation/Function [data]": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "phmo|/Ball And Socket Constraints": {
+  "n": 1,
+  "align": 64,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "DECR|/Models": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "DECR|/Raw Vertices": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "DECR|/Indices": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "DECR|/Resources": {
+  "n": 5,
+  "align": 4,
+  "consistent": {
+   "4": 5,
+   "8": 3,
+   "16": 2,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "mulg|/Universal": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "mulg|/Universal/Team Colors": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "mulg|/Runtime": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mulg|/Runtime/Weapons": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "mulg|/Runtime/Vehicles": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "mulg|/Runtime/Grenades": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "mulg|/Runtime/Powerups": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "mulg|/Runtime/Sounds": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "mulg|/Runtime/General Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mulg|/Runtime/Flavor Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mulg|/Runtime/Slayer Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mulg|/Runtime/CTF Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mulg|/Runtime/Oddball Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mulg|/Runtime/King Of The Hill Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "mulg|/Runtime/Juggernaut Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "mulg|/Runtime/Territories Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mulg|/Runtime/Assault Events": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "mulg|/Runtime/Multiplayer Constants": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "mulg|/Runtime/State Responses": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "sfx+|/Sound Effects": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 2
+  }
+ },
+ "sfx+|/Sound Effects/Filter": {
+  "n": 20,
+  "align": 4,
+  "consistent": {
+   "4": 20,
+   "8": 10,
+   "16": 2
+  }
+ },
+ "sfx+|/Sound Effects/Sound Effect": {
+  "n": 56,
+  "align": 4,
+  "consistent": {
+   "4": 56,
+   "8": 28,
+   "16": 20,
+   "32": 8,
+   "64": 4,
+   "128": 2,
+   "256": 1,
+   "512": 1,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "sfx+|/Sound Effects/Sound Effect/Components": {
+  "n": 36,
+  "align": 4,
+  "consistent": {
+   "4": 36,
+   "8": 18,
+   "16": 4,
+   "32": 4,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "sfx+|/Sound Effects/Sound Effect/Unknown": {
+  "n": 32,
+  "align": 4,
+  "consistent": {
+   "4": 32,
+   "8": 16,
+   "16": 2
+  }
+ },
+ "sfx+|/Sound Effects/Sound Effect/Unknown/Sound Effects": {
+  "n": 28,
+  "align": 4,
+  "consistent": {
+   "4": 28,
+   "8": 14,
+   "16": 8,
+   "32": 4,
+   "64": 2
+  }
+ },
+ "sfx+|/Sound Effects/Sound Effect/Unknown/Sound Effects/Function Inputs": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2
+  }
+ },
+ "sfx+|/Sound Effects/Sound Effect/Unknown/Sound Effects/Function Inputs/Function [data]": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2
+  }
+ },
+ "sfx+|/Sound Effects/Sound Effect/Unknown/Sound Effects/Constant Inputs": {
+  "n": 16,
+  "align": 4,
+  "consistent": {
+   "4": 16,
+   "8": 8
+  }
+ },
+ "sfx+|/Sound Effects/Sound Effect/Unknown/Sound Effects/Template Override Descriptors": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 6
+  }
+ },
+ "sfx+|/Sound Effects/Pitch LFO": {
+  "n": 8,
+  "align": 4,
+  "consistent": {
+   "4": 8,
+   "8": 4,
+   "16": 2,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "sfx+|/Sound Effects/Filter LFO": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 2
+  }
+ },
+ "<fx>|/Platform Effect Templates": {
+  "n": 20,
+  "align": 4,
+  "consistent": {
+   "4": 20,
+   "8": 10,
+   "16": 6,
+   "32": 3,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "<fx>|/Platform Effect Templates/Platform Effect Template": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 2,
+   "32": 1,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "<fx>|/Platform Effect Templates/Platform Effect Template/Components": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2
+  }
+ },
+ "colo|/Colors": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 9,
+   "16": 4,
+   "32": 3,
+   "64": 2,
+   "128": 1
+  }
+ },
+ "hudg|/Waypoint Arrows": {
+  "n": 8,
+  "align": 4,
+  "consistent": {
+   "4": 8,
+   "8": 4,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "hudg|/Dashlights": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 1
+  }
+ },
+ "hudg|/Waypoints": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 1
+  }
+ },
+ "hudg|/HUD Sounds": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 1
+  }
+ },
+ "hudg|/Player Training Data": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 1
+  }
+ },
+ "wgtz|/Screen Widgets": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "wigl|/Errors": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 2,
+   "32": 2,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "wigl|/Errors/Error Block": {
+  "n": 32,
+  "align": 4,
+  "consistent": {
+   "4": 32,
+   "8": 24,
+   "16": 12,
+   "32": 8,
+   "64": 4,
+   "128": 2,
+   "256": 1,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "wigl|/Screen Animations": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 2
+  }
+ },
+ "wigl|/Screen Animations/Keyframes": {
+  "n": 296,
+  "align": 4,
+  "consistent": {
+   "4": 296,
+   "8": 134,
+   "16": 71,
+   "32": 37,
+   "64": 17,
+   "128": 8,
+   "256": 4,
+   "512": 2,
+   "1024": 2,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "wigl|/Persistant Background Animations": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 1
+  }
+ },
+ "wigl|/Persistant Background Animations/Interpolated Keyframes": {
+  "n": 32,
+  "align": 4,
+  "consistent": {
+   "4": 32,
+   "8": 18,
+   "16": 9,
+   "32": 6,
+   "64": 3,
+   "128": 1
+  }
+ },
+ "wigl|/List Item Skins": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 1
+  }
+ },
+ "wigl|/Skill Mappings": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "skin|/Item Animations": {
+  "n": 93,
+  "align": 4,
+  "consistent": {
+   "4": 93,
+   "8": 45,
+   "16": 21,
+   "32": 12,
+   "64": 8,
+   "128": 3
+  }
+ },
+ "skin|/Item Animations/Keyframes": {
+  "n": 188,
+  "align": 4,
+  "consistent": {
+   "4": 188,
+   "8": 89,
+   "16": 44,
+   "32": 24,
+   "64": 13,
+   "128": 6,
+   "256": 3,
+   "512": 2,
+   "1024": 1
+  }
+ },
+ "skin|/Text Blocks": {
+  "n": 125,
+  "align": 4,
+  "consistent": {
+   "4": 125,
+   "8": 59,
+   "16": 29,
+   "32": 7,
+   "64": 3,
+   "128": 2
+  }
+ },
+ "skin|/Bitmap Blocks": {
+  "n": 113,
+  "align": 4,
+  "consistent": {
+   "4": 113,
+   "8": 61,
+   "16": 30,
+   "32": 23,
+   "64": 11,
+   "128": 4,
+   "256": 2,
+   "512": 2,
+   "1024": 1
+  }
+ },
+ "skin|/Player Blocks": {
+  "n": 28,
+  "align": 4,
+  "consistent": {
+   "4": 28,
+   "8": 17,
+   "16": 7,
+   "32": 3,
+   "64": 3,
+   "128": 2,
+   "256": 1
+  }
+ },
+ "skin|/HUD Blocks": {
+  "n": 25,
+  "align": 4,
+  "consistent": {
+   "4": 25,
+   "8": 15,
+   "16": 7,
+   "32": 5,
+   "64": 4,
+   "128": 4,
+   "256": 2,
+   "512": 1
+  }
+ },
+ "wgit|/Panes": {
+  "n": 253,
+  "align": 4,
+  "consistent": {
+   "4": 253,
+   "8": 136,
+   "16": 66,
+   "32": 39,
+   "64": 27,
+   "128": 15,
+   "256": 11,
+   "512": 5,
+   "1024": 3,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "wgit|/Panes/Buttons": {
+  "n": 15,
+  "align": 4,
+  "consistent": {
+   "4": 15,
+   "8": 8,
+   "16": 5,
+   "32": 4,
+   "64": 2,
+   "128": 1,
+   "256": 1,
+   "512": 1,
+   "1024": 1,
+   "2048": 1,
+   "4096": 1
+  }
+ },
+ "wgit|/Panes/Text Blocks": {
+  "n": 354,
+  "align": 4,
+  "consistent": {
+   "4": 354,
+   "8": 175,
+   "16": 77,
+   "32": 43,
+   "64": 20,
+   "128": 11,
+   "256": 5
+  }
+ },
+ "wgit|/Panes/Bitmap Blocks": {
+  "n": 259,
+  "align": 4,
+  "consistent": {
+   "4": 259,
+   "8": 137,
+   "16": 65,
+   "32": 31,
+   "64": 14,
+   "128": 6,
+   "256": 3,
+   "512": 2
+  }
+ },
+ "mcsr|/Mouse Cursor Bitmaps": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 3,
+   "16": 1
+  }
+ },
+ "wgit|/Panes/List Definition": {
+  "n": 188,
+  "align": 4,
+  "consistent": {
+   "4": 188,
+   "8": 87,
+   "16": 49,
+   "32": 21,
+   "64": 8,
+   "128": 4,
+   "256": 4,
+   "512": 3,
+   "1024": 3,
+   "2048": 1
+  }
+ },
+ "wgit|/Panes/Player Blocks": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 3
+  }
+ },
+ "wgit|/Panes/Model Scene Blocks": {
+  "n": 10,
+  "align": 4,
+  "consistent": {
+   "4": 10,
+   "8": 5,
+   "16": 2
+  }
+ },
+ "wgit|/Panes/Model Scene Blocks/Objects": {
+  "n": 14,
+  "align": 4,
+  "consistent": {
+   "4": 14,
+   "8": 3,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "wgit|/Panes/Model Scene Blocks/Lights": {
+  "n": 14,
+  "align": 4,
+  "consistent": {
+   "4": 14,
+   "8": 3,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "wgit|/Local Strings": {
+  "n": 8,
+  "align": 4,
+  "consistent": {
+   "4": 8,
+   "8": 2,
+   "16": 2,
+   "32": 2,
+   "64": 2
+  }
+ },
+ "wgit|/Local Strings/Local String Section References": {
+  "n": 10,
+  "align": 4,
+  "consistent": {
+   "4": 10,
+   "8": 6,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "bsdt|/Particle Effects": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 3
+  }
+ },
+ "bsdt|/Particle Effects/Emitters": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 3,
+   "16": 3,
+   "32": 2,
+   "64": 1,
+   "128": 1
+  }
+ },
+ "bsdt|/Particle Effects/Emitters/Function [data]": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "gldf|/Lighting Variables": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 1
+  }
+ },
+ "gldf|/Lighting Variables/Function [data]": {
+  "n": 12,
+  "align": 4,
+  "consistent": {
+   "4": 12,
+   "8": 5,
+   "16": 4,
+   "32": 1
+  }
+ },
+ "gldf|/Lighting Variables/Lightmap Shadows Function [data]": {
+  "n": 8,
+  "align": 4,
+  "consistent": {
+   "4": 8,
+   "8": 4
+  }
+ },
+ "nhdt|/Text Widgets/Effect": {
+  "n": 6,
+  "align": 4,
+  "consistent": {
+   "4": 6,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "ugh!|/Reflections": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1
+  }
+ },
+ "ugh!|/Promotions": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "ugh!|/Promotions/Rules": {
+  "n": 49,
+  "align": 4,
+  "consistent": {
+   "4": 49,
+   "8": 30,
+   "16": 15,
+   "32": 8,
+   "64": 3,
+   "128": 3,
+   "256": 3,
+   "512": 1,
+   "1024": 1
+  }
+ },
+ "ugh!|/Promotions/Runtime Timers": {
+  "n": 49,
+  "align": 4,
+  "consistent": {
+   "4": 49,
+   "8": 30,
+   "16": 15,
+   "32": 7,
+   "64": 5,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "ugh!|/Extra Info": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3
+  }
+ },
+ "ugh!|/Extra Info/Resources": {
+  "n": 25255,
+  "align": 32,
+  "consistent": {
+   "4": 25255,
+   "8": 25255,
+   "16": 25255,
+   "32": 25255,
+   "64": 12627,
+   "128": 6314,
+   "256": 3157,
+   "512": 1578,
+   "1024": 788,
+   "2048": 393,
+   "4096": 197
+  }
+ },
+ "scnr|/Machine Palette": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "prt3|/Postprocess Definition/Layers": {
+  "n": 9,
+  "align": 4,
+  "consistent": {
+   "4": 9,
+   "8": 4,
+   "16": 2,
+   "32": 1
+  }
+ },
+ "bipd|/Postures": {
+  "n": 2,
+  "align": 8,
+  "consistent": {
+   "4": 2,
+   "8": 2
+  }
+ },
+ "bipd|/Widgets": {
+  "n": 1,
+  "align": 16,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "bipd|/Dialogue Variants": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2
+  }
+ },
+ "bipd|/Weapons": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "bipd|/Seats": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "bipd|/Seats/Camera Tracks": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "char|/Swarm Properties": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "crea|/Attachments": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "crea|/Change Colors": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "crea|/Change Colors/Initial Permutations": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "crea|/Predicted Resources": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "crea|/Dead Sphere Shapes": {
+  "n": 1,
+  "align": 32,
+  "consistent": {
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "crea|/Sphere Shapes": {
+  "n": 1,
+  "align": 64,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1
+  }
+ },
+ "char|/Boarding Properties": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "bipd|/Sphere Shapes": {
+  "n": 1,
+  "align": 16,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "bloc|/Functions/Default Function [data]": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "mach|/Functions": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "mach|/Predicted Resources": {
+  "n": 3,
+  "align": 4,
+  "consistent": {
+   "4": 3,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "ugh!|/Lowpass Cut Off Parameters": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "ugh!|/Lowpass Cut Off Parameters/Function [data]": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "matg|/UI Level Data": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "matg|/UI Level Data/Campaigns": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "matg|/UI Level Data/Campaign Levels": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "matg|/UI Level Data/Multiplayer Levels": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "scnr|/Predicted Resources": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "scnr|/Scripts": {
+  "n": 1,
+  "align": 32,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "scnr|/Cutscene Flags": {
+  "n": 1,
+  "align": 16,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scnr|/Cutscene Camera Points": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "scnr|/Interpolators": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "scnr|/Interpolators/Function [data]": {
+  "n": 2,
+  "align": 4,
+  "consistent": {
+   "4": 2,
+   "8": 1
+  }
+ },
+ "scnr|/Screen Effect References": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "sky |/Patchy Fog": {
+  "n": 1,
+  "align": 16,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1
+  }
+ },
+ "scen|/Functions": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "scen|/Functions/Default Function [data]": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "phys|/Inertial Matrix And Inverse": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "phys|/Mass Points": {
+  "n": 1,
+  "align": 32,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "prt3|/Locations": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "egor|/Pass References": {
+  "n": 2,
+  "align": 8,
+  "consistent": {
+   "4": 2,
+   "8": 2,
+   "16": 1,
+   "32": 1
+  }
+ },
+ "egor|/Pass References/Convolution": {
+  "n": 1,
+  "align": 256,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1,
+   "32": 1,
+   "64": 1,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "wgit|/Local Bitmaps": {
+  "n": 4,
+  "align": 4,
+  "consistent": {
+   "4": 4,
+   "8": 2,
+   "16": 1
+  }
+ },
+ "goof|/Game Engine Settings": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "goof|/Game Engine Settings/Options": {
+  "n": 27,
+  "align": 4,
+  "consistent": {
+   "4": 27
+  }
+ },
+ "goof|/Default Variants": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "goof|/Default Variants/Settings": {
+  "n": 34,
+  "align": 8,
+  "consistent": {
+   "4": 34,
+   "8": 34,
+   "16": 23,
+   "32": 7,
+   "64": 2,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "goof|/Settings": {
+  "n": 7,
+  "align": 8,
+  "consistent": {
+   "4": 7,
+   "8": 7,
+   "16": 6,
+   "32": 3,
+   "64": 2,
+   "128": 1,
+   "256": 1
+  }
+ },
+ "sily|/Text Value Pairs": {
+  "n": 45,
+  "align": 4,
+  "consistent": {
+   "4": 45,
+   "8": 23,
+   "16": 13,
+   "32": 5,
+   "64": 3,
+   "128": 2,
+   "256": 1,
+   "512": 1
+  }
+ },
+ "sbsp|/Environment Object Palette": {
+  "n": 1,
+  "align": 4,
+  "consistent": {
+   "4": 1
+  }
+ },
+ "sbsp|/Environment Objects": {
+  "n": 1,
+  "align": 8,
+  "consistent": {
+   "4": 1,
+   "8": 1
+  }
+ },
+ "sbsp|/Debug Info/Clusters/Containing Fog Zone Indices": {
+  "n": 35,
+  "align": 8,
+  "consistent": {
+   "4": 35,
+   "8": 35,
+   "16": 18,
+   "32": 9,
+   "64": 5,
+   "128": 4,
+   "256": 2,
+   "512": 2,
+   "1024": 1,
+   "2048": 1
+  }
+ },
+ "sbsp|/Debug Info/Fog Zones/Immersed Cluster Indices": {
+  "n": 1,
+  "align": 16,
+  "consistent": {
+   "4": 1,
+   "8": 1,
+   "16": 1
+  }
+ }
+}

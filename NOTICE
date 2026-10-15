@@ -1,0 +1,38 @@
+Halo 2 Map Converter 0.1.0
+Copyright (C) 2026 harctheshark
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (the file LICENSE).  If not, see
+<https://www.gnu.org/licenses/>.
+
+SPDX-License-Identifier: GPL-3.0-or-later
+
+That is the licence of the converter's own code.  The release also bundles Assembly's tag layout files, which are GPL-3.0 (version 3 only);
+the download as a whole is therefore distributed under the GNU General Public License, version 3.
+
+Third-party components that are bundled with this program keep their own
+licences and copyright notices; see THIRD_PARTY_NOTICES.md:
+
+  - Assembly's Halo 2 tag layout and HaloScript XML files (GPL-3.0)
+        h2conv/data/assembly/
+  - libopus 1.5.2 (BSD-3-Clause)
+        h2conv/third_party/opus.dll, h2conv/third_party/LICENSE-opus.txt
+  - Halo Asset Blender Development Toolset tag layouts (MIT)
+        h2conv/data/plugins_extra/
+
+The Windows zip (not the source download) also carries a runtime that was packed with PyInstaller 6.22.3: CPython 3.10.5 (PSF licence, with
+OpenSSL, libffi and other libraries inside it), Tcl/Tk 8.6, numpy 2.2.6 and scipy 1.15.3 (BSD-3-Clause, with OpenBLAS and other libraries) and the
+Microsoft Visual C++ runtime DLLs.  Their licence texts are in the LICENSES folder of the zip; THIRD_PARTY_NOTICES.md, section 1b, lists them.
+
+Halo, Halo 2 and Halo: The Master Chief Collection are trademarks of Microsoft
+Corporation.  This is an unofficial fan project.  No game files are included.

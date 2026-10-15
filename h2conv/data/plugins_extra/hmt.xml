@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin game="Halo2" baseSize="0x6C">
+	<!-- Cache layout of tag group "hmt " (hud_message_text), derived from the Halo 2 tag definition of the Halo Asset Blender Development Toolset (HABT, MIT licence, Copyright (c) 2020 Steven Garcia) as converted by the blam-tags project; see THIRD_PARTY_NOTICES.md -->
+	<!-- rule: tag_reference 16->8, block 12->8, data 20->8, useless_pad 0, everything else equal; pads are written as undefined/int fields -->
+	<dataref name="Text Data" offset="0x0" visible="true" />
+	<tagblock name="Message Elements" offset="0x8" visible="true" elementSize="0x2">
+		<int8 name="Type" offset="0x0" visible="true" />
+		<int8 name="Data" offset="0x1" visible="true" />
+	</tagblock>
+	<tagblock name="Messages" offset="0x10" visible="true" elementSize="0x40">
+		<ascii name="Name" offset="0x0" visible="true" size="0x20" />
+		<int16 name="Start Index Into Text Blob" offset="0x20" visible="true" />
+		<int16 name="Start Index Of Message Block" offset="0x22" visible="true" />
+		<int8 name="Panel Count" offset="0x24" visible="true" />
+		<int8 name="Padding" offset="0x25" visible="false" />
+		<int16 name="Padding" offset="0x26" visible="false" />
+		<undefined name="Padding" offset="0x28" visible="false" />
+		<undefined name="Padding" offset="0x2C" visible="false" />
+		<undefined name="Padding" offset="0x30" visible="false" />
+		<undefined name="Padding" offset="0x34" visible="false" />
+		<undefined name="Padding" offset="0x38" visible="false" />
+		<undefined name="Padding" offset="0x3C" visible="false" />
+	</tagblock>
+	<undefined name="Padding" offset="0x18" visible="false" />
+	<undefined name="Padding" offset="0x1C" visible="false" />
+	<undefined name="Padding" offset="0x20" visible="false" />
+	<undefined name="Padding" offset="0x24" visible="false" />
+	<undefined name="Padding" offset="0x28" visible="false" />
+	<undefined name="Padding" offset="0x2C" visible="false" />
+	<undefined name="Padding" offset="0x30" visible="false" />
+	<undefined name="Padding" offset="0x34" visible="false" />
+	<undefined name="Padding" offset="0x38" visible="false" />
+	<undefined name="Padding" offset="0x3C" visible="false" />
+	<undefined name="Padding" offset="0x40" visible="false" />
+	<undefined name="Padding" offset="0x44" visible="false" />
+	<undefined name="Padding" offset="0x48" visible="false" />
+	<undefined name="Padding" offset="0x4C" visible="false" />
+	<undefined name="Padding" offset="0x50" visible="false" />
+	<undefined name="Padding" offset="0x54" visible="false" />
+	<undefined name="Padding" offset="0x58" visible="false" />
+	<undefined name="Padding" offset="0x5C" visible="false" />
+	<undefined name="Padding" offset="0x60" visible="false" />
+	<undefined name="Padding" offset="0x64" visible="false" />
+	<undefined name="Padding" offset="0x68" visible="false" />
+</plugin>

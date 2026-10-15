@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin game="Halo2" baseSize="0x4">
+	<!-- Cache layout of tag group "BooM" (stereo_system), derived from the Halo 2 tag definition of the Halo Asset Blender Development Toolset (HABT, MIT licence, Copyright (c) 2020 Steven Garcia) as converted by the blam-tags project; see THIRD_PARTY_NOTICES.md -->
+	<!-- rule: tag_reference 16->8, block 12->8, data 20->8, useless_pad 0, everything else equal; pads are written as undefined/int fields -->
+	<int32 name="Unused" offset="0x0" visible="true" />
+</plugin>

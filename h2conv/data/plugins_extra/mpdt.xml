@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin game="Halo2" baseSize="0x14">
+	<!-- Cache layout of tag group "mpdt" (material_physics), derived from the Halo 2 tag definition of the Halo Asset Blender Development Toolset (HABT, MIT licence, Copyright (c) 2020 Steven Garcia) as converted by the blam-tags project; see THIRD_PARTY_NOTICES.md -->
+	<!-- rule: tag_reference 16->8, block 12->8, data 20->8, useless_pad 0, everything else equal; pads are written as undefined/int fields -->
+	<float32 name="Ground Friction Scale" offset="0x0" visible="true" />
+	<float32 name="Ground Friction Normal K1 Scale" offset="0x4" visible="true" />
+	<float32 name="Ground Friction Normal K0 Scale" offset="0x8" visible="true" />
+	<float32 name="Ground Depth Scale" offset="0xC" visible="true" />
+	<float32 name="Ground Damp Fraction Scale" offset="0x10" visible="true" />
+</plugin>

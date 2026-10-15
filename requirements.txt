@@ -1,0 +1,7 @@
+# Halo 2 Map Converter - Python packages (everything else is the standard library).
+# Tested with: CPython 3.10.5 (64-bit, Windows 11), numpy 2.2.6, scipy 1.15.3.  Newer releases of the same major versions are expected to work
+# but have not been tested.  scipy is used in one place only (resampling Opus audio from 48 kHz for MCC -> Vista).
+# The window program (py -3 -m h2conv gui) also needs tkinter, which the python.org installer includes by default ("tcl/tk and IDLE").
+# Building the Windows zip needs PyInstaller 6 as well: see packaging/README.md.
+numpy>=2.2.6,<3
+scipy>=1.15.3,<2

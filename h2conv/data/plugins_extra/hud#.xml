@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin game="Halo2" baseSize="0x5C">
+	<!-- Cache layout of tag group "hud#" (hud_number), derived from the Halo 2 tag definition of the Halo Asset Blender Development Toolset (HABT, MIT licence, Copyright (c) 2020 Steven Garcia) as converted by the blam-tags project; see THIRD_PARTY_NOTICES.md -->
+	<!-- rule: tag_reference 16->8, block 12->8, data 20->8, useless_pad 0, everything else equal; pads are written as undefined/int fields -->
+	<tagRef name="Digits Bitmap" offset="0x0" visible="true" />
+	<int8 name="Bitmap Digit Width" offset="0x8" visible="true" />
+	<int8 name="Screen Digit Width" offset="0x9" visible="true" />
+	<int8 name="X Offset" offset="0xA" visible="true" />
+	<int8 name="Y Offset" offset="0xB" visible="true" />
+	<int8 name="Decimal Point Width" offset="0xC" visible="true" />
+	<int8 name="Colon Width" offset="0xD" visible="true" />
+	<int16 name="Padding" offset="0xE" visible="false" />
+	<undefined name="Padding" offset="0x10" visible="false" />
+	<undefined name="Padding" offset="0x14" visible="false" />
+	<undefined name="Padding" offset="0x18" visible="false" />
+	<undefined name="Padding" offset="0x1C" visible="false" />
+	<undefined name="Padding" offset="0x20" visible="false" />
+	<undefined name="Padding" offset="0x24" visible="false" />
+	<undefined name="Padding" offset="0x28" visible="false" />
+	<undefined name="Padding" offset="0x2C" visible="false" />
+	<undefined name="Padding" offset="0x30" visible="false" />
+	<undefined name="Padding" offset="0x34" visible="false" />
+	<undefined name="Padding" offset="0x38" visible="false" />
+	<undefined name="Padding" offset="0x3C" visible="false" />
+	<undefined name="Padding" offset="0x40" visible="false" />
+	<undefined name="Padding" offset="0x44" visible="false" />
+	<undefined name="Padding" offset="0x48" visible="false" />
+	<undefined name="Padding" offset="0x4C" visible="false" />
+	<undefined name="Padding" offset="0x50" visible="false" />
+	<undefined name="Padding" offset="0x54" visible="false" />
+	<undefined name="Padding" offset="0x58" visible="false" />
+</plugin>

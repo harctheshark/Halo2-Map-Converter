@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin game="Halo2" baseSize="0x3C">
+	<!-- Cache layout of tag group "coln" (colony), derived from the Halo 2 tag definition of the Halo Asset Blender Development Toolset (HABT, MIT licence, Copyright (c) 2020 Steven Garcia) as converted by the blam-tags project; see THIRD_PARTY_NOTICES.md -->
+	<!-- rule: tag_reference 16->8, block 12->8, data 20->8, useless_pad 0, everything else equal; pads are written as undefined/int fields -->
+	<flags16 name="Flags" offset="0x0" visible="true">
+		<bit name="Unused" index="0" />
+	</flags16>
+	<int16 name="Padding" offset="0x2" visible="false" />
+	<undefined name="Padding" offset="0x4" visible="false" />
+	<rangef name="Radius" offset="0x8" visible="true" />
+	<undefined name="Padding" offset="0x10" visible="false" />
+	<undefined name="Padding" offset="0x14" visible="false" />
+	<undefined name="Padding" offset="0x18" visible="false" />
+	<colorf name="Debug Color" offset="0x1C" visible="true" alpha="true" />
+	<tagRef name="Base Map" offset="0x2C" visible="true" />
+	<tagRef name="Detail Map" offset="0x34" visible="true" />
+</plugin>

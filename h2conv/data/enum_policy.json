@@ -1,0 +1,1703 @@
+{
+  "bipd": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "bitm": {
+    "": {
+      "Usage": {
+        "type": "enum16",
+        "mcc_offset": 4,
+        "vista_offset": 4,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Label-only, NO remap: MCC \"Alpha-Blend\"=0 and Vista \"Alpha Blend\"=0 are the same value and meaning. Vista has the same 11 values. Usage of value 0 is the normal alpha-blend bitmap."
+      },
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 6,
+        "vista_offset": 6,
+        "clear_bits": [
+          13
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 13 (OG Xbox Mipmap Selection; engine bitmap_flag enum ends at 12). KEEP bit 5 (MCC \"WDP Compression\" = engine bitmap_flag_wdp_compression FLAG(5), Vista tagdef label UNUSED): Vista has it on 174/174 same-name bitmaps, MCC on 122/174, so the converter must FORCE bit 5 = 1."
+      }
+    },
+    "/Bitmaps": {
+      "More Flags": {
+        "type": "flags8",
+        "mcc_offset": 9,
+        "vista_offset": 9,
+        "clear_bits": [
+          2,
+          3
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 166,
+        "usage_stock": 54,
+        "note": "Clear bits 2 and 3 (Bitmap Recreate Allowed / Bitmap Sampling Allowed): engine e_more_bitmap_data_flags defines only bit 0 (delete from cache) and bit 1 (create attempted); matches FACTS more_flags &= 3."
+      }
+    }
+  },
+  "bloc": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "crea": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "ctrl": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "eqip": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "garb": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "goof": {
+    "": {
+      "Variant Type@52": {
+        "type": "enum32",
+        "mcc_offset": 52,
+        "vista_offset": 52,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      },
+      "Variant Type@72": {
+        "type": "enum32",
+        "mcc_offset": 72,
+        "vista_offset": 72,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      },
+      "Variant Type@92": {
+        "type": "enum32",
+        "mcc_offset": 92,
+        "vista_offset": 92,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      },
+      "Variant Type@112": {
+        "type": "enum32",
+        "mcc_offset": 112,
+        "vista_offset": 112,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      },
+      "Variant Type@132": {
+        "type": "enum32",
+        "mcc_offset": 132,
+        "vista_offset": 132,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      },
+      "Variant Type@152": {
+        "type": "enum32",
+        "mcc_offset": 152,
+        "vista_offset": 152,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      },
+      "Variant Type@172": {
+        "type": "enum32",
+        "mcc_offset": 172,
+        "vista_offset": 172,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      },
+      "Variant Type@192": {
+        "type": "enum32",
+        "mcc_offset": 192,
+        "vista_offset": 192,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      },
+      "Variant Type@212": {
+        "type": "enum32",
+        "mcc_offset": 212,
+        "vista_offset": 212,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Default Variants": {
+      "Variant Type": {
+        "type": "enum32",
+        "mcc_offset": 4,
+        "vista_offset": 4,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection/Headhunter/Race (7-11) have no Vista variant and no placeholder value. 0 = Slayer is a live type, so the converter should DROP MCC-only variant records instead of retyping them. goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Default Variants/Settings": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Game Engine Settings": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "40": 10,
+          "41": 10,
+          "42": 10,
+          "43": 10,
+          "44": 10,
+          "45": 10,
+          "46": 10,
+          "47": 10,
+          "48": 10,
+          "49": 10,
+          "50": 10,
+          "51": 10,
+          "52": 10
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls and Medic/VIP/Infection categories (40-52) map to the Vista placeholder 10 OBSOLETE (no Vista family; 0 would alias Match-CTF). goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings#1": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings#2": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings#3": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings#4": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings#5": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings#6": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings#7": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    },
+    "/Settings#8": {
+      "Setting Category": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Skulls/Medic/VIP/Infection/Veh. parameters (112-157) map to 111 \"UNS. Force Even Teams\" (Vista UNS. placeholder, no-op); 0 would alias \"Match Round Setting\". goof is absent from both maps (0 tags)."
+      }
+    }
+  },
+  "hlmt": {
+    "/New Damage Info": {
+      "Collision Damage Reporting Type": {
+        "type": "enum8",
+        "mcc_offset": 16,
+        "vista_offset": 16,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "42": 36,
+          "43": 36
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Warthog Gunner Gauss/Rocket -> 36 \"Warthog Gunner\" (same weapon family; engine damage_reporting.h _damage_reporting_type_warthog_gunner = 36). 0 uses in custom and stock."
+      },
+      "Response Damage Reporting Type": {
+        "type": "enum8",
+        "mcc_offset": 17,
+        "vista_offset": 17,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "42": 36,
+          "43": 36
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Warthog Gunner Gauss/Rocket -> 36 \"Warthog Gunner\" (same weapon family; engine damage_reporting.h _damage_reporting_type_warthog_gunner = 36). 0 uses in custom and stock."
+      }
+    },
+    "/New Damage Info/Damage Sections/Instant Responses": {
+      "Flags": {
+        "type": "flags32",
+        "mcc_offset": 4,
+        "vista_offset": 4,
+        "clear_bits": [
+          25
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 1,
+        "usage_stock": 0,
+        "note": "Clear bit 25 (Forces Object To Loose Vitality): no Vista flag at bit 25 (hlmt instant-response flags are named 0-24, no engine name). 1 custom instance uses it (objects\\vehicles\\h_turret_ap)."
+      }
+    }
+  },
+  "lifi": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "lsnd": {
+    "": {
+      "Flags": {
+        "type": "flags32",
+        "mcc_offset": 8,
+        "vista_offset": 0,
+        "clear_bits": [
+          8,
+          9
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 102,
+        "usage_stock": 4,
+        "note": "Clear bits 8/9 (Legacy Only / Remastered Only): no Vista meaning. Vista lsnd flags are at +0x0 (MCC +0x8), low 8 bits equal on 7/7 same-name tags. Read with the 8-byte MCC tagref shift."
+      }
+    }
+  },
+  "mach": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "matg": {
+    "/Multiplayer Information/General Events": {
+      "Event": {
+        "type": "enum16",
+        "mcc_offset": 4,
+        "vista_offset": 4,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "49": 19
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Pre Game Over (49) -> 19 \"Game Over\" (engine _multiplayer_event_response_general_game_over = 19) is the closest family, and the custom element plays sound\\dialog\\multiplayer\\general\\misc\\game_over. CONVERTER ACTION: the custom mulg ALREADY has one event-19 element, so remapping 49 would duplicate it (double announcer). Drop the 49 element when a 19 element exists; the remap is only the fallback."
+      }
+    }
+  },
+  "mulg": {
+    "/Runtime/General Events": {
+      "Event": {
+        "type": "enum16",
+        "mcc_offset": 4,
+        "vista_offset": 4,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "49": 19
+        },
+        "usage_custom": 1,
+        "usage_stock": 0,
+        "note": "Pre Game Over (49) -> 19 \"Game Over\" (engine _multiplayer_event_response_general_game_over = 19) is the closest family, and the custom element plays sound\\dialog\\multiplayer\\general\\misc\\game_over. CONVERTER ACTION: the custom mulg ALREADY has one event-19 element, so remapping 49 would duplicate it (double announcer). Drop the 49 element when a 19 element exists; the remap is only the fallback."
+      }
+    }
+  },
+  "nhdt": {
+    "/Bitmap Widgets": {
+      "Anchor": {
+        "type": "enum16",
+        "mcc_offset": 28,
+        "vista_offset": 28,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Top/Bottom/Left/Right Center (6-9) have no Vista anchor (Vista anchors 0-5 name HUD elements); 0 = \"Health And Shield\" is the fallback and is a live anchor, so this is a visible change if ever used. 0 uses."
+      }
+    },
+    "/Screen Effect Widgets": {
+      "Anchor": {
+        "type": "enum16",
+        "mcc_offset": 28,
+        "vista_offset": 28,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Top/Bottom/Left/Right Center (6-9) have no Vista anchor (Vista anchors 0-5 name HUD elements); 0 = \"Health And Shield\" is the fallback and is a live anchor, so this is a visible change if ever used. 0 uses."
+      }
+    },
+    "/Text Widgets": {
+      "Anchor": {
+        "type": "enum16",
+        "mcc_offset": 28,
+        "vista_offset": 28,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Top/Bottom/Left/Right Center (6-9) have no Vista anchor (Vista anchors 0-5 name HUD elements); 0 = \"Health And Shield\" is the fallback and is a live anchor, so this is a visible change if ever used. 0 uses."
+      }
+    }
+  },
+  "proj": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      },
+      "Damage Reporting Type": {
+        "type": "enum8",
+        "mcc_offset": 296,
+        "vista_offset": 296,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "42": 36,
+          "43": 36
+        },
+        "usage_custom": 1,
+        "usage_stock": 0,
+        "note": "Warthog Gunner Gauss -> 36 \"Warthog Gunner\" (same family; engine damage_reporting.h). The custom warthog gauss_bullet projectile uses 42 once."
+      }
+    }
+  },
+  "scen": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "scnr": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 18,
+        "vista_offset": 18,
+        "clear_bits": [
+          8
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 8 (Do Not Apply Bungie MP Tag Patches): engine e_scenario_flags defines bits 0-7 only. 0 uses (1 scnr in each map, bit clear)."
+      }
+    },
+    "/Netgame Equipment": {
+      "Game Type 1": {
+        "type": "enum16",
+        "mcc_offset": 4,
+        "vista_offset": 4,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 2": {
+        "type": "enum16",
+        "mcc_offset": 6,
+        "vista_offset": 6,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 3": {
+        "type": "enum16",
+        "mcc_offset": 8,
+        "vista_offset": 8,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 4": {
+        "type": "enum16",
+        "mcc_offset": 10,
+        "vista_offset": 10,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      }
+    },
+    "/Player Starting Locations": {
+      "Game Type 1": {
+        "type": "enum16",
+        "mcc_offset": 20,
+        "vista_offset": 20,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 2": {
+        "type": "enum16",
+        "mcc_offset": 22,
+        "vista_offset": 22,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 3": {
+        "type": "enum16",
+        "mcc_offset": 24,
+        "vista_offset": 24,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 4": {
+        "type": "enum16",
+        "mcc_offset": 26,
+        "vista_offset": 26,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      }
+    },
+    "/Scenery": {
+      "Valid Multiplayer Games": {
+        "type": "flags16",
+        "mcc_offset": 90,
+        "vista_offset": 90,
+        "clear_bits": [
+          7,
+          8,
+          9,
+          10
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bits 7-10 (Medic/VIP/Infection/Headhunter): engine e_relevant_multiplayer_games is bits 0-6 only (CTF..Assault). 0 uses."
+      }
+    },
+    "/Spawn Data/Dynamic Spawn Overloads": {
+      "Overload Type": {
+        "type": "enum16",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "12": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic overload (12) has no Vista equivalent and no placeholder; 0 = \"Enemy\" is live, so the converter should DROP such overload elements. 0 uses."
+      }
+    },
+    "/Spawn Data/Static Initial Spawn Zones": {
+      "Relevant Games": {
+        "type": "flags32",
+        "mcc_offset": 8,
+        "vista_offset": 8,
+        "clear_bits": [
+          8,
+          9,
+          10
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bits 8-10 (Medic/VIP/Infection): the Vista spawn-zone list names bits 0-7 only (Slayer..Territories, a different list from the scenery one). 0 uses."
+      }
+    },
+    "/Spawn Data/Static Respawn Zones": {
+      "Relevant Games": {
+        "type": "flags32",
+        "mcc_offset": 8,
+        "vista_offset": 8,
+        "clear_bits": [
+          8,
+          9,
+          10
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bits 8-10 (Medic/VIP/Infection): the Vista spawn-zone list names bits 0-7 only (Slayer..Territories, a different list from the scenery one). 0 uses."
+      }
+    },
+    "/Starting Equipment": {
+      "Game Type 1": {
+        "type": "enum16",
+        "mcc_offset": 4,
+        "vista_offset": 4,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 2": {
+        "type": "enum16",
+        "mcc_offset": 6,
+        "vista_offset": 6,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 3": {
+        "type": "enum16",
+        "mcc_offset": 8,
+        "vista_offset": 8,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      },
+      "Game Type 4": {
+        "type": "enum16",
+        "mcc_offset": 10,
+        "vista_offset": 10,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 0,
+          "16": 0,
+          "17": 0
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Medic/VIP/Infection (15-17) -> 0 \"None\": Vista has no such game types; 0 is the unused-slot value (game_type_2..4 are 0 in every instance of both maps). Ignored 3/4 and Stub are never used. 0 uses."
+      }
+    }
+  },
+  "shad": {
+    "": {
+      "Shader LOD Bias": {
+        "type": "enum16",
+        "mcc_offset": 60,
+        "vista_offset": 60,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "7": 4
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "\"Lowest\" (7) -> 4 \"1/4 Size\" (nearest named size reduction; approximate). 0 uses."
+      }
+    }
+  },
+  "sily": {
+    "": {
+      "Parameter": {
+        "type": "enum32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "112": 111,
+          "113": 111,
+          "114": 111,
+          "115": 111,
+          "116": 111,
+          "117": 111,
+          "118": 111,
+          "119": 111,
+          "120": 111,
+          "121": 111,
+          "122": 111,
+          "123": 111,
+          "124": 111,
+          "125": 111,
+          "126": 111,
+          "127": 111,
+          "128": 111,
+          "129": 111,
+          "130": 111,
+          "131": 111,
+          "132": 111,
+          "133": 111,
+          "134": 111,
+          "135": 111,
+          "136": 111,
+          "137": 111,
+          "138": 111,
+          "139": 111,
+          "140": 111,
+          "141": 111,
+          "142": 111,
+          "143": 111,
+          "144": 111,
+          "145": 111,
+          "146": 111,
+          "147": 111,
+          "148": 111,
+          "149": 111,
+          "150": 111,
+          "151": 111,
+          "152": 111,
+          "153": 111,
+          "154": 111,
+          "155": 111,
+          "156": 111,
+          "157": 111
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Same parameter list as goof Setting Category: 112-157 -> 111 \"UNS. Force Even Teams\" (no-op placeholder; 0 would alias \"Match Round Setting\"). sily is absent from both maps (0 tags)."
+      }
+    }
+  },
+  "sncl": {
+    "/Sound Classes": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 10,
+        "vista_offset": 10,
+        "clear_bits": [
+          13
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 13 (Bypass Lfe): engine e_sound_class_flags ends at bit 11 (send_mono_to_lfe is bit 4 and is the Vista LFE flag, not a move target). 0 uses."
+      }
+    }
+  },
+  "snd!": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [
+          10,
+          11
+        ],
+        "move_bits": {
+          "12": 10,
+          "13": 11,
+          "14": 12,
+          "15": 13
+        },
+        "value_map": {},
+        "usage_custom": 2178,
+        "usage_stock": 33,
+        "note": "Clear bits 10/11 (Play Only In Legacy/Remastered Mode), move MCC 12-15 -> Vista 10-13 (MCC bits 12-15 carry only generic \"Bit N\" labels; the Vista XML has no entry for them). Data: (f&0x3FF)|((f&0xF000)>>2) equals Vista flags on 19/19 same-name sounds; Vista bit 12 set on 19/19 (MCC bit 14 set on all). Engine enum names only bits 0-9."
+      },
+      "Sound Class": {
+        "type": "enum8",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "15": 4,
+          "16": 4,
+          "17": 42,
+          "39": 42,
+          "40": 42,
+          "41": 42
+        },
+        "usage_custom": 173,
+        "usage_stock": 0,
+        "note": "Labels differ, values exist in Vista: 15 weapon_fire_lod and 16 weapon_fire_lod_far -> 4 weapon_fire; 17 lfe and 39/40/41 reflection* -> 42 (Vista \"unused\" placeholder). Identity is unsafe: engine names 15 slow_impacts and 39 player_hurt. Every custom use (173) sits in sound_remastered tags the converter drops."
+      }
+    }
+  },
+  "ssce": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "vehi": {
+    "": {
+      "Flags": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      }
+    }
+  },
+  "weap": {
+    "": {
+      "Flags@2": {
+        "type": "flags16",
+        "mcc_offset": 2,
+        "vista_offset": 2,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Prophet Is Not Displayed In Pegasus Builds): no Vista flag of that name; Vista flag enums end at bit 13 (plugin) and the Cartographer source has no such flag. 0 uses in custom or stock."
+      },
+      "Flags@300": {
+        "type": "flags32",
+        "mcc_offset": 300,
+        "vista_offset": 300,
+        "clear_bits": [
+          30,
+          31
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bits 30/31 (Prevents Crouching, Uses 3rd Person Camera): engine weapon_definition flags end at bit 29 (cannot_be_used_by_player). 0 uses."
+      },
+      "Melee Damage Reporting Type": {
+        "type": "enum8",
+        "mcc_offset": 508,
+        "vista_offset": 508,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "42": 36,
+          "43": 36
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Warthog Gunner Gauss/Rocket -> 36 \"Warthog Gunner\" (same family). 0 uses."
+      }
+    },
+    "/Barrels": {
+      "Flags": {
+        "type": "flags32",
+        "mcc_offset": 0,
+        "vista_offset": 0,
+        "clear_bits": [
+          14
+        ],
+        "move_bits": {},
+        "value_map": {},
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Clear bit 14 (Can Fire At Maximum Age): engine e_weapon_barrel_definition_flags ends at bit 13. 0 uses."
+      },
+      "Damage Effect Reporting Type": {
+        "type": "enum8",
+        "mcc_offset": 136,
+        "vista_offset": 136,
+        "clear_bits": [],
+        "move_bits": {},
+        "value_map": {
+          "42": 36,
+          "43": 36
+        },
+        "usage_custom": 0,
+        "usage_stock": 0,
+        "note": "Warthog Gunner Gauss/Rocket -> 36 \"Warthog Gunner\" (same family). 0 uses."
+      }
+    }
+  }
+}

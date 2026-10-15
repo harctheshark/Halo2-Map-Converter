@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin game="Halo2" baseSize="0x14">
+	<!-- Cache layout of tag group "slit" (shader_light_response), derived from the Halo 2 tag definition of the Halo Asset Blender Development Toolset (HABT, MIT licence, Copyright (c) 2020 Steven Garcia) as converted by the blam-tags project; see THIRD_PARTY_NOTICES.md -->
+	<!-- rule: tag_reference 16->8, block 12->8, data 20->8, useless_pad 0, everything else equal; pads are written as undefined/int fields -->
+	<tagblock name="Categories" offset="0x0" visible="true" elementSize="0xC">
+		<stringId name="Name" offset="0x0" visible="true" />
+		<tagblock name="Parameters" offset="0x4" visible="true" elementSize="0x34">
+			<stringId name="Name" offset="0x0" visible="true" />
+			<dataref name="Explanation" offset="0x4" visible="true" />
+			<enum16 name="Type" offset="0xC" visible="true">
+				<option name="Bitmap" value="0x0" />
+				<option name="Value" value="0x1" />
+				<option name="Color" value="0x2" />
+				<option name="Switch" value="0x3" />
+			</enum16>
+			<flags16 name="Flags" offset="0xE" visible="true">
+				<bit name="Animated" index="0" />
+				<bit name="Hide Bitmap Reference" index="1" />
+			</flags16>
+			<tagRef name="Default Bitmap" offset="0x10" visible="true" />
+			<float32 name="Default Const Value" offset="0x18" visible="true" />
+			<colorf name="Default Const Color" offset="0x1C" visible="true" alpha="false" />
+			<enum16 name="Bitmap Type" offset="0x28" visible="true">
+				<option name="2D" value="0x0" />
+				<option name="3D" value="0x1" />
+				<option name="Cube Map" value="0x2" />
+			</enum16>
+			<int16 name="Padding" offset="0x2A" visible="false" />
+			<flags16 name="Bitmap Animation Flags" offset="0x2C" visible="true">
+				<bit name="Scale Uniform" index="0" />
+				<bit name="Scale" index="1" />
+				<bit name="Translation" index="2" />
+				<bit name="Rotation" index="3" />
+				<bit name="Index" index="4" />
+			</flags16>
+			<int16 name="Padding" offset="0x2E" visible="false" />
+			<float32 name="Bitmap Scale" offset="0x30" visible="true" />
+		</tagblock>
+	</tagblock>
+	<tagblock name="Shader LODs" offset="0x8" visible="true" elementSize="0xC">
+		<float32 name="Projected Diameter" offset="0x0" visible="true" />
+		<tagblock name="Pass" offset="0x4" visible="true" elementSize="0x18">
+			<enum16 name="Layer" offset="0x0" visible="true">
+				<option name="Texaccum" value="0x0" />
+				<option name="Environment Map" value="0x1" />
+				<option name="Self-illumination" value="0x2" />
+				<option name="Overlay" value="0x3" />
+				<option name="Transparent" value="0x4" />
+				<option name="Lightmap (indirect)" value="0x5" />
+				<option name="Diffuse" value="0x6" />
+				<option name="Specular" value="0x7" />
+				<option name="Shadow Generate" value="0x8" />
+				<option name="Shadow Apply" value="0x9" />
+				<option name="Bloom" value="0xA" />
+				<option name="Fog" value="0xB" />
+				<option name="Sh Prt" value="0xC" />
+				<option name="Active Camo" value="0xD" />
+				<option name="Water Edge Blend" value="0xE" />
+				<option name="Decal" value="0xF" />
+				<option name="Active Camo Stencil Modulate" value="0x10" />
+				<option name="Hologram" value="0x11" />
+				<option name="Light Albedo" value="0x12" />
+			</enum16>
+			<int16 name="Padding" offset="0x2" visible="false" />
+			<tagRef name="Pass" offset="0x4" visible="true" />
+			<undefined name="Padding" offset="0xC" visible="false" />
+			<undefined name="Padding" offset="0x10" visible="false" />
+			<undefined name="Padding" offset="0x14" visible="false" />
+		</tagblock>
+	</tagblock>
+	<int16 name="Padding" offset="0x10" visible="false" />
+	<int16 name="Padding" offset="0x12" visible="false" />
+</plugin>

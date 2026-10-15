@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<plugin game="Halo2MCC" baseSize="0x24">
+	<!-- Automatically generated plugin -->
+	<revisions>
+		<revision author="Lord Zedd" version="1">k</revision>
+	</revisions>
+	<tagblock name="Geometry Classifications DX11" offset="0x0" visible="true" elementSize="0x18">
+		<uint64 name="Pointer" offset="0x0" visible="true" />
+		<dataref name="Compiled Shader" offset="0x8" visible="true" />
+		<dataref name="Code" offset="0x10" visible="true" />
+	</tagblock>
+	<tagblock name="Geometry Classifications DX9" offset="0x8" visible="true" elementSize="0x18">
+		<uint64 name="Pointer" offset="0x0" visible="true" />
+		<dataref name="Compiled Shader" offset="0x8" visible="true" />
+		<dataref name="Code" offset="0x10" visible="true" />
+	</tagblock>
+	<tagblock name="Geometry Classifications Xbox1" offset="0x10" visible="true" elementSize="0x18">
+		<uint64 name="Pointer" offset="0x0" visible="true" />
+		<dataref name="Compiled Shader" offset="0x8" visible="true" />
+		<dataref name="Code" offset="0x10" visible="true" />
+	</tagblock>
+	<int32 name="Output Swizzles DX11" offset="0x18" visible="true" />
+	<int32 name="Output Swizzles DX9" offset="0x1C" visible="true" />
+	<int32 name="Output Swizzles Xbox1" offset="0x20" visible="true" />
+</plugin>

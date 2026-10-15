@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# this tool's caches and outputs (never publish game data)
+work/
+dist/
+build/
+*.map
+*.dat
+*.tmp
+*.part
+*.log
+*.report.json
+.h2conv/
+.h2conv_staging/
+settings.json
+
+# editor / backup leftovers
+*.bak
+*.bak-*
+*.orig
+*~
+.vs/
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

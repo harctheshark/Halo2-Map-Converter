@@ -1,0 +1,15 @@
+{
+ "_about": "group word MCC writes into NULL tag references where it differs from Vista (modal word >= 90 percent and more samples than \"copy the Vista word\"); key group|MCC block path|field name",
+ "effe||Looping Sound": "6C736E64",
+ "foot|/Effects/Sounds|Tag": "FFFFFFFF",
+ "hudg||Alternate Icon Text": "FFFFFFFF",
+ "hudg||Item Message Text": "FFFFFFFF",
+ "ligh||Light Volume": "4D475332",
+ "lsnd||Remastered Looping Sound": "6C736E64",
+ "matg|/Player Representation|First Person Body Model": "FFFFFFFF",
+ "matg|/Player Representation|First Person Hands Model": "FFFFFFFF",
+ "matg|/Player Representation|Third Person Unit": "FFFFFFFF",
+ "sbsp|/Background Sound Palette|Background Sound": "6C736E64",
+ "scnr|/Background Sound Palette|Background Sound": "6C736E64",
+ "sky |/Cube Map|Cube Map Reference": "FFFFFFFF"
+}
