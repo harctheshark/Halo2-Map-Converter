@@ -4,7 +4,7 @@ This file is the honest ledger of the Halo 2 Map Converter: what went wrong whil
 fixed, what is still wrong, and how to work around it.  It is written for people who want to use converted maps and for
 people who want to help.
 
-Version 0.1.0 (pre-release).
+Version 0.2.0 (pre-release).  Sections 1 and 3 are current for 0.2.0; section 2.1 lists what changed since 0.1.0 at its end.
 
 ## 1. How much has actually been tested
 
@@ -22,6 +22,7 @@ Two kinds of evidence are used throughout this file.  Please keep them apart.
 | Stock map round trips | MCC stock `headlong` to Vista is about 99.7 % field-equal to the stock Vista `headlong` (the remainder are real differences between the two games' versions of the content).  **Checked** |
 | MCC to Vista, played | A custom (MCC editing kit) `headlong` and a custom `chronopolis`, including its custom HUD pickup text, in Project Cartographer |
 | Vista to MCC, played | In MCC: the vehicle driver and gunner seats on a converted custom map (confirmed 2026-10-14), the water on converted custom maps, `Holidays Grave` and `corpsys` (confirmed 2026-10-15), and the sky fix on `Bikini Bottom` (section 2.2; confirmed 2026-10-15) |
+| MCC to Vista, workshop maps with their own `shared.map` (0.2.0) | 125 multiplayer maps of six workshop mods: 113 converted with 0 errors from the format validator, the limits check and the invariants (the other 12 are the Halo CE ports, section 3.3).  **Checked, not played.**  The tutorial-prompt frame went away on a converted `chronopolis` (**played**) |
 | Window program and Windows zip | New in 0.1.0, the least used part: it runs the same batch engine as the command line (the tested part).  **Checked:** three conversions made with `h2conv.exe` are byte-identical to the Python source's (except the header's creation time); a batch with `--isolate`, the sound transcoder's helper processes and the stop request work in the frozen program; the window's logic runs in automated tests without a screen.  **Not checked:** how the window looks on other screens (high-DPI), on Windows 10, or on a PC without Python or the Visual C++ runtime |
 | Everything else | **Not played.**  In particular campaign / solo maps, network play between machines, most of the community archive, sounds in every language |
 
@@ -86,6 +87,43 @@ games with the same pixels.  Treating it as "modified" forced hundreds of tags t
 deciding what is modified (`--no-taint-ignore` restores the old rule); the custom `headlong` built with `--matg link` dropped from 1,223
 to 1,035 local tags.
 *Status:* fixed, checked.
+
+**Added or fixed in 0.2.0.**  Unless a line says "played", the status is *checked* (the files were compared with the games' own data and
+code), and **not yet confirmed in game**.
+
+* **Workshop maps built against their own `shared.map`** were skipped.  Now (multiplayer only) the converter finds the mod's `shared.map` by the
+  creation time the map recorded, compares its tags with the stock MCC `shared.map`, converts the changed ones and the tags that depend on them,
+  links the rest to Vista's `shared.map`, and uses the mod's own `textures.dat` and sound files.  Every workshop `shared.map` is built on a newer
+  MCC than the installed one, and a few physics-shape fields of four stock shared tags always differ for that reason; they are treated as equal.  A batch over 125 maps of six mods converted 113 with no errors from the
+  checks.  *Status:* checked, not played.  Open: section 3.3.
+* **The mod's own multiplayer globals** (the weapon lists that game variants choose from) were never converted for such maps, so game variants
+  picked Vista's stock weapons.  They are converted when they differ from the stock ones.  *Status:* checked; that a local multiplayer-globals
+  tag of the same name as the shared one is accepted by the engine is not verified in game.
+* **Tutorial prompts drew as an empty square.**  The frame of the tutorial prompt is drawn around text that measures zero.  Removing the training
+  list from the map's HUD globals removed the square (confirmed in game on `chronopolis`).  The converter's training-list removal is therefore
+  the default; every converted multiplayer map gets its own copy of Vista's globals without the list (`--keep-training` links the shared
+  globals instead).  The cause inside the engine was not found, so this is a workaround.  *Status:* fixed by workaround, played.
+* **Blank or wrong name in Cartographer's custom map list.**  A map with its own globals is listed under its header name (Cartographer's list
+  check rejects local globals before it reads the name from the scenario), so the header name is now the MCC menu title (README, "Names in Cartographer's map list").  Scenario name
+  and description fields left empty by the editing kit are filled from the map's own text.  `py -3 -m h2conv.mpnames` repairs older output.
+* **No spawn while Cartographer's seasonal events are on.**  Cartographer's holiday props refer to shared slots (a skeleton biped with its
+  animation graph); a map with its own globals had no entry in those slots, the object could not be created and the player never spawned.
+  The slots of the shared globals and of Cartographer's injected props are always kept; `invariants` has a `spawn` check.
+* **A shader with an MCC-only template had no template at all**, which crashes the game as soon as the shader is drawn.  The identical-skeleton
+  Vista template (or a twin) is used instead; a shader that still has none is an error in `validate` and `invariants`.  *Status:* fixed, checked.
+* **The editing kit's `rasterizer\invalid`** (a red/green checkerboard) differs from the one in the shipped games (a 14-sequence atlas the
+  stock globals point at); a map with local globals got a copy that shadowed the shared atlas.  It is linked to Vista's now.
+* **Crosshairs twice as big.**  MCC halves the draw size of one bitmap by name (the crosshair atlas `hud_reticles`); a map shipping its own
+  doubled atlas (`cyberdyne_h2`) looked 2x too big in Vista.  The atlas is halved (area average) when it is really twice Vista's.
+* **Black scenery.**  A custom model without tangent frames drew black on every face not facing the light under dynamic lighting (4 boxes on
+  one map).  A valid frame is written for such models.
+* **Overlays showing through walls.**  The shader depth-bias value means a different thing in the two games (an absolute offset in Vista, a value
+  relative to the depth in MCC).  Shaders of editing-kit maps get the value rescaled for a reference distance of 32 world units; stock-built
+  inputs are untouched.  The reference distance is a design choice; `H2CONV_DEPTH_BIAS_REF=<world units>` changes it, `0` switches it off.
+* **Compressed maps and checksums.**  The shared-tag count of a map in MCC's compressed form is read from the compressed file, and a compressed
+  chunk without its 4-byte checksum trailer is accepted.
+* **Campaign maps started from the multiplayer lobby crashed on load** (Cartographer dereferences a player-representation entry and a
+  multiplayer-UI entry that campaign globals leave empty); the converter fills both, and also fills the starting weapons from the scenario's own starting profile.  Campaign maps are still unreliable (3.3).
 
 ### 2.2 Vista to MCC
 
@@ -216,9 +254,20 @@ handle it, but that is a guess.  *Workaround:* none from the converter; the map 
 
 ### 3.3 Inputs that are not supported
 
-* **MCC maps built against a custom `shared.map`** are not supported.  Batch mode detects them (from the build times recorded in the header),
-  warns and skips them.  The single-map command `h2conv.convert` does not run that check; run `py -3 -m h2conv.mapinfo <map>` first,
-  and look for the status "skip" with the reason "depends on a CUSTOM shared.map".
+* **Campaign (single-player) maps for Vista / Project Cartographer: unsupported / experimental.**  Cartographer launches a custom campaign map
+  through its multiplayer path and some campaign maps crash it; of the campaign maps tried, only one small test map loads.  The converter
+  writes campaign maps, but they cannot be expected to work.  Multiplayer maps are the supported case.
+* **The 12 Halo CE ports of workshop mod 3583572796** (`bloodgulch`, `wizard`, `beavercreek` and the rest of its Halo CE ports) fail with
+  "shader has no Template": 115 to 133 of their shaders use Halo CE shader templates that exist in MCC only as DirectX 11 bytecode, and
+  Vista has no equivalent.  Converting them would need a translator from that bytecode to Direct3D 9 (not part of this tool); the converter
+  reports an error instead of writing a map that would crash when a shader is drawn.
+* **Maps with their own globals show only a name** in Cartographer's custom map list (no description, no preview).  This is Cartographer's
+  own list check; the map plays normally.  It affects every converted multiplayer map by default (2.1, "Tutorial prompts"); `--keep-training`
+  on a map without custom globals keeps the full entry.
+* **MCC campaign maps built against a custom `shared.map`**, and multiplayer maps whose mod `shared.map` or `textures.dat` cannot be found, are
+  skipped.  Batch mode detects them (from the build times recorded in the header) and warns.  The single-map command `h2conv.convert` does not
+  run that check; run `py -3 -m h2conv.mapinfo <map>` first, and look for the status "skip" with the reason "depends on a CUSTOM shared.map".
+  A multiplayer map whose mod ships its `shared.map` (in `<mod>\halo2\h2_maps_win64_dx11` or next to the map) is converted.
 * **Vista maps of build `11091`** (25 in the archive tested) are accepted with a warning: Project Cartographer itself cannot load them,
   though the Vista to MCC converter handled the two that were tried.
 * **`mainmenu`, `shared`, `single_player_shared`** of either game are skipped by batch mode (they are databases, not playable maps).

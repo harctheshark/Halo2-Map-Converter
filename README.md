@@ -16,11 +16,28 @@ directions: with a **window program** (pick a folder, let it find the maps, conv
 In the Windows zip the same commands are `h2conv.exe convert`, `h2conv.exe rev`, `h2conv.exe batch` and so on
 (see [The Windows programs](#the-windows-programs)); the examples in this file are written for Python.
 
-**Version 0.1.0, a pre-release.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
+**Version 0.2.0, a pre-release.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
 program) and `h2conv.exe` (the command line), which needs no Python, and this **source** (a Python package, run with `py -3 -m h2conv`).
 Both do the same conversions (see "Status" below for how that was checked).
 It has been run over hundreds of community maps and several fixes were confirmed by playing, but most converted maps have not
 been played.  Read [Status](#status-what-has-and-has-not-been-tested) and [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) before relying on it.
+
+**New in 0.2.0:** MCC multiplayer maps from Steam workshop mods that ship their **own `shared.map`** now convert (0.1.0 skipped them);
+the tutorial prompts that drew as an empty square on converted multiplayer maps are switched off by default; custom maps show the MCC menu
+title in Cartographer's map list; and a number of fixes for converted maps (see [RELEASE_NOTES.md](RELEASE_NOTES.md)).
+
+### Limits you should know before you start
+
+* **Campaign (single-player) maps do not work reliably in Vista / Project Cartographer yet.**  Cartographer starts a custom campaign map
+  through its multiplayer path, and some campaign maps crash it; of the campaign maps tried, only one small test map loads.  The converter
+  still writes campaign maps, but treat **MCC to Vista campaign conversion as unsupported / experimental**.  Multiplayer maps are the
+  supported case.
+* **The 12 Halo CE port maps of workshop mod 3583572796 are not supported** (`bloodgulch`, `wizard`, `beavercreek` and the others of that
+  mod).  Their shader templates exist in MCC only as DirectX 11 bytecode, and Halo 2 Vista has no equivalent to convert them to.  They are
+  reported as failed.
+* **A map that carries its own globals shows only its name** (no description and no preview picture) in Project Cartographer's custom map
+  list.  Since 0.2.0 that is the normal case for a converted multiplayer map (see "Names in Cartographer's map list" below); the map
+  still plays normally.
 
 ## Why
 
@@ -34,6 +51,9 @@ played in Project Cartographer.
 * **MCC to Vista.**  Reads an MCC map, converts every tag to the Vista layout, re-encodes bitmaps and sounds, rebuilds the
   string table, sound tables, Havok physics data and scripts, and writes a Vista map.  Tags that Vista's own `shared.map` already
   contains unchanged are linked instead of copied, exactly like stock Vista multiplayer maps.
+  Multiplayer maps from Steam workshop mods that ship **their own `shared.map`** are converted too: the tags the mod changed are
+  converted and stored in the map, everything else still links to Vista's `shared.map`, and the mod's own `textures.dat` and sound
+  files are used.  (Campaign maps: see "Limits you should know before you start".)
 * **Vista to MCC.**  Reads a Vista map and writes a self-contained MCC map in the style the MCC editing kit produces.  Content
   that exists in MCC's stock maps is taken from there (MCC "donor" tags); everything the custom map adds is converted.
   Custom shaders are converted by a faithful port of their compiled Direct3D 9 code to MCC's Direct3D 11 shader format, not by
@@ -61,9 +81,15 @@ How it works in detail: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
   * Vista to MCC, in MCC: the driver and gunner seats of vehicles on a converted custom map (confirmed 2026-10-14), the water on
     converted custom maps, `Holidays Grave` and `corpsys` (confirmed 2026-10-15), and the sky fix on `Bikini Bottom`: a floor that
     showed as flat sky colour no longer does (confirmed 2026-10-15; `--plan-opt sky_depth=mcc` switches the fix off).
-* **Not played:** most of the archive.  Campaign / solo maps and play between two machines are tested least.  Several details
+* **Not played:** most of the archive.  Campaign / solo maps (MCC to Vista: known not to work reliably, see above) and play between two machines are tested least.  Several details
   are known to differ from the source games or are unverified in the engine; they are listed, with workarounds, in
   [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
+* **0.2.0, workshop maps with their own `shared.map`:** a batch over the 125 multiplayer maps of six workshop mods that use one converted
+  113 of them with no errors from the built-in checks (format, references, engine limits, gameplay and shader checks).  The other 12 are
+  the Halo CE ports named above.  This is again a structural result: **those maps were checked by program, not played**.  The only
+  0.2.0 change confirmed by playing so far is that the empty-square frame of the tutorial prompts disappears on a converted `chronopolis`
+  when the prompts are removed.  The other fixes of 0.2.0 were derived from the games' own code and data and checked on the files; they
+  are listed in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) (section 2.1) as "not yet confirmed in game".
 * **Newest, least used:** the window program and the Windows zip.  They run the same batch engine as the command line, which is the part
   that has been tested at scale.  What was checked: three conversions made with `h2conv.exe` (MCC to Vista `lockout`, Vista to MCC `lockout`
   and `Holidays Grave`) are byte-for-byte identical to the Python source's output (apart from the creation time in the header); the sound
@@ -129,15 +155,16 @@ or modded MCC maps in a sub-folder or in another folder.
 
 ## The Windows programs
 
-The release's **Windows zip** (`Halo2-Map-Converter-0.1.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
+The release's **Windows zip** (`Halo2-Map-Converter-0.2.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
 `Halo2MapConverter`, with two programs that share their libraries and need no Python and no installer:
 
 * **`Halo 2 Map Converter.exe`** - the window program.  You choose a root folder; it scans that folder and every folder below it, recognises
   the Halo 2 maps it finds (Halo 2 Vista maps and Halo 2 MCC maps) and lists them, then converts them all in one go.  Vista maps are set up
   for MCC as an Excession mod package, so the program asks for the Excession folder (where the mod package goes); MCC maps are converted
   for Project Cartographer, so it asks for your Halo 2 maps folder (`Documents\My Games\Halo 2\Maps`).  A map that fails is skipped and the
-  batch carries on; at the end the program tells you which maps failed (and why) and lists the output folder.  MCC maps that need a custom
-  `shared.map` are not supported: they are reported and skipped.  Nothing is ever uploaded.
+  batch carries on; at the end the program tells you which maps failed (and why) and lists the output folder.  Multiplayer maps from a
+  workshop mod that ships its own `shared.map` are converted (the program finds the mod's `shared.map`, see "Maps from workshop mods" below); an
+  MCC map whose custom `shared.map` cannot be found, and campaign maps that use one, are reported and skipped.  Nothing is ever uploaded.
 * **`h2conv.exe`** - the command line, the same program as `py -3 -m h2conv`: `h2conv.exe convert`, `h2conv.exe rev`, `h2conv.exe batch`,
   `h2conv.exe paths` and the other commands listed at the top.  It prints to the console window you start it from.
 
@@ -149,8 +176,8 @@ place to look for options the window does not show.  With a Python install the w
 
 1. *Folder with your maps* - type or choose it and press **Find maps**.  The *Maps found* tab lists every `.map` file below it: what it is
    (Vista or MCC, multiplayer or campaign), what will happen to it, and, for a file that is left out, why (a database such as
-   `shared.map`, a byte-identical copy of another map, already converted, not a usable Halo 2 map, an MCC map that needs a custom
-   `shared.map`).  The line above the list counts the maps per direction and kind.  Nothing is written by this step.
+   `shared.map`, a byte-identical copy of another map, already converted, not a usable Halo 2 map, an MCC map whose custom
+   `shared.map` was not found).  The line above the list counts the maps per direction and kind.  Nothing is written by this step.
 2. *What to convert* - automatic (Vista maps go to MCC, MCC maps go to Vista), or one direction only; multiplayer maps, campaign maps, or
    both; replace Vista maps that already exist in the output folder; convert again maps that are already in the Excession mod package; and
    how many maps to convert at the same time (1 to 4, about 1.5 GB of memory each).
@@ -163,7 +190,7 @@ place to look for options the window does not show.  With a Python install the w
    H2EK maps are found automatically and shown with where they came from; **Change ...** picks another folder and **Automatic** goes back to
    the automatic one.  What you choose is remembered in the settings file.
 5. **Convert** - starts the conversion (it scans first if the folder, direction or outputs changed since the last scan) and warns before it
-   starts if a drive looks too full or MCC maps that need a custom `shared.map` will be skipped.  The *Progress* tab shows the batch's own lines
+   starts if a drive looks too full or MCC maps whose custom `shared.map` was not found will be skipped.  The *Progress* tab shows the batch's own lines
    and the bar counts maps done.  **Cancel** stops after the map that is being converted (maps already done are kept); pressing it again
    (**Stop now**) ends the conversion at once and loses the map in progress.  Closing the window during a conversion asks first.
 6. *Summary* tab - at the end: how many were converted, skipped and **failed**, the failed maps with a one-line reason each, the files that
@@ -237,7 +264,7 @@ py -3 -m h2conv.batch run "<folder with Vista maps>" --direction vista2mcc --mcc
 
 `--direction auto` (the default) converts Vista maps to MCC and MCC maps to Vista in one pass.  Useful switches: `--only a,b*` and
 `--exclude` (file-name patterns), `--kind multiplayer|solo`, `--limit N`, `--force` (Vista to MCC: convert again even if the package
-already holds this exact source), `--overwrite` (MCC to Vista: replace existing output files), `--isolate` (every map in its own
+already holds this exact source), `--overwrite` (MCC to Vista: replace existing output files), `--avoid-stock-names` (MCC to Vista: remakes of stock maps get a numeric suffix), `--isolate` (every map in its own
 process, so a crash cannot stop the batch; add `--jobs N`, at most 4, to run several at once), `--report result.json`.  Run
 `py -3 -m h2conv.batch run --help` for all of them.  Maps already converted are skipped on the next run, so an interrupted batch can
 simply be started again.
@@ -245,6 +272,52 @@ simply be started again.
 The Excession mod package folder must sit directly below one of the folders Excession scans for mods; see Excession's own
 documentation for how to enable and load a mod package.  `py -3 -m h2conv.excession check-root "<mods root folder>"` replays that scan and
 `py -3 -m h2conv.excession validate "<package folder>"` checks the package.
+
+## Maps from workshop mods (a custom `shared.map`)
+
+An MCC multiplayer map from a Steam workshop mod normally sits in `<mod>\maps\<name>.map`, and the mod keeps its data in
+`<mod>\halo2\h2_maps_win64_dx11\` (`textures.dat`, `sounds_*.dat` and, for mods that changed shared content, its own `shared.map`).
+Since 0.2.0 such a map converts when the `shared.map` it was built against can be found.  The converter
+
+* finds that `shared.map` by the creation time the map recorded (it looks next to the map, in `<mod>\halo2\h2_maps_win64_dx11` and in the
+  folder above); `--shared-map FILE` names it yourself.  If it, or the mod's `textures.dat`, is missing the map is skipped with a message;
+* compares the mod's shared tags with the stock MCC `shared.map`: tags the mod changed, and tags that depend on them, are converted and
+  stored in the Vista map; everything else still links to Vista's `shared.map`, like a stock map;
+* takes bitmaps and sounds from the mod's own `textures.dat` and sound files, never from the installed game's, and carries over the mod's own
+  multiplayer globals (the weapon lists that game variants choose from);
+* keeps names apart: many mods remake a stock map under its stock name (`containment`, `beavercreek` ...), so pass a different
+  `--name`, or give a batch `--avoid-stock-names` so such a map gets a numeric suffix (`containment_2`).
+
+```
+py -3 -m h2conv.convert "<mod>\maps\<name>.map" "<Documents>\My Games\Halo 2\Maps" --name <short_name> ^
+    --vista-maps "<Project Cartographer>\maps" --mcc-maps "<MCC>\halo2\h2_maps_win64_dx11"
+```
+
+Converted workshop maps are 14 to 95 MB (about 240 to 1,300 tags stored in the map) and take 8 to 20 seconds each.  Campaign maps of such
+mods are not converted (see "Limits you should know before you start").
+
+## Names in Cartographer's map list
+
+Project Cartographer lists a custom map by the name stored in the map's scenario, with a description and a preview, **only** when the
+map uses Vista's own shared globals.  A map with its **own globals** makes Cartographer fall back to the map's header name, with no description
+and no preview.  Since 0.2.0 every converted multiplayer map carries its own globals by default (see the next section), so the converter
+writes a good name into the header name instead:
+
+* the title the MCC menu shows for the map (from the mod's `multiplayer\<name>.json`), cut to what the header can hold (31 plain ASCII
+  characters, no `|`, never exactly the name of a stock map);
+* with `--name`, the header name is that name, and `--display-name TEXT` always wins;
+* the **file name** is not changed.
+
+Maps built with the editing kit often leave the name and description fields of the scenario empty, which showed as a blank name in the list;
+0.2.0 fills them from the map's own text.  A map converted earlier can be repaired in place with
+`py -3 -m h2conv.mpnames <map.map> <fixed.map>` (add `--check` to only report).
+
+## Tutorial prompts (training)
+
+The tutorial ("training") prompts of Halo 2 drew as an **empty square** on converted multiplayer maps.  Since 0.2.0 they are **off by default**:
+a converted multiplayer map carries its own copy of Vista's globals (identical to Vista's apart from the empty training list), which is why
+its list entry shows only the name.  `py -3 -m h2conv.convert ... --keep-training` brings the prompts back; a map whose globals are unchanged
+then links to Vista's shared globals again and gets the full list entry (name, description, preview).
 
 ## Settings and environment variables
 
@@ -289,7 +362,9 @@ record of what it converted (the file name, size and SHA-256 of each source map,
 * **No tag extraction or injection.**  This release converts whole maps.  Pulling individual tags out of a map, or putting tags
   into one, is not part of it.
 * **No BSP or model export** (no Blender, `.ASS` or `.JMS` files).
-* **No MCC maps that need a custom `shared.map`.**  Batch mode detects them, warns and skips them.
+* **No campaign maps that need a custom `shared.map`.**  Only multiplayer maps are converted against a mod's own `shared.map`; batch mode
+  detects the others, warns and skips them.  The same holds for a multiplayer map whose `shared.map` or `textures.dat` is not in the mod folder.
+* **No working campaign conversion for Project Cartographer** (see "Limits you should know before you start").
 * **At most one campaign per mod package.**  An Excession mod can hold only one campaign, so a package can carry the campaign
   maps of a single campaign.
 * **No installer, no code signing, no automatic updates.**  The Windows programs are plain executables in a zip.
@@ -324,9 +399,11 @@ py -3 -m h2conv.excession validate <package folder>     check an Excession mod p
 | option | meaning |
 |---|---|
 | `--name NAME` | internal map name and file name (letters, digits, `_`, `-`, space; at most 31 characters) |
-| `--display-name TEXT` | the name shown in the map list (all 8 languages) |
-| `--matg hud` (default) | link to Vista's shared globals, except use the map's own globals when the map customised its HUD text (custom pickup prompts keep working) |
-| `--matg link` / `local` / `auto` | always link to Vista's shared globals / always convert the map's globals / convert them only if they differ from stock.  Local globals cost the map-list entry its description and preview (Cartographer's list check rejects them) |
+| `--display-name TEXT` | the name shown in the map list (all 8 languages, and the header name that Cartographer shows for a map with its own globals).  Without it a workshop map uses the MCC menu title |
+| `--keep-training` | keep the tutorial prompts (off by default since 0.2.0: they drew as an empty square); a map with unchanged globals then links to Vista's shared globals again |
+| `--shared-map FILE` | the custom `shared.map` of the workshop mod the map was built against (default: found automatically, see "Maps from workshop mods") |
+| `--matg hud` (default) | use Vista's globals, except use the map's own globals when the map customised its HUD text (custom pickup prompts keep working).  Where Vista's globals are used, the map gets its own copy of them without the tutorial prompts (`--keep-training` links the shared ones instead) |
+| `--matg link` / `local` / `auto` | always use Vista's globals / always convert the map's globals / convert them only if they differ from stock.  Local globals cost the map-list entry its description and preview (Cartographer's list check rejects them) |
 | `--self-contained` | do not link to Vista's `shared.map`; copy everything (much bigger file; experimental) |
 | `--no-pull-mcc-only` | for stock MCC maps: drop MCC-only objects instead of converting them |
 | `--mcc-maps`, `--vista-maps`, `--assembly-dir` | the folders (see "Settings and environment variables") |
@@ -351,6 +428,12 @@ known-issues file), plus the same three folder options.
   map: a Vista map (those go through `rev`, Vista to MCC), a damaged or cut-off download, or some other file.  `mapinfo` tells you what a `.map` is.
 * **The converted map does not appear in the game's list (MCC to Vista):** the file must be directly in `Documents\My Games\Halo 2\Maps`
   (not in a sub-folder), its name at most 31 characters; then restart the game or type `reload_maps`.
+* **The map shows only its name in Cartographer's custom map list (no description, no preview):** expected for a map with its own globals,
+  which is every converted multiplayer map unless you pass `--keep-training` and the map has no custom globals; see "Names in Cartographer's map list".
+* **A converted campaign (solo) map crashes or does not start in Cartographer:** known; campaign conversion for Cartographer is experimental
+  and unsupported (see "Limits you should know before you start").
+* **An MCC map from a workshop mod is skipped ("depends on a CUSTOM shared.map that was not found"):** keep the map in the mod's own folder
+  (`<mod>\maps\`, with `<mod>\halo2\h2_maps_win64_dx11\` holding `shared.map` and `textures.dat`) or pass `--shared-map`.
 * **The map loads but looks or behaves wrongly, or the game crashes:** see [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md), then report it.
 * **The window program does not open, or closes at once:** open a Command Prompt in the folder of the zip and run `h2conv.exe gui --selftest`:
   it lists what is wrong (a missing file, `opus.dll`, Tcl / Tk), and `%LOCALAPPDATA%\H2MapConverter\gui_error.log` has the details if the
@@ -361,7 +444,7 @@ known-issues file), plus the same three folder options.
 
 * [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) - architecture in plain language and the engine facts it relies on
 * [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) - problems met and solved, what is still open, workarounds
-* [RELEASE_NOTES.md](RELEASE_NOTES.md) - what is in 0.1.0
+* [RELEASE_NOTES.md](RELEASE_NOTES.md) - what is in 0.2.0 (and 0.1.0)
 * [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) - licences of the bundled and required components
 
 ## Credits

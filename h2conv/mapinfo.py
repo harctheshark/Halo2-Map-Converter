@@ -15,8 +15,14 @@ dumps(obj)                                        Excession's JSON formatting (t
 
 Classification (MapRecord.status / .code):
     ok       convertible: Vista v8 (MP / solo) or MCC v13 (MP / solo, compressed or not, H2EK self-contained or stock-linked)
-    skip     deliberately not converted: code 'database' (shared / single_player_shared / mainmenu), 'custom_shared'
-             (MCC map that needs a CUSTOM shared.map - unsupported)
+    skip     deliberately not converted: code 'database' (shared / single_player_shared / mainmenu), 'custom_shared_missing'
+             (MCC map that needs a CUSTOM shared.map which cannot be found in its mod).  A map built against a non-stock shared.map
+             only needs it when it really has tags in it (external tag count, also for chunk-compressed maps: only the chunks with the
+             tag table are inflated); with ZERO external tags it is 'ok' (it does not need any shared.map) and MapRecord.data_dir names
+             the folder of the mod's own textures.dat / sounds_*.dat.  A MULTIPLAYER map with external tags whose custom shared.map is
+             found in its mod (creation time == the one recorded at header 0x58) is 'ok' too: MapRecord.custom_shared stays True,
+             .custom_shared_dir / .custom_shared_map name the file and .data_dir the mod's textures.dat / sounds_*.dat folder (custom-shared
+             support, step 2; campaign maps with shared tags stay skipped)
     invalid  not a usable Halo 2 cache: 'unreadable', 'too_small', 'bad_signature', 'unsupported_version', 'bad_footer',
              'bad_type', 'not_pc_build', 'truncated', 'bad_tags_header'
 """
@@ -137,7 +143,7 @@ class MapRecord(object):
     """One looked-at file.  `fmt` 'vista' | 'mcc' | 'invalid'; `status` 'ok' | 'skip' | 'invalid'; `code` machine readable cause."""
     FIELDS = ('path', 'size', 'mtime', 'fmt', 'version', 'kind', 'type_code', 'name', 'scenario_path', 'build', 'compressed',
               'style', 'creation_time', 'shared_times', 'custom_shared', 'external_tags', 'status', 'code', 'reason', 'warnings',
-              'header_file_size')
+              'header_file_size', 'data_dir', 'custom_shared_dir', 'custom_shared_map')
 
     def __init__(self, path):
         self.path = path
@@ -161,6 +167,9 @@ class MapRecord(object):
         self.reason = ''
         self.warnings = []
         self.header_file_size = None
+        self.data_dir = None             # MCC map of a mod built against a non-stock shared.map (no shared tags, or a custom shared.map that was found): folder with ITS textures.dat / sounds_*.dat
+        self.custom_shared_dir = None    # MULTIPLAYER map whose external tags resolve against a CUSTOM shared.map found in its mod: that file's folder (status stays ok)
+        self.custom_shared_map = None    # ... and the file itself (creation time == the one the map recorded at header 0x58)
 
     # -- convenience --------------------------------------------------------------------------------
     @property
@@ -185,6 +194,8 @@ class MapRecord(object):
             return 'Vista v8 %s (build %s)' % (self.kind, self.build)
         if self.fmt == 'mcc':
             extra = ['compressed' if self.compressed else 'uncompressed', 'H2EK self-contained' if self.style == 'h2ek' else 'stock-linked']
+            if self.custom_shared_dir:
+                extra.append('custom shared.map')
             return 'MCC v13 %s (%s)' % (self.kind, ', '.join(extra))
         return 'invalid'
 
@@ -225,7 +236,7 @@ def stock_mcc_times(mcc_dir=None, refresh=False):
     `<mcc_dir>/<paths.STOCK_BACKUP_DIR_NAME>` when that folder exists (an untouched copy some modders keep), else from `mcc_dir` itself (default: the installed
     game's h2_maps_win64_dx11); falls back to the values measured on this PC for a missing file."""
     try:
-        mcc_dir = mcc_dir or _paths.mcc_maps_dir(required=False)
+        mcc_dir = mcc_dir or _paths.stock_mcc_maps_dir()
     except _paths.PathsError:                          # identify() never raises: a broken setting is reported by the converters, not here
         mcc_dir = None
     if not mcc_dir:                                    # no MCC found: the values of the tested build
@@ -268,28 +279,94 @@ def near_shared_time(map_path):
     return None, 0
 
 
-def count_external_tags(path, meta_offset):
-    """Tags of an UNcompressed v13 map that live in shared.map (valid group, address 0, size 0).  None if the table cannot be read."""
+def _mcc_cache():
     try:
-        with open(path, 'rb') as fh:
-            fh.seek(meta_offset)
-            mh = fh.read(0x20)
-            if len(mh) < 0x20 or mh[0x1C:0x20] != TAGS_SIG:
-                return None
-            tag_table_off, n_tags = _u32(mh, 8), _u32(mh, 0x18)
-            if n_tags > 100000:
-                return None
-            fh.seek(meta_offset + tag_table_off)
-            tbl = fh.read(16 * n_tags)
+        from . import mcc_cache as mc
+    except ImportError:                 # imported as a top-level module by the developer tools
+        import mcc_cache as mc
+    return mc
+
+
+def count_external_tags_ex(path, meta_offset, compressed=False):
+    """-> (count, error): tags of a v13 map that live in shared.map (valid group, address 0, size 0).  `compressed` maps are not inflated as a
+    whole: only the chunks that hold the tag table (a few hundred KB) are read, through h2conv.mcc_cache.read_decompressed_range.
+    count is None (and error a short sentence) if the table cannot be read."""
+    try:
+        if compressed:
+            mc = _mcc_cache()
+            read = lambda off, n: mc.read_decompressed_range(path, off, n)           # noqa: E731
+        else:
+            def read(off, n):
+                with open(path, 'rb') as fh:
+                    fh.seek(off)
+                    return fh.read(n)
+        mh = read(meta_offset, 0x20)
+        if len(mh) < 0x20 or mh[0x1C:0x20] != TAGS_SIG:
+            return None, "no 'tags' signature at the meta region"
+        tag_table_off, n_tags = _u32(mh, 8), _u32(mh, 0x18)
+        if n_tags > 100000:
+            return None, 'implausible tag count %d' % n_tags
+        tbl = read(meta_offset + tag_table_off, 16 * n_tags)
         if len(tbl) != 16 * n_tags:
-            return None
+            return None, 'tag table is cut off'
         n = 0
         for g, _datum, addr, sz in struct.iter_unpack('<IIII', tbl):
             if g != NONE32 and addr == 0 and sz == 0:
                 n += 1
-        return n
-    except (OSError, struct.error):
-        return None
+        return n, ''
+    except (OSError, struct.error, ValueError) as ex:
+        return None, str(ex) or ex.__class__.__name__
+    except Exception as ex:                          # noqa: BLE001 - MccFormatError / zlib.error of a damaged compressed map: classify, never raise
+        return None, '%s' % (ex,)
+
+
+def count_external_tags(path, meta_offset, compressed=False):
+    """Tags of a v13 map that live in shared.map (valid group, address 0, size 0).  None if the table cannot be read."""
+    return count_external_tags_ex(path, meta_offset, compressed)[0]
+
+
+MOD_DATA_SUBDIR = os.path.join('halo2', 'h2_maps_win64_dx11')       # where an Excession / Steam-workshop mod keeps its shared.map, textures.dat, sounds_*.dat
+
+
+def mod_data_dir(map_path):
+    """The folder with the textures.dat / sounds_*.dat (and shared.map) that belong to a map of a mod, or None.  A workshop mod keeps its maps in
+    `<mod>\\maps\\` and its data in `<mod>\\halo2\\h2_maps_win64_dx11\\` (every mod ships its own textures.dat, sizes differ from the stock one: its
+    bitmaps live there, not in the installed game's file); a map that sits in a folder with textures.dat uses that."""
+    d = os.path.dirname(os.path.abspath(map_path))
+    for c in (os.path.join(os.path.dirname(d), MOD_DATA_SUBDIR), os.path.join(d, MOD_DATA_SUBDIR), d):
+        if os.path.isfile(os.path.join(c, 'textures.dat')):
+            return c
+    return None
+
+
+def find_custom_shared(map_path, want_time):
+    """(path, '') of the v13 `shared.map` of the map's mod whose creation FILETIME (header 0x48) equals `want_time` (the time the map recorded at
+    0x58), else (None, 'why not').  Looked for next to the map, in `<mod>\\halo2\\h2_maps_win64_dx11` and in the mod folder (a map in `<mod>\\maps\\`
+    keeps its shared.map either there or in the halo2 folder; the copy in the folder with textures.dat is preferred)."""
+    d = os.path.dirname(os.path.abspath(map_path))
+    up = os.path.dirname(d)
+    dirs = []
+    for c in (mod_data_dir(map_path), os.path.join(d, MOD_DATA_SUBDIR), os.path.join(up, MOD_DATA_SUBDIR), d, up):
+        if c and os.path.normcase(c) not in [os.path.normcase(x) for x in dirs]:
+            dirs.append(c)
+    seen = []
+    for c in dirs:
+        p = os.path.join(c, 'shared.map')
+        if not os.path.isfile(p):
+            continue
+        try:
+            b = _read_head(p, MCC_HEADER_SIZE)
+        except OSError:
+            continue
+        if len(b) == MCC_HEADER_SIZE and b[:4] == b'daeh' and _u32(b, 4) == MCC_VERSION:
+            t = _u64(b, 0x48)
+            if t == want_time:
+                return p, ''
+            seen.append('%s has creation time %s' % (p, filetime_hex(t)))
+    if seen:
+        return None, 'no shared.map of the mod has the recorded creation time %s (%s)' % (filetime_hex(want_time), '; '.join(seen))
+    return None, 'no shared.map was found next to the map, in %s next to its folder or in the folder above (recorded creation time %s)' % (
+        MOD_DATA_SUBDIR, filetime_hex(want_time))
 
 
 # ======================================================================================================
@@ -410,22 +487,48 @@ def _identify_mcc(rec, buf, deep, mcc_dir):
             why += '; the matching shared.map is next to the map (%s)' % near_path
         elif near_path:
             why += '; a shared.map next to the map has creation time %s, which does not match either' % filetime_hex(near_t)
-        if deep and not rec.compressed:
-            rec.external_tags = count_external_tags(rec.path, meta_offset)
+        count_err = ''
+        if deep:
+            # compressed maps too: only the chunks that hold the tag table are inflated
+            rec.external_tags, count_err = count_external_tags_ex(rec.path, meta_offset, rec.compressed)
             if rec.external_tags == 0:
                 rec.custom_shared = False
                 rec.warnings.append('built against a non-stock shared.map (%s) but references no shared tags - converted like a self-contained map' % why)
                 why = ''
+                if rec.style == 'stock':
+                    rec.data_dir = mod_data_dir(rec.path)
+                    if not rec.data_dir:
+                        rec.warnings.append('no textures.dat next to the map or in %s next to its folder: the installed game\'s textures.dat would be used' % MOD_DATA_SUBDIR)
         if rec.custom_shared:
-            return _set(rec, 'skip', 'custom_shared',
-                        'depends on a CUSTOM shared.map (unsupported): %s%s' % (why, '' if rec.external_tags is None else '; %d tags are external' % rec.external_tags))
+            # custom-shared support, step 2 (MULTIPLAYER only): the shared.map the map was built against is looked for in its mod (creation
+            # time must equal the one the map recorded); found -> ok, the converter compares it with the stock one and copies what the mod changed
+            if rec.kind == 'multiplayer' and any(s == 'shared' for s, _t in wrong) and not any(s != 'shared' for s, _t in wrong):
+                found, why_not = find_custom_shared(rec.path, rec.shared_times[1])
+                if found:
+                    rec.custom_shared_map = found
+                    rec.custom_shared_dir = os.path.dirname(found)
+                    rec.data_dir = mod_data_dir(rec.path)
+                    if rec.style == 'stock' and not rec.data_dir:
+                        return _set(rec, 'skip', 'custom_shared_missing',
+                                    'built against the custom shared.map %s, but the mod\'s own textures.dat was not found (%s next to the map\'s folder): '
+                                    'the installed game\'s textures.dat would give wrong bitmaps' % (found, MOD_DATA_SUBDIR))
+                    rec.warnings.append('built against a CUSTOM shared.map (%s); %s tags are external: its tags are compared with the stock shared.map '
+                                        'and the changed ones are copied' % (found, rec.external_tags if rec.external_tags is not None else '?'))
+                    return _set(rec, 'ok', 'mcc', '')
+                why += '; ' + why_not
+            if rec.external_tags is None:
+                n_txt = '; the external tags were not counted (deep check off)' if not deep else '; the external tags could not be counted (%s)' % count_err
+            else:
+                n_txt = '; %d tags are external (they live in that shared.map)' % rec.external_tags
+            return _set(rec, 'skip', 'custom_shared_missing', 'depends on a CUSTOM shared.map that was not found%s: %s%s' % (
+                '' if rec.kind == 'multiplayer' else ' (campaign maps with shared tags are not supported)', why, n_txt))
     elif mask != 0 and not rec.shared_times[1]:
         # linked to a shared.map (mask != 0) yet no creation time recorded: cannot be compared, count the external tags
-        if deep and not rec.compressed:
-            rec.external_tags = count_external_tags(rec.path, meta_offset)
+        if deep:
+            rec.external_tags = count_external_tags(rec.path, meta_offset, rec.compressed)
         if rec.external_tags:
             rec.custom_shared = True
-            return _set(rec, 'skip', 'custom_shared',
+            return _set(rec, 'skip', 'custom_shared_missing',
                         'references %d shared.map tags but records no shared.map creation time - the shared.map it needs cannot be '
                         'verified to be the stock one (unsupported)' % rec.external_tags)
         rec.warnings.append('header marks the map as shared-linked (mask 0x%X) but no creation time is recorded' % mask)

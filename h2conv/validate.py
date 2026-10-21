@@ -643,6 +643,7 @@ class _ValidatorBase(object):
             self._check_strings(R, mv)
             self._check_names(R, mv)
             self._check_instances(R, mv)
+            self._check_shader_templates(R, mv)
             self._check_language_pack(R, mv)
             self.geo_blocks = {}
             self.bitmap_blobs = {}
@@ -945,6 +946,26 @@ class _ValidatorBase(object):
             R.warn('names.scenario_path', 'header scenario_path %r != name of the scenario tag %r' % (h.scenario_path, names[si]))
 
     # ==============================================================================================
+    # shader templates
+    # ==============================================================================================
+    def _check_shader_templates(self, R, mv):
+        """Every local shad must name a stem (its first field is the Template tag reference).  A NONE / dangling Template crashes the
+        engine when the shader is drawn: the sky / model draw reads Template -> stem+0x58 without a null check (halo2.exe sub_67FE30, the
+        cyberdyne_h2 sky shader `kilimanjaro`, 2026-10-20).  0 findings on the 44 stock Vista maps."""
+        c = mv.c
+        for t in c.tags:
+            if t.group != 'shad' or t.is_empty or not t.addr or t.size < 8 or (t.index >= FIRST_SHARED_TAG_INSTANCE_INDEX and mv.ntags > FIRST_SHARED_TAG_INSTANCE_INDEX):
+                continue
+            g, d = struct.unpack('<II', c.read_addr(t.addr, 8))
+            if d == NULL or d == 0:
+                R.error('shad.null_template', 'shader %s has no Template (stem): the engine crashes when it is drawn' % t.name, tag=t)
+                continue
+            i = d & 0xFFFF
+            st = c.tags[i] if i < len(c.tags) else None
+            if st is None or st.datum != d or st.group != 'stem':
+                R.error('shad.template_unresolved', 'shader %s: Template 0x%08X does not name a stem tag' % (t.name, d), tag=t)
+
+    # ==============================================================================================
     # tag instance table
     # ==============================================================================================
     def _check_instances(self, R, mv):
@@ -1165,6 +1186,61 @@ class _ValidatorBase(object):
                     R.note('custom_list.names', 'language pack lacks map-name strings in some of the 9 languages: %s' % cnts, flags=fl)
             if mv.ntags > 15064 and (mv.inst_group[15064] != _fcc('ugh!') or mv.inst_datum[15064] == NULL):
                 R.note('custom_list.shared_ugh', 'tag 15064 is not the shared sound gestalt ugh!', flags=fl)
+            self._check_list_name(R, mv)
+
+    def _check_list_name(self, R, mv):
+        """Which name does Cartographer's custom-map LIST show for this map?  (halo2.exe sub_44F690 + Cartographer
+        validate_and_read_custom_map_data, see handlers/mp_level_names.py.)
+          validator passes  -> the scnr Level Data[0].Multiplayer[0] English Name (+ descriptions + preview); an EMPTY name passes
+                               the checks and shows a BLANK row (found 2026-10-20: martian / plaza / stone_walls)
+          validator fails   -> the header name (0x1A4) is copied as the list name, no description, no preview (empty -> file name)
+        The validator fails for: globals matg index < 10000 (a LOCAL matg: 0x44F942, before any name is copied - every converted
+        map since the training-off change), a secondary ugh! that is not local, a file size outside [0xC00, 0xFA00000], a MOPP
+        checksum mismatch, no Level Data / Multiplayer element.  (Other rules - tag mask, 50 MiB tag size, bitmap bounds - are
+        not predicted.)"""
+        h, c = mv.h, mv.c
+        why = []
+        gi = c.globals_datum & 0xFFFF
+        if c.globals_datum == NULL or gi < FIRST_SHARED_TAG_INSTANCE_INDEX:
+            why.append('local matg (index %d < 10000)' % gi if c.globals_datum != NULL else 'no matg')
+        s2 = h.secondary_ugh_tag_index
+        if s2 != NULL and (s2 & 0xFFFF) >= FIRST_SHARED_TAG_INSTANCE_INDEX:
+            why.append('secondary ugh! is not local')
+        if not (CUSTOM_LIST_MIN <= mv.size <= CUSTOM_LIST_MAX):
+            why.append('file size %#x outside the window' % mv.size)
+        try:
+            if mopp_checksum_of(c) != h.mopp_checksum:
+                why.append('mopp checksum mismatch')
+        except Exception:                                  # noqa: BLE001
+            pass
+        name = None
+        try:
+            scn = c.find('scnr')
+            d = c.read_tag(scn[0])
+            cnt, addr = struct.unpack_from('<II', d, 0x398)
+            if cnt >= 1 and addr:
+                mc, ma = struct.unpack_from('<II', c.read_addr(addr, 24), 0x10)
+                if mc >= 1 and ma:
+                    mp = c.read_addr(ma, 0xC64)
+                    name = mp[0xC:0x4C].decode('utf-16-le', 'replace').split('\0')[0]
+        except Exception:                                  # noqa: BLE001 - unreadable scnr is reported by the structural checks
+            return
+        if name is None:
+            why.append('no Level Data / Multiplayer element')
+        elif ('|' in name) or any(ord(ch) < 32 or 0xE000 <= ord(ch) <= 0xF8FF for ch in name):
+            why.append('the scnr English Name %r holds a character the validator rejects (| , control or private-use)' % name)
+        stem = os.path.splitext(os.path.basename(mv.path))[0]
+        if why:
+            shown = h.name or stem
+            R.note('custom_list.name', 'the list shows %r = the HEADER name%s (no description, no preview): the vanilla list validator fails: %s'
+                   % (shown, '' if shown.lower() == stem.lower() else ' (file %r)' % stem, '; '.join(why)))
+            if not h.name:
+                R.warn('custom_list.name_empty', 'header name is empty: the list falls back to the file name')
+        elif not name:
+            R.warn('custom_list.mp_name', 'scnr Level Data[0] Multiplayer[0] English Name is empty: the custom-map list shows a BLANK name '
+                   '(and its preview says "No custom maps found!").  Fix: py -3 -m h2conv.mpnames <map> <fixed.map>')
+        else:
+            R.note('custom_list.name', 'the list shows %r = the scnr Multiplayer English Name (the vanilla list validator passes: shared matg)' % name)
 
 
 def _fcc(s):

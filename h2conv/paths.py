@@ -470,6 +470,17 @@ def mcc_maps_dir(explicit=None, required=True):
     return v
 
 
+def stock_mcc_maps_dir():
+    """The STOCK MCC maps folder (the installed game's halo2\\h2_maps_win64_dx11: the stock shared.map, textures.dat, sounds_*.dat), None if
+    unknown.  Unlike mcc_maps_dir() this ignores a per-map `--mcc-maps` (a workshop mod's own folder: its shared.map and its .dat files are NOT
+    the stock ones, custom-shared support compares against the stock ones); the auto-detected Steam install comes first, then the folder
+    mcc_maps_dir() resolves (a non-Steam stock install given by option / environment / settings)."""
+    inst = _auto_mcc()
+    if inst:
+        return inst
+    return mcc_maps_dir(required=False)
+
+
 def mcc_dat_dir(explicit=None, need=('textures.dat',)):
     """The folder that holds textures.dat / sounds_*.dat: the MCC maps folder in use when it has the `need` files, else the installed game's.
     (--mcc-maps may point at a folder of decompressed maps without the .dat files.)"""

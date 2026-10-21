@@ -191,27 +191,108 @@ def read_chunk_table(f, header):
     return list(struct.iter_unpack('<iI', tbl))
 
 
+def _inflate_chunk(blob, i, chunk_size):
+    """Inflate one chunk's zlib stream (RFC1950).  A stream whose 4-byte Adler-32 trailer is MISSING (the chunk table's size ends right after the
+    last deflate block) is accepted when the deflate data itself terminates cleanly: the four Uncut campaign maps of workshop item 2898973963
+    (07a_highcharity, 07b_forerunnership, 08a_deltacliffs, 08b_deltacontrol) were written by a tool that left the trailer out of every chunk.
+    The data is complete (the chunk inflates to its full size, the decompressed file has the size the header says); only the checksum is absent.
+    Anything else (truncated deflate data, garbage after the stream, a wrong checksum) is still an error."""
+    d = zlib.decompressobj()
+    try:
+        out = d.decompress(blob) + d.flush()
+    except zlib.error as ex:
+        raise MccFormatError('chunk %d: %s' % (i, ex))
+    if d.eof and not d.unused_data:
+        pass
+    elif not d.eof and not d.unused_data and len(blob) > 2 and (blob[0] & 0x0F) == 8 and ((blob[0] << 8) | blob[1]) % 31 == 0:
+        raw = zlib.decompressobj(-15)                  # same deflate data without the 2-byte header, no trailer expected
+        try:
+            out = raw.decompress(blob[2:]) + raw.flush()
+        except zlib.error as ex:
+            raise MccFormatError('chunk %d: %s' % (i, ex))
+        if not raw.eof or raw.unused_data:
+            raise MccFormatError('chunk %d: zlib stream not cleanly terminated' % i)
+    else:
+        raise MccFormatError('chunk %d: zlib stream not cleanly terminated' % i)
+    if len(out) > chunk_size:
+        raise MccFormatError('chunk %d inflates to 0x%X > chunk size' % (i, len(out)))
+    return out
+
+
+def _read_chunk(f, i, csize, coff, chunk_size):
+    f.seek(coff)
+    if csize < 0:                        # negative size => stored raw, length = -size
+        blob = f.read(-csize)
+        if len(blob) != -csize:
+            raise MccFormatError('chunk %d truncated' % i)
+        return blob
+    blob = f.read(csize)
+    if len(blob) != csize:
+        raise MccFormatError('chunk %d truncated' % i)
+    return _inflate_chunk(blob, i, chunk_size)
+
+
 def iter_decompressed_chunks(f, header):
     """Yield the decompressed bytes of every chunk of a compressed MCC map, in order."""
     chunk_size = header['compression_chunk_size']
     for i, (csize, coff) in enumerate(read_chunk_table(f, header)):
-        f.seek(coff)
-        if csize < 0:                    # negative size => stored raw, length = -size
-            blob = f.read(-csize)
-            if len(blob) != -csize:
-                raise MccFormatError('chunk %d truncated' % i)
-            yield blob
-            continue
-        blob = f.read(csize)
-        if len(blob) != csize:
-            raise MccFormatError('chunk %d truncated' % i)
-        d = zlib.decompressobj()
-        out = d.decompress(blob) + d.flush()
-        if not d.eof or d.unused_data:
-            raise MccFormatError('chunk %d: zlib stream not cleanly terminated' % i)
-        if len(out) > chunk_size:
-            raise MccFormatError('chunk %d inflates to 0x%X > chunk size' % (i, len(out)))
-        yield out
+        yield _read_chunk(f, i, csize, coff, chunk_size)
+
+
+def read_decompressed_range(src, start, length):
+    """Bytes [start, start+length) of the DECOMPRESSED image of a compressed MCC map, inflating only the chunks that cover them (a few
+    hundred KB instead of the whole map).  The image is the 0x380-byte header (flag bit0 cleared) followed by the chunks, every chunk but the
+    last inflating to `compression_chunk_size` bytes; that is verified for each chunk read and, if a map does not follow it, the chunks are
+    inflated from the start instead.  Raises MccFormatError if the range lies beyond the image."""
+    with open(src, 'rb') as f:
+        hb = f.read(HEADER_SIZE)
+        h = parse_header(hb)
+        if h['version'] != MCC_VERSION or h['signature'] != 'head' or not h['compressed']:
+            raise MccFormatError('%s: not a compressed MCC v13 cache' % src)
+        if start < 0 or length < 0 or start + length > h['file_size']:
+            raise MccFormatError('%s: range 0x%X+0x%X lies beyond the %d-byte image' % (src, start, length, h['file_size']))
+        out = bytearray()
+        if start < HEADER_SIZE:
+            hdr = bytearray(hb)
+            struct.pack_into('<H', hdr, 0x1C, h['flags'] & ~1)
+            out += hdr[start:start + length]
+        end = start + length
+        cs = h['compression_chunk_size']
+        tbl = read_chunk_table(f, h)
+        n = len(tbl)
+        if cs <= 0 or n == 0:
+            raise MccFormatError('%s: bad compression header (chunk size %d, %d chunks)' % (src, cs, n))
+        lo = max(start, HEADER_SIZE)
+        if end > lo:
+            first, last = (lo - HEADER_SIZE) // cs, (end - 1 - HEADER_SIZE) // cs
+            if last >= n:
+                raise MccFormatError('%s: range 0x%X+0x%X lies beyond the chunk table' % (src, start, length))
+            fast = True
+            parts = []
+            for i in range(first, last + 1):
+                data = _read_chunk(f, i, tbl[i][0], tbl[i][1], cs)
+                want = cs if i < n - 1 else h['file_size'] - HEADER_SIZE - i * cs
+                if len(data) != want:
+                    fast = False
+                    break
+                parts.append(data)
+            if fast:
+                base = HEADER_SIZE + first * cs
+                blob = b''.join(parts)
+                out += blob[lo - base:end - base]
+            else:                                       # irregular chunk sizes: walk the chunks from the start
+                pos = HEADER_SIZE
+                for i, (csize, coff) in enumerate(tbl):
+                    data = _read_chunk(f, i, csize, coff, cs)
+                    a, b = max(lo, pos), min(end, pos + len(data))
+                    if a < b:
+                        out += data[a - pos:b - pos]
+                    pos += len(data)
+                    if pos >= end:
+                        break
+        if len(out) != length:
+            raise MccFormatError('%s: could only read %d of %d bytes at 0x%X' % (src, len(out), length, start))
+        return bytes(out)
 
 
 def decompress_map(src, dst):
@@ -292,18 +373,62 @@ def ensure_decompressed(path, out_dir=None):
     h = parse_header(hb)
     if not h['compressed']:
         return path
+    default_dir = out_dir is None
     out_dir = out_dir or DECOMP_DIR
     base = os.path.basename(path)
     dst = os.path.join(out_dir, base)
     if _same_decompressed(hb, dst):
         return dst
-    if os.path.exists(dst):   # basename taken by a different map -> hashed name
+    # custom-shared support: a workshop mod's shared.map / mainmenu.map / single_player_shared.map must NEVER take the bare database name in the
+    # default cache folder - the planner and MccShared treat <cache>\shared.map as the STOCK shared.map (a mod's file decompressed first filled
+    # ~2,600 stock-equal tags into every conversion).  Only a file with the stock creation time keeps the bare name.
+    force_hashed = default_dir and base.lower() in DATABASE_FILE_NAMES and not _is_stock_database(h)
+    if os.path.exists(dst) or force_hashed:   # basename taken by a different map (or a non-stock database) -> hashed name
         stem, ext = os.path.splitext(base)
         dst = os.path.join(out_dir, '%s.%s%s' % (stem, hashlib.md5(hb).hexdigest()[:8], ext))
         if _same_decompressed(hb, dst):
             return dst
     decompress_map(path, dst)
     return dst
+
+
+DATABASE_FILE_NAMES = ('shared.map', 'single_player_shared.map', 'mainmenu.map')
+
+
+def file_creation_time(path):
+    """Header creation FILETIME (0x48) of a v13 cache file, None if it is not one / unreadable."""
+    try:
+        with open(path, 'rb') as fh:
+            b = fh.read(HEADER_SIZE)
+        if len(b) == HEADER_SIZE and b[:4] == b'daeh' and struct.unpack_from('<I', b, 4)[0] == MCC_VERSION:
+            return struct.unpack_from('<Q', b, 0x48)[0]
+    except OSError:
+        pass
+    return None
+
+
+def pick_shared_map(paths, want_time=0):
+    """The shared.map a map was built against: of the existing files in `paths` (search order) the first whose creation time equals the
+    time the map recorded (header 0x58, `want_time`); when none matches (or nothing was recorded) the first existing file, as before."""
+    first = None
+    for p in paths:
+        if p and os.path.isfile(p):
+            if first is None:
+                first = p
+            if want_time and file_creation_time(p) == want_time:
+                return p
+    return first
+
+
+def _is_stock_database(header):
+    """True when the creation FILETIME of this database map (parse_header dict) equals one of the stock MCC databases' (mapinfo.stock_mcc_times:
+    the installed game's, or its untouched backup copy).  When the stock folder cannot be read the values of the tested build are used."""
+    try:
+        from . import mapinfo as _MI
+        times = _MI.stock_mcc_times(_paths.stock_mcc_maps_dir())
+        return header['creation_time'] in times.values()
+    except Exception:                                  # noqa: BLE001 - unknown stock: keep the legacy bare name
+        return True
 
 
 # --------------------------------------------------------------------------------------------------
@@ -528,11 +653,8 @@ class MccCache(object):
         if not any(t.external for t in self.tags):
             return None
         cands = [d for d in (maps_dir, os.path.dirname(self.source_path), DECOMP_DIR, _paths.mcc_maps_dir(required=False)) if d]
-        for d in cands:
-            p = os.path.join(d, 'shared.map')
-            if os.path.isfile(p):
-                return MccCache(p)
-        return None
+        p = pick_shared_map([os.path.join(d, 'shared.map') for d in cands], self.header['shared_creation_time'][1])
+        return MccCache(p) if p else None
 
     def resolve_external(self, tag, shared):
         """For an external tag (addr == size == 0) return the same tag in *shared* (same index, verified by

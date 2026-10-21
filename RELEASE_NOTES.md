@@ -1,125 +1,131 @@
-# Halo 2 Map Converter 0.1.0 (pre-release)
+# Halo 2 Map Converter 0.2.0 (pre-release)
 
-First public release, marked as a pre-release: a Windows zip (the window program `Halo 2 Map Converter.exe` and the command-line
-program `h2conv.exe`, no Python needed) and the source.  Early software: please read "Still open" below.
+Second pre-release: a Windows zip (the window program `Halo 2 Map Converter.exe` and the command-line program `h2conv.exe`, no Python
+needed) and the source.  Early software: please read "Read this first" and "Still open" below.
 
-Converts Halo 2 maps between **Halo 2 Vista / Project Cartographer** (cache version 8) and **Halo 2: MCC** (cache version 13),
-in both directions, one map at a time or a whole folder tree at once.
+Converts Halo 2 maps between **Halo 2 Vista / Project Cartographer** (cache version 8) and **Halo 2: MCC** (cache version 13), in both
+directions, one map at a time or a whole folder tree at once.  0.2.0 is mostly about **MCC to Vista**: Steam workshop multiplayer maps that
+ship their own `shared.map` now convert.
 
-## Highlights
+## Read this first
 
-* **MCC to Vista** (`py -3 -m h2conv.convert`).  Stock MCC maps and maps built with the MCC Halo 2 Editing Kit become Vista maps
-  that Project Cartographer can load as custom maps.  The stock MCC `headlong`, converted, is about 99.7 % field-equal to the
-  stock Vista `headlong`.  Custom HUD pickup text, vehicle and weapon content, sounds (Opus re-encoded as Xbox ADPCM), bitmaps,
-  Havok physics, scripts and localized text are converted.
-* **Vista to MCC** (`py -3 -m h2conv.rev.convert`).  Stock and community Vista maps become self-contained MCC maps.  Custom shaders
-  are carried over by a **faithful port** of their Direct3D 9 code to MCC's Direct3D 11 format, compiled the same way MCC's own tool
-  compiles shaders and checked for equivalence, instead of substituting look-alike shaders.
-* **Batch mode** (`py -3 -m h2conv.batch`).  Scans a folder tree, recognises every Halo 2 map by its header, skips duplicates and
-  databases, previews its plan with `--dry-run`, converts the rest, keeps going past failures and lists what failed and why.  It can
-  be re-run to convert only new maps.
-* **One entry point.**  `py -3 -m h2conv <convert|rev|batch|mapinfo|excession|validate|limits|invariants|paths|gui>` starts every tool
-  (the older `py -3 -m h2conv.convert` style still works), and `--version` prints `0.1.0`.  In the Windows zip it is `h2conv.exe <command>`.
-* **Window program (Windows zip, or `py -3 -m h2conv gui`).**  `Halo 2 Map Converter.exe`: choose a root folder, it scans the folder tree,
-  lists the Halo 2 maps it finds (with counts per direction and kind, and why a file is left out) and converts them all.  Vista maps go into
-  an Excession mod package (it asks for the Excession folder), MCC maps go to your Halo 2 maps folder; the MCC, Vista and Assembly folders are
-  found automatically and can be changed.  A progress log runs while it works, **Cancel** stops after the current map, a map that fails is
-  skipped, and at the end a summary lists converted, skipped and **failed** maps (each failure with its reason) and the output folders, with an
-  **Open folder** button.  MCC maps that need a custom `shared.map` are warned about and skipped.  It never uploads anything.  It is a front end
-  for the same batch engine as `h2conv.exe batch` (every map is converted in its own process), and it is the newest and least used part of this
-  release: its logic is covered by automated tests that run without a screen, but the window itself has had little use.
-* **Windows zip.**  `Halo2-Map-Converter-0.1.0-windows-x64.zip` (about 60 MB; about 150 MB unzipped) holds the window program and the command
-  line in one folder with their libraries (Python, numpy, scipy, Tcl / Tk, the Visual C++ runtime), so nothing has to be installed.  Its
-  output was compared with the Python source's on three conversions (byte-identical except the header's creation time).  Built with PyInstaller
-  from the spec in `packaging\` (see `packaging\README.md`).  Licences of everything inside: `LICENSES\` in the zip and THIRD_PARTY_NOTICES.md.
-* **Finds your games.**  MCC is looked for in your Steam libraries and Project Cartographer's `maps` folder in the usual places;
-  `py -3 -m h2conv.paths` shows what was found.  Everything can be overridden by an option, an environment variable or the settings
-  file (README, "Settings and environment variables").
-* **Layout files bundled.**  The tag layouts of Assembly (release 2026.02.16, GPL-3.0) are included, so there is nothing else to
-  download; `--assembly-dir` still lets you use another set.
-* **Excession packaging.**  Vista to MCC batches are written as one Excession mod package (`ModInfo.json`, `maps\`,
-  `multiplayer\`) with map titles and descriptions taken from each map's own language pack.  Nothing is ever uploaded.
-* **Built-in checks.**  Every output is read back and verified; separate commands (`h2conv.validate`, `h2conv.limits_check`,
-  `h2conv.invariants`, `h2conv.excession validate`) check any map or package.
-* **Safe by default.**  Inputs are only read, outputs are written atomically, batch results are staged before they are moved into
-  place, a failed map never replaces a good one, and a single conversion refuses to replace an existing file unless you pass
-  `--overwrite`.
-* **Run at scale.**  A run over 484 community Vista maps converted all of them, in about 29 minutes, with a clean package validation.
-  (This is a structural result: most of those maps have not been played, and the run was made before the water fix below.)
+* **Campaign (single-player) maps do not work reliably in Vista / Project Cartographer yet.**  Cartographer starts a custom campaign map
+  through its multiplayer path, and some campaign maps crash it.  Of the campaign maps tried, only one small test map loads.  The
+  converter still writes campaign maps, but **treat MCC to Vista campaign conversion as unsupported / experimental.**  Multiplayer maps are
+  the supported case.
+* **The 12 Halo CE port maps of workshop mod 3583572796 are not supported** (`bloodgulch`, `wizard` and the rest of that mod's Halo CE
+  ports).  Their shader templates exist in MCC only as DirectX 11 bytecode and Halo 2 Vista has nothing to convert them to.  They are
+  reported as failed.
+* **A map with its own globals shows only its name** (no description, no preview picture) in Project Cartographer's custom map list.  Since
+  0.2.0 that is the normal case for a converted multiplayer map (see "Tutorial prompts are off" below); the map plays normally.
+* **Checked, not played.**  The new workshop-map support was checked by program on the files (113 of 125 maps, see below), not by playing.
+  Only one 0.2.0 change is confirmed in game so far: the empty-square frame of the tutorial prompts disappears on a converted `chronopolis`
+  when the prompts are removed.  The other fixes were derived from the games' own code and data; they are listed as "not yet confirmed in
+  game" in `docs/KNOWN_ISSUES.md`.
 
-## Problems fixed during development
+## What is new
 
-The full story is in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).  In short:
+* **Workshop maps with their own `shared.map` (MCC to Vista, multiplayer).**  An MCC workshop map built against a mod's own `shared.map`
+  used to be skipped.  Now the converter finds that `shared.map` (by the creation time the map recorded; next to the map, in
+  `<mod>\halo2\h2_maps_win64_dx11` or in the folder above; `--shared-map FILE` to name it), compares its tags with the stock MCC
+  `shared.map`, converts and stores the tags the mod changed (and the tags that depend on them), and still links everything else to Vista's
+  `shared.map`.  The mod's own `textures.dat` and sound files are used for its bitmaps and sounds, and the mod's own multiplayer globals
+  (the weapon lists game variants choose from) are carried over.  A batch over the 125 multiplayer maps of six workshop mods that use a
+  custom `shared.map` converted **113 of them with no errors** from the built-in checks (format, references, engine limits, gameplay and
+  shader checks); the other 12 are the Halo CE ports named above.  Each converted map is 14 to 95 MB and takes 8 to 20 seconds.  The
+  window program and `h2conv.exe batch` no longer skip these maps; campaign maps of such mods, and maps whose `shared.map` or
+  `textures.dat` cannot be found, are still skipped with a message.
+* **Tutorial prompts are off by default.**  The tutorial ("training") prompts drew as an empty square on converted multiplayer maps.  Every
+  converted multiplayer map now carries its own copy of Vista's globals (identical to Vista's apart from the empty training list), so the
+  prompts do not appear.  `h2conv.exe convert ... --keep-training` (or `py -3 -m h2conv.convert ... --keep-training`) restores them; a map
+  with unchanged globals then links to Vista's shared globals again and keeps the full custom-list entry.
+* **Custom map list names.**  A map with its own globals makes Cartographer show the map's *header* name in its custom map list.  The
+  converter now writes the title the MCC menu shows (from the mod's `multiplayer\<name>.json`) into the header name: plain ASCII, at most 31
+  characters, never exactly a stock map's name.  The file name is unchanged.  `--display-name` overrides it.  Maps built with the editing kit that left the scenario's
+  name and description empty (which showed as a blank name) get them filled from the map's own text, and
+  `py -3 -m h2conv.mpnames <map> <fixed.map>` repairs a map converted earlier.
+* **`batch run --avoid-stock-names`** gives a remake that has a stock map's name a numeric suffix (`containment_2`) instead of the stock name.
 
-* MCC to Vista: a crash on load caused by an empty scenario block, custom shaders that took another shader's textures, a missing
-  animated shader, wrongly ordered shader arrays, lost custom HUD text, tables the engine searches by binary search being unsorted.
-* Vista to MCC: bump maps showing as colour textures (17 shader templates MCC does not have), custom templates under stock names,
-  vehicle driver and gunner seats that could not be entered (unsorted animation label tables; **confirmed in game**), water that
-  flickered and changed colour on custom maps (MCC's water shaders assume finely tessellated water; Vista's own water shaders are now
-  ported under private names; **confirmed in game** on `Holidays Grave` and `corpsys`), a floor that showed as flat sky colour on one
-  community map (`Bikini Bottom`, internally `cbsp`: MCC draws the sky later than Vista does, so Vista's two sky vertex shaders are now
-  ported to keep the sky at the far plane; **confirmed in game** on 2026-10-15), maps using tag groups that had no layout, and Ogg
-  Vorbis sounds mislabelled as PCM.
-* Batch mode: the dry run now names maps that are already in a package by their real names (checked offline).
+## Fixes (MCC to Vista)
 
-## Still open (see KNOWN_ISSUES for details and workarounds)
+* **No spawn during Cartographer's seasonal events.**  A map with its own globals could leave the player without a body when Cartographer
+  injected its holiday props, because tags that the shared globals still depend on were not kept reachable.  They always are now, the props'
+  own shared slots are kept too, and a new `spawn` check in `invariants` reports the problem if it ever comes back.
+* **MCC-only shader templates no longer produce a shader with no template** (which crashes the game when the shader is drawn).  The converter
+  substitutes the Vista template with an identical structure (or a twin) where there is one, and `validate` / `invariants` now report an
+  error for any shader left without a template.
+* **Placeholder texture `rasterizer\invalid`:** the editing kit's red/green checkerboard version of it is linked to Vista's own, so converted
+  maps with their own globals no longer shadow the real one.
+* **Crosshairs twice as big (`cyberdyne_h2`).**  MCC draws its reticle atlas at half size when it is used as a crosshair; Vista draws bitmaps
+  at their real size.  A map-supplied atlas that is really twice the size of Vista's is now halved (`hud_scale`).
+* **Black scenery.**  Custom models that came with no tangent frames (a few boxes on one workshop map) drew black on their sides under
+  dynamic lighting; the converter now writes a valid frame.
+* **Screens and decals showing through walls.**  Shaders from editing-kit maps carry a depth-bias value in different units from Vista's; it
+  is rescaled so overlays such as wall monitors stay on their wall.
+* **Compressed maps.**  The number of shared tags of a map stored in MCC's compressed form is read correctly (so a compressed map built against
+  a custom `shared.map` is recognised), and maps whose compressed chunks lack the 4-byte checksum trailer now open.
+* **Campaign maps started from the multiplayer lobby** no longer crash Cartographer on load because of empty Player Representation entries
+  and an empty multiplayer UI globals reference in the campaign globals; the converter fills them.  (Campaign maps are still unreliable, see
+  "Read this first".)
+* Campaign maps launched from Cartographer's multiplayer lobby: crash guards plus starting weapons from the scenario's own starting profile;
+  still experimental.
 
-* Not yet checked: how the fixed sky looks in the reflection of planar water; and maps converted before the sky fix keep the old sky until
-  they are converted again.  (`--plan-opt sky_depth=mcc` turns the sky fix off.)
-* `aftermath` / `redv2` (a community Red Ice remake): the original, unconverted map crashes **Halo 2 Vista** when walking into tight
-  corners (a crash dump shows a failed memory allocation inside a collision query).  Its collision data is a single oversized cluster
-  (4,137 triangles; the largest in any stock Vista map has 2,178).  The converter copies that data unchanged; whether the converted MCC
-  map also crashes has not been confirmed.  A fault of the source map, not of the converter.
-* 2D reflection bitmaps in cube-map slots of many water shaders are carried over as authored (Vista does the same).
-* One shader template (`tex_bump_scale_alpha_test`, one community map) cannot be ported and uses MCC's `invalid` shader.
-* MCC maps that need a custom `shared.map` are not supported.
-* Custom vehicles get zero MCC "metagame" values; effect flag bits are copied, not recomputed; only English sound and lip-sync are converted.
-* **Not everything has been played.**  Campaign / solo maps and network play are the least tested.
+## Still open
+
+* Campaign maps for Cartographer (see "Read this first"); the 12 Halo CE ports of mod 3583572796; description and preview missing in the
+  list for maps with their own globals.
+* Not yet confirmed in game: the fixes above except the training frame, and that every converted workshop map plays.
+* The open items of 0.1.0 (sky in planar-water reflections, the `aftermath` source-map fault, a few unportable shader templates, custom
+  metagame values, English-only sounds) are unchanged; see `docs/KNOWN_ISSUES.md`.
+* **Not everything has been played.**
 
 ## Requirements
 
 * Windows 10 or 11 (64-bit)
-* Python 3.10 or newer (64-bit; only 3.10.5 is tested) plus `numpy` and `scipy` (`py -3 -m pip install -r requirements.txt`) - for the
-  source download only; the Windows zip needs no Python.  (The window program from source also needs `tkinter`, which the python.org installer
-  includes by default.)
 * Halo: The Master Chief Collection (Steam) with Halo 2, including its `h2_maps_win64_dx11` folder
 * Halo 2 for Windows Vista with Project Cartographer, including its stock `maps` folder
-* Included: Assembly's tag layout files (GPL-3.0) and libopus (BSD-3-Clause); the Microsoft Visual C++ 2015-2022 x64 runtime is needed by `opus.dll`
-  (the Windows zip carries it; with the source download it comes with the Python installer)
-* Excession, to play Vista to MCC results in MCC (optional for the converter itself)
-* Optional: `ffmpeg.exe` (for three rare mislabelled sounds); the MCC Halo 2 Editing Kit maps as extra donors (`--h2ek-maps`)
-* Disk: Vista to MCC maps are about 250 to 610 MB each; caches add about 2.5 GB
+* Source download only: Python 3.10 or newer (64-bit; only 3.10.5 is tested) plus `numpy` and `scipy`
+  (`py -3 -m pip install -r requirements.txt`); the Windows zip needs no Python
+* Included: Assembly's tag layout files (GPL-3.0) and libopus (BSD-3-Clause); the Microsoft Visual C++ 2015-2022 x64 runtime is needed by
+  `opus.dll` (the Windows zip carries it)
+* Optional: Excession (to play Vista to MCC results in MCC), `ffmpeg.exe`, the MCC Halo 2 Editing Kit maps as extra donors
 
 ## Installing and first run
 
-**Windows zip:** download `Halo2-Map-Converter-0.1.0-windows-x64.zip`, unzip it into a folder you can write to and start
-`Halo 2 Map Converter.exe`, or open a command prompt in the unzipped `Halo2MapConverter` folder and run `h2conv.exe paths` to see which folders
-were found.  Keep the files of the folder together.  The programs are not code-signed, so Windows SmartScreen or an antivirus program may warn
-the first time (check the zip against `SHA256SUMS.txt`: `certutil -hashfile <zip> SHA256`).  `README-WINDOWS.txt` in the folder says the rest.
+**Windows zip:** download `Halo2-Map-Converter-0.2.0-windows-x64.zip`, unzip it into a folder you can write to and start
+`Halo 2 Map Converter.exe`, or open a command prompt in the unzipped `Halo2MapConverter` folder and run `h2conv.exe paths`.  Keep the files of the
+folder together.  The programs are not code-signed, so Windows SmartScreen or an antivirus program may warn the first time (check the zip
+against `SHA256SUMS.txt`: `certutil -hashfile <zip> SHA256`).
 
-**Source:**
-
-1. Download `Halo2-Map-Converter-0.1.0.zip` from this release and unzip it.
-2. `py -3 -m pip install -r requirements.txt`
-3. Open a command prompt in the unzipped folder, run `py -3 -m h2conv.paths` to see which folders were found, and follow the
-   Quick start in [README.md](README.md).
-
-## Not included in this release
-
-* An installer, code signing or automatic updates.
-* Extracting tags from maps or injecting tags into maps; BSP, model or Blender export.  These belong to a separate project.
-* Uploading to Steam Workshop or anywhere else.
-* The game files.  You need your own copies of the games.
+**Source:** download `Halo2-Map-Converter-0.2.0.zip`, unzip it, run `py -3 -m pip install -r requirements.txt`, then `py -3 -m h2conv paths`
+and follow the Quick start in `README.md`.
 
 ## Checksums
 
-The SHA-256 of each release archive (the Windows zip `Halo2-Map-Converter-0.1.0-windows-x64.zip` and the source
-`Halo2-Map-Converter-0.1.0.zip`) is in `SHA256SUMS.txt`, attached to this release.
+The SHA-256 of each archive (`Halo2-Map-Converter-0.2.0-windows-x64.zip` and `Halo2-Map-Converter-0.2.0.zip`) is in `SHA256SUMS.txt`,
+attached to this release.
 
 ## Credits and licence
 
-Copyright (C) 2026 harctheshark.  The converter's own code is under the GNU General Public License, version 3 or later; the bundled
-Assembly layout files are GPL-3.0, so the download as a whole is distributed under the GPL, version 3.  See `LICENSE` and `NOTICE`.  The
-release also bundles libopus (BSD-3-Clause) and layouts derived from HABT (MIT); see `THIRD_PARTY_NOTICES.md`.  Credits:
-see README.  Unofficial fan project, not affiliated with Microsoft, Xbox Game Studios, 343 Industries / Halo Studios, Bungie, the
-Project Cartographer team, the Assembly project or Excession.  Get the map author's permission before you share a converted map.
+Copyright (C) 2026 harctheshark.  The converter's own code is under the GNU General Public License, version 3 or later; the bundled Assembly
+layout files are GPL-3.0, so the download as a whole is distributed under the GPL, version 3.  See `LICENSE` and `NOTICE`.  The release also
+bundles libopus (BSD-3-Clause) and layouts derived from HABT (MIT); see `THIRD_PARTY_NOTICES.md`.  Unofficial fan project, not affiliated
+with Microsoft, Xbox Game Studios, 343 Industries / Halo Studios, Bungie, the Project Cartographer team, the Assembly project or Excession.
+Get the map author's permission before you share a converted map.
+
+---
+
+## Earlier release: 0.1.0 (pre-release)
+
+First public release: a Windows zip (the window program and the command-line program, no Python needed) and the source.
+
+* MCC to Vista and Vista to MCC conversion of stock and community maps, and batch mode over a whole folder tree (`py -3 -m h2conv.batch`),
+  with Excession mod packages for Vista to MCC results.
+* Custom Vista shaders carried to MCC by a faithful port of their Direct3D 9 code to MCC's Direct3D 11 format, instead of look-alike shaders.
+* One entry point, `py -3 -m h2conv <command>` (`h2conv.exe <command>` in the Windows zip); the window program scans a folder tree and
+  converts every Halo 2 map it finds.
+* Built-in checks on every output, safe-by-default writing, and a run over 484 community Vista maps that converted all of them with a clean
+  package validation.
+* Tag layouts of Assembly (GPL-3.0) and libopus (BSD-3-Clause) bundled.  MCC maps that needed a custom `shared.map` were not supported.
+
+The full 0.1.0 notes are in the repository history (the commit "Halo 2 Map Converter 0.1.0").

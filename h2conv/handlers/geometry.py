@@ -19,7 +19,8 @@ MCC -> Vista differences (all measured):
     payloads - MOPP / reorder code - land on the same absolute block offset, so their padding grows);
   * every other site (ltmp Geometry Buckets, sbsp Decorators, DECR, PRTM, weat, mode PRT Info, scnr / dc*s decorators,
     ugh! lipsync Extra Info) has the same section struct, so its block is bit-identical apart from float noise.
-The vertex / index / part payload bytes are copied untouched.
+The vertex / index / part payload bytes are copied untouched (exceptions: the MSVC-fill / padding scrubs below, and
+repair_zero_tangent_frames for a custom render model with no UV mapping).
 
 Public API
     SITES                                  the table of all geometry_block_info users
@@ -266,18 +267,87 @@ def scrub_vertex_padding(entries, pays):
     return out, changed
 
 
-def convert_block(kind, blk, entries, sds, rds, strict=False, stats=None):
+DECL_NBT = 25                 # vertex declaration 25: normal, binormal, tangent (f32 x 3 each, stride 36) - render-model sections too
+NBT_STRIDE = 36
+
+
+def repair_zero_tangent_frames(entries, pays, allow=None):
+    """A render-model section whose declaration-25 buffer has an ALL-ZERO binormal and tangent in EVERY vertex (black_boxes, 2026-10-20).
+
+    The H2EK exporter writes that for a mesh without a UV mapping (a street prop, `streetobj_signal_transmitter`: all 209 vertices have
+    the texcoord (0, 1) and zero tangent / binormal, normals are fine).  MCC's DX11 shaders do not need the tangent frame for the
+    object lighting; Vista's D3D9 vertex shaders (`lightmap_dynamic_*`: `oT3` = dot(tangent / binormal / normal, light direction), view
+    vector in oD0) collapse to the normal component, so a dynamically lit object (no ltmp Scenery Object Info record: every
+    placement of an H2EK map that is not lightmapped) has black sides.  Stock Vista has such models only as baked / cinematic /
+    invisible props (soccer_ball, lift tubes ...), which the caller leaves alone because they have a Vista twin by name.
+
+    Rewrites binormal / tangent of such a buffer with an orthonormal frame around the vertex normal (axis least parallel to the
+    normal, Gram-Schmidt; binormal = tangent x normal: the sign of 72 % of the stock Vista vertices).  Buffers where any vertex
+    already has a tangent or binormal, and vertices without a unit normal, are left untouched.
+    allow: optional callable evaluated only when a buffer qualifies (the caller's "no Vista twin" test is expensive); False = leave it.
+    Returns the new payload list and the number of vertices rewritten."""
+    vbdefs = {}
+    for e, p in zip(entries, pays):
+        if e.type == RES_TAG_BLOCK and e.secondary == VB_DEF_SIZE:
+            vbdefs[e.primary] = p
+    out = list(pays)
+    fixed = 0
+    for i, e in enumerate(entries):
+        if e.type != RES_VERTEX_BUFFER or e.secondary < 0:
+            continue
+        d = vbdefs.get(e.primary)
+        if d is None or (e.secondary + 1) * VB_DEF_SIZE > len(d):
+            continue
+        decl, stride = d[e.secondary * VB_DEF_SIZE], d[e.secondary * VB_DEF_SIZE + 1]
+        p = pays[i]
+        if decl != DECL_NBT or stride != NBT_STRIDE or not p or len(p) % NBT_STRIDE:
+            continue
+        n = len(p) // NBT_STRIDE
+        if any(any(p[v * NBT_STRIDE + 12:(v + 1) * NBT_STRIDE]) for v in range(n)):
+            continue                                   # at least one vertex has a tangent frame: a real mapping, leave it alone
+        if allow is not None and not allow():
+            continue
+        b = bytearray(p)
+        cnt = 0
+        for v in range(n):
+            o = v * NBT_STRIDE
+            nx, ny, nz = struct.unpack_from('<3f', b, o)
+            ln = (nx * nx + ny * ny + nz * nz) ** 0.5
+            if not (0.9 < ln < 1.1):
+                continue
+            nx, ny, nz = nx / ln, ny / ln, nz / ln
+            ax, ay, az = (1.0, 0.0, 0.0) if abs(nx) < 0.9 else (0.0, 1.0, 0.0)
+            d_ = ax * nx + ay * ny + az * nz
+            tx, ty, tz = ax - d_ * nx, ay - d_ * ny, az - d_ * nz
+            tl = (tx * tx + ty * ty + tz * tz) ** 0.5
+            tx, ty, tz = tx / tl, ty / tl, tz / tl
+            bx, by, bz = ty * nz - tz * ny, tz * nx - tx * nz, tx * ny - ty * nx          # tangent x normal
+            struct.pack_into('<6f', b, o + 12, bx, by, bz, tx, ty, tz)
+            cnt += 1
+        if cnt:
+            out[i] = bytes(b)
+            fixed += cnt
+    return out, fixed
+
+
+def convert_block(kind, blk, entries, sds, rds, strict=False, stats=None, repair_tbn=False):
     """Convert one MCC raw block to the Vista block.
 
     kind    'mode' | 'bsp' | 'plain'
     blk     the MCC 'blkh'...'fklb' bytes;   entries  list of Entry (decode_entry of the MCC Resources block)
     sds/rds the MCC info numbers;   stats  optional Counter receiving the scrub counters
+    repair_tbn  kind 'mode' only: True or a callable (evaluated lazily, see repair_zero_tangent_frames) = give an all-zero tangent
+                frame an orthonormal one; default False = payloads are copied untouched
     Returns (vista block bytes, vista Entry list, vista sds, vista rds)."""
     sd, pays = split_block(blk, sds, rds, entries)
     nsd, drops = convert_section(kind, sd, strict)
     scr = [scrub_payload(e, p) for e, p in zip(entries, pays)]
     pays = [p for p, _n in scr]
     pays, pad = scrub_vertex_padding(entries, pays)
+    if repair_tbn and kind == 'mode':
+        pays, nfix = repair_zero_tangent_frames(entries, pays, repair_tbn if callable(repair_tbn) else None)
+        if stats is not None:
+            stats['geometry_zero_tbn_vertices_repaired'] += nfix
     if stats is not None:
         stats['geometry_cd_tail_bytes_zeroed'] += sum(n for _p, n in scr)
         stats['geometry_vertex_padding_bytes_zeroed'] += pad
@@ -411,6 +481,34 @@ def estimate_empty_numbers(kind, sds, rds, entries):
     return vsz, rds, entries
 
 
+def _tbn_repair_gate(ctx, kind):
+    """None (no repair) or the lazy predicate for repair_zero_tangent_frames: only a render model that the plan CONVERTS and that has
+    no Vista twin by name in any Vista map (custom content; a stock model keeps the Vista tool's data - the stock lockout goldens
+    stay byte-identical).  Switch: ctx.opts['repair_zero_tbn'] (default on)."""
+    if kind != 'mode':
+        return None
+    if not (getattr(ctx, 'opts', None) or {}).get('repair_zero_tbn', True):
+        return None
+    ent = getattr(ctx, 'cur_entry', None)
+    if ent is None or getattr(ent, 'action', None) != 'convert' or getattr(ent, 'group', None) != 'mode':
+        return None
+
+    def allow():
+        try:
+            from .. import donor
+            if donor.find(ctx, 'mode', ent.name) is not None:
+                return False
+        except Exception:                      # no Vista maps folder / test ctx: do not touch the data
+            return False
+        _stat(ctx, 'geometry_zero_tbn_models')
+        if hasattr(ctx, 'warn'):
+            ctx.warn('geometry_zero_tangent_frames_repaired',
+                     'render model without a UV mapping (every vertex has a zero tangent / binormal): orthonormal frame written, '
+                     'Vista\'s dynamic-lighting vertex shaders would otherwise light it black')
+        return True
+    return allow
+
+
 def convert_info(ctx, kind, mcc_info36, mcc_entry_bytes, owner_datum=None, strict=False):
     """Convert one geometry_block_info.
 
@@ -432,8 +530,9 @@ def convert_info(ctx, kind, mcc_info36, mcc_entry_bytes, owner_datum=None, stric
     key = (bo, bs, sds, rds, tuple(mcc_entry_bytes), kind)
     blk, cache = read_mcc_block(ctx, bo, bs, sds, rds)
     toks = _tokens(ctx)
-    tkey = (id(cache), key)
-    nblk, nent, nsds, nrds = convert_block(kind, blk, entries, sds, rds, strict, getattr(ctx, "stats", None))
+    gate = _tbn_repair_gate(ctx, kind)
+    tkey = (id(cache), key, gate is not None)
+    nblk, nent, nsds, nrds = convert_block(kind, blk, entries, sds, rds, strict, getattr(ctx, "stats", None), repair_tbn=gate or False)
     if kind == 'bsp':
         _numbers(ctx).setdefault((sds, rds), set()).add((nsds, nrds))
     token = toks.get(tkey)

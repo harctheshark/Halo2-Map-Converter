@@ -52,7 +52,7 @@ DIRECTION_LABELS = OD([
 # plain words for the machine codes of h2conv.batch / h2conv.mapinfo
 SKIP_WORDS = OD([
     ('database', 'game database (shared / mainmenu), not a playable map'),
-    ('custom_shared', 'needs a custom shared.map - not supported, skipped'),
+    ('custom_shared_missing', 'needs a custom shared.map that was not found next to the mod - skipped'),
     ('duplicate', 'byte-identical copy of another map'),
     ('up_to_date', 'already converted (tick "convert again" to redo it)'),
     ('exists', 'the output file already exists (tick "replace" to overwrite it)'),
@@ -268,7 +268,7 @@ class ScanResult(object):
         self.to_mcc2vista = [i for i in self.items if i.action == 'convert' and i.direction == 'mcc2vista']
         self.skipped = collections.Counter(i.code for i in self.items if i.action == 'skip')
         self.invalid = [i for i in self.items if i.action == 'invalid']
-        self.custom_shared = [r for r in records if r.status == 'skip' and r.code == 'custom_shared']
+        self.custom_shared = [r for r in records if r.status == 'skip' and r.code == 'custom_shared_missing']
 
     @property
     def n_convert(self):
@@ -876,7 +876,7 @@ class Controller(object):
         if res.to_mcc2vista and not (f['vista_out'].path and f['vista_out'].ok):
             errs.append('Choose your Halo 2 Maps folder: %s' % (f['vista_out'].message or 'not set'))
         if res.custom_shared:
-            warns.append('%d MCC map(s) need a custom shared.map. That is not supported: they are listed and skipped.' % len(res.custom_shared))
+            warns.append('%d MCC map(s) need a custom shared.map that was not found next to the mod: they are listed and skipped (multiplayer maps whose mod ships the shared.map, and maps that use none of its tags, are converted).' % len(res.custom_shared))
         for label, n, est, free, folder in self.estimate(res):
             if free is not None and est > free:
                 warns.append('%s: about %s of output is expected for %d map(s), but only %s are free where it will be written (%s).'
@@ -1297,7 +1297,8 @@ class App(object):
         self.btn_copy = ttk.Button(self.tab_sum, text='Copy summary', command=self.on_copy_summary)
         self.btn_copy.grid(row=3, column=0, sticky='w')
 
-        ttk.Label(main, text='MCC maps that need a custom shared.map are not supported: they are listed and skipped. '
+        ttk.Label(main, text='MCC multiplayer maps whose mod ships its own shared.map are converted; campaign maps and maps whose custom shared.map '
+                             'cannot be found are listed and skipped. '
                              'A map that fails is skipped and the batch carries on; the Summary tab lists what failed.',
                   wraplength=wrap, justify='left', foreground='#555555').grid(row=7, column=0, sticky='ew', pady=(6, 0))
 
@@ -1610,7 +1611,7 @@ class App(object):
         if res.skipped_text():
             head += '  ' + res.skipped_text()
         if res.custom_shared:
-            head += '  %d MCC map(s) need a custom shared.map and are skipped.' % len(res.custom_shared)
+            head += '  %d MCC map(s) need a custom shared.map that was not found and are skipped.' % len(res.custom_shared)
         if res.error:
             head += '  (%s)' % res.error
         self.var_headline.set(head)

@@ -356,8 +356,27 @@ def out_label(ctx, datum):
 # ================================================================================================
 # remapping a decoded donor tree into the output
 # ================================================================================================
-def remap_tree(ctx, root, cache, label=None):
+def _shared_slot_datum(ctx, cache, dat, lab):
+    """Output datum of a reference inside a CLONE of a Vista shared tag (PlanEntry.shared_refs): the clone hudg's local datum, else the
+    shared slot itself (same index + datum as shared.map) provided the plan lists it as a shared placeholder.  NEVER resolved by name: a
+    local tag that shadows a shared tag must not capture the clone's references.  NULL when the slot is not listed."""
+    plan = getattr(ctx, 'plan', None)
+    if lab is not None:
+        fn = getattr(plan, 'shared_clone_datum', None)
+        local = fn(lab[0], lab[1]) if callable(fn) else None
+        if local is not None:
+            return local
+    if os.path.basename(cache.path).lower() != 'shared.map':
+        return NULL
+    listed = getattr(plan, 'shared_listed', None)
+    if callable(listed) and not listed(dat & 0xFFFF):
+        return NULL
+    return dat
+
+
+def remap_tree(ctx, root, cache, label=None, shared_refs=False):
     """In place: tag references -> output datums (by (group, name)), string ids -> output ids (by text).
+    shared_refs=True (a clone of a Vista shared tag): references stay on the shared slots instead (see _shared_slot_datum).
     Idempotent per tree only if called once (it rewrites ids)."""
     stats = ctx.stats
     for n in _unique_nodes(root):
@@ -382,7 +401,9 @@ def remap_tree(ctx, root, cache, label=None):
                 continue
             lab = tag_label(cache, dat)
             nd = NULL
-            if lab is not None:
+            if shared_refs:
+                nd = _shared_slot_datum(ctx, cache, dat, lab)
+            elif lab is not None:
                 nd = out_datum(ctx, lab[0], lab[1])
             stats['donor_refs'] += 1
             if nd == NULL:
@@ -487,8 +508,15 @@ def import_donor(ctx, d, entry=None):
         ctx.cur_entry = entry
     try:
         root = ctx.decode_vista(d.cache, d.tag)
-        remap_tree(ctx, root, d.cache, label)
+        shared_refs = bool(getattr(entry, 'shared_refs', False))
+        remap_tree(ctx, root, d.cache, label, shared_refs=shared_refs)
         relocate_raw(ctx, root, d.cache, label)
+        if shared_refs and root.group == 'hudg':
+            _strip_training(ctx, root, label)
+        if shared_refs and root.group == 'matg':
+            ex = getattr(ctx, 'extra', None)
+            if ex is not None:
+                ex.setdefault('clone_matg_nodes', []).append(root)       # handlers/locale.py keeps the clone's language-entry tail dwords
         hook = _POST_HOOKS.get(root.group)
         if hook is None and root.group == 'shad':
             _load_shader_hooks()
@@ -500,6 +528,22 @@ def import_donor(ctx, d, entry=None):
         return root
     finally:
         ctx.cur_entry = prev
+
+
+def _strip_training(ctx, root, label=None):
+    """Training off: empty the hudg 'Player Training Data' block (the only change of the cloned Vista hudg; handlers/gameplay.hudg_root
+    does the same for a converted hudg).  The planner only creates such a clone when training is off."""
+    f = next((x for x in root.fields if x.name and x.name.lower() == 'player training data'), None)
+    if f is None:
+        ctx.warn('gp_hudg_training_field', 'hudg clone has no Player Training Data block', label)
+        return 0
+    n = len(root.blocks.get(f.offset) or [])
+    root.blocks[f.offset] = []
+    root.set_i32(f.offset, 0)
+    ctx.stats['gp_hudg_training_entries_removed'] += n
+    ctx.warn('gp_hudg_training_disabled', 'hudg Player Training Data emptied (%d entries; the game shows no tutorial prompts; '
+                                          '--keep-training keeps them)' % n, label)
+    return n
 
 
 def _load_shader_hooks():

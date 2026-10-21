@@ -146,7 +146,17 @@ def check_map(path, profile="mp_custom", deep=True, maps_dir=None):
     # ---- globals / scenario
     gi = c.globals_datum & 0xFFFF; si = c.scenario_datum & 0xFFFF
     if gi >= n or c.tags[gi].group != "matg": R.add("ERROR", "M001", "globals datum 0x%08X is not a matg tag" % c.globals_datum)
-    elif gi < K["FIRST_SHARED_INDEX"] and h.type == 1: R.add("WARN", "M002", "matg is LOCAL (index %d): works (10 community MP maps do it) but the vanilla list validator fails -> list entry uses the header name, no description/preview" % gi)
+    elif gi < K["FIRST_SHARED_INDEX"] and h.type == 1:
+        # A local matg only works while the Vista shared matg closure stays listed as shared placeholders: Cartographer's seasonal events
+        # and its skeleton biped inject content that reaches shared slots BY INDEX (jmad masterchief 10231, ligh flashlight_3p 10435).
+        # Slot 10231 empty = the Halloween skeleton biped cannot be created = the player never spawns (chronopolis, 2026-10-20).
+        jm = None
+        if n >= K["FIRST_SHARED_INDEX"]:
+            jm = next((t for t in _shared().tags if t.group == "jmad" and t.addr and (t.name or "").lower() == "objects\\characters\\masterchief\\masterchief"), None)
+        if jm is not None and (jm.index >= n or c.tags[jm.index].datum == 0xFFFFFFFF):
+            R.add("ERROR", "M002", "matg is LOCAL (index %d) and the Vista shared matg closure is NOT listed: shared slot %d (jmad objects\\characters\\masterchief\\masterchief) is empty, so Cartographer's skeleton biped / seasonal events cannot create the player (black screen, never spawns); re-convert with the planner that lists the closure" % (gi, jm.index))
+        else:
+            R.add("WARN", "M002", "matg is LOCAL (index %d): works only while the Vista shared matg closure stays listed (Cartographer's seasonal events and skeleton biped reach shared content by slot index); the vanilla list validator fails (halo2.exe 0x44F942: globals datum index must be >= 10000, a shared matg - local data cannot live in a shared slot, sub_4311AF overwrites it from shared.map) -> the list entry shows the HEADER name %r (the converter writes the MCC MapInfo title / --display-name there, else the file stem), no description/preview" % (gi, c.header.name))
     if si >= n or c.tags[si].group != "scnr": R.add("ERROR", "M003", "scenario datum is not a scnr tag")
     elif si >= K["FIRST_SHARED_INDEX"]: R.add("ERROR", "M004", "scenario tag must be local")
     # ---- bitmaps

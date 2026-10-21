@@ -445,9 +445,33 @@ def convert_map(src_path, out_path, vista_maps=None, self_contained=False, repor
     opts['vista_maps'] = vista_maps
     # the MCC side must be complete BEFORE planning: a missing textures.dat would make the planner compare every bitmap as "different"
     # (and link or copy the wrong tags) without a single error
+    if not (opts.get('mcc_maps_dir') or opts.get('mcc_dat_dir')):
+        # a map of a mod built against a custom shared.map but using none of its tags (mapinfo: ok, data_dir): its bitmaps / sounds are in the
+        # mod's own textures.dat / sounds_*.dat (<mod>\halo2\h2_maps_win64_dx11), not in the installed game's
+        try:
+            from . import mapinfo as _MI
+            _rec = _MI.identify(src_path)
+            if _rec.status == 'ok' and _rec.data_dir:
+                opts['mcc_maps_dir'] = opts['mcc_dat_dir'] = _rec.data_dir
+                _log(opts, 'MCC data folder (the mod\'s own textures.dat / sounds_*.dat): %s' % _rec.data_dir)
+            if _rec.status == 'ok' and _rec.custom_shared_map and not opts.get('shared_map'):
+                opts['shared_map'] = _rec.custom_shared_map
+                _log(opts, 'custom shared.map of the mod (its tags are compared with the stock one): %s' % _rec.custom_shared_map)
+        except Exception:                                    # noqa: BLE001 - detection only; the installed game's folder is the fallback
+            pass
+    # the STOCK textures.dat / sounds_*.dat folder (custom-shared planning compares the mod's bitmaps and sounds with the stock ones; --mcc-maps names
+    # the MOD's folder there, so this must not come from it)
+    if not opts.get('stock_dat_dir'):
+        try:
+            opts['stock_dat_dir'] = _paths.stock_mcc_maps_dir()
+        except Exception:                                    # noqa: BLE001
+            opts['stock_dat_dir'] = None
     dat_dir = _paths.require_mcc_files(('textures.dat',), opts.get('mcc_maps_dir') or opts.get('mcc_dat_dir'))
     opts.setdefault('mcc_dat_dir', dat_dir)               # one folder for textures.dat / sounds_*.dat everywhere (planner, bitmaps, sounds)
     opts['matg'] = MATG_MODES.get(opts.get('matg') or 'hud', opts.get('matg'))
+    # training is OFF unless --keep-training / H2CONV_KEEP_TRAINING: the planner then gives an MP map whose globals would be linked its own
+    # training-less copy of Vista's matg + hudg (planner._setup_training_globals), gameplay.hudg_root empties a converted hudg
+    opts['training_off'] = not (opts.get('keep_training') or os.environ.get('H2CONV_KEEP_TRAINING'))
     log = lambda m: _log(opts, m)                                  # noqa: E731
     name_opt = opts.get('name')
     if name_opt:
@@ -476,7 +500,10 @@ def convert_map(src_path, out_path, vista_maps=None, self_contained=False, repor
     if len(stem) > LIM.MAP_STEM_MAX:
         log('WARNING: the file stem %r is longer than %d characters - Cartographer skips such files in its custom map list' % (stem, LIM.MAP_STEM_MAX))
     report['output'] = out_path
-    mcc_shared = X.MccShared([opts.get('mcc_maps_dir'), os.path.dirname(os.path.abspath(src_path))])
+    # the shared.map the input was built against: the explicit one (--shared-map / mapinfo's custom_shared_map), else the file with the creation time
+    # the map recorded (header 0x50..0x60) among the usual folders, else the first one found (as before)
+    mcc_shared = X.MccShared([opts.get('mcc_maps_dir'), os.path.dirname(os.path.abspath(src_path))], shared_map=opts.get('shared_map'),
+                             want_times=src.header['shared_creation_time'])
     vista = X.VistaRefs(vista_maps)
     map_type = src.header['scenario_type']
     mask = MP_MASK if map_type == 1 else 0
@@ -486,7 +513,7 @@ def convert_map(src_path, out_path, vista_maps=None, self_contained=False, repor
     report['planner'] = planner_name
     report['options'] = {k: v for k, v in sorted(opts.items()) if k in (
         'name', 'display_name', 'matg', 'self_contained', 'pull_mcc_only', 'sound_workers', 'no_sound_cache', 'sound_language',
-        'havok_rcp', 'only_groups', 'no_handlers', 'limit', 'taint_ignore') and (v not in (None, False) or k == 'taint_ignore' and v == ())}
+        'havok_rcp', 'only_groups', 'no_handlers', 'limit', 'taint_ignore', 'keep_training') and (v not in (None, False) or k == 'taint_ignore' and v == ())}
     ctx = X.Ctx(src, mcc_shared, vista, plan, strs, opts=opts, map_type=map_type)
     ctx.extra['out_path'] = out_path
     ctx.extra['converted'] = {}
@@ -705,7 +732,14 @@ def build_file(ctx, plan, strs, converted, src, vista, vista_maps, mask, map_typ
     secondary_ugh = header_secondary_ugh(ctx, plan, map_type)
     scen_name = src.header['scenario_name'] or src.header['internal_name']
     name = opts.get('name') or (src.header['internal_name'] or os.path.splitext(os.path.basename(scen_name.replace('\\', '/')))[0])[:31]
-    hdr = W.new_header(name, scen_name, map_type=map_type, build=VISTA_BUILD, uses_shared=uses,
+    # header name (0x1A4) = what Cartographer's custom map list shows whenever the vanilla list validator fails, i.e. for every map with a
+    # LOCAL matg (the default since the training-off change): the MCC MapInfo title / --display-name instead of the file stem.  The file
+    # name is untouched; an explicit `--name` (CLI) keeps its value unless --display-name is given.  Stock maps (no ModInfo.json) keep the stem.
+    hdr_name, hdr_name_src = name, 'stem'
+    if map_type == 1 and (opts.get('display_name') or not opts.get('name_explicit')):
+        from .handlers import mp_level_names as _MN
+        hdr_name, hdr_name_src = _MN.list_header_name(getattr(src, 'source_path', None), opts, name)
+    hdr = W.new_header(hdr_name, scen_name, map_type=map_type, build=VISTA_BUILD, uses_shared=uses,
                        shared_creation_time=shared_ct, secondary_ugh_tag_index=secondary_ugh)
     groups = W.groups_from_stock(os.path.join(vista_maps, 'shared.map'))
     b = W.VistaBuilder(hdr, groups, tag_offset_mask=mask)
@@ -814,7 +848,7 @@ def build_file(ctx, plan, strs, converted, src, vista, vista_maps, mask, map_typ
     img = b.build_image()
     img.mopp_checksum = 'compute' if map_type == 1 else 0
     write_atomic(img, out_path, opts.get('overwrite', True))
-    return {'name': name, 'scenario_path': scen_name, 'type': map_type, 'uses_shared': uses, 'tag_count': tag_count,
+    return {'name': name, 'header_name': hdr_name, 'header_name_source': hdr_name_src, 'scenario_path': scen_name, 'type': map_type, 'uses_shared': uses, 'tag_count': tag_count,
             'local_tags': len(plan.entries), 'tag_data_bytes': len(tag_data), 'strings': len(strs.strings),
             'raw_sounds': sum(1 for k, _d in ctx.raws if k == 'sound'),
             'raw_geometry': sum(1 for k, _d in ctx.raws if k == 'geometry'),
@@ -825,7 +859,7 @@ def build_file(ctx, plan, strs, converted, src, vista, vista_maps, mask, map_typ
 
 def print_report(rep, log):
     log('--- conversion report ---')
-    for k in ('output', 'name', 'scenario_path', 'type', 'tag_count', 'local_tags', 'tag_data_bytes', 'strings', 'raw_sounds',
+    for k in ('output', 'name', 'header_name', 'header_name_source', 'scenario_path', 'type', 'tag_count', 'local_tags', 'tag_data_bytes', 'strings', 'raw_sounds',
               'raw_geometry', 'raw_bitmaps', 'out_size', 'sha256', 'peak_rss_mb'):
         if k in rep:
             log('  %-16s %s' % (k, rep[k]))
@@ -874,10 +908,16 @@ def main(argv=None):
     ap.add_argument('--display-name', default=None, metavar='TEXT',
                     help='text of the localized map name shown in the custom map list (all 8 languages), <=31 chars')
     ap.add_argument('--matg', choices=('hud', 'link', 'local', 'auto'), default='hud',
-                    help="globals tag: hud (default) = local globals only when the map's HUD text (matg -> hudg -> unic, e.g. custom pickup "
-                         "prompts) is customised, else Vista's shared globals; link = always Vista's shared globals (full list entry, "
-                         "MCC edits to the globals/HUD are NOT carried over); local = always convert the input's globals; auto = local "
-                         "if the input's globals differ from the stock MCC ones")
+                    help="globals tag: hud (default) = the input's globals converted locally when the map's HUD text (matg -> hudg -> unic, e.g. "
+                         "custom pickup prompts) is customised, else Vista's globals; link = Vista's globals, the MCC edits to the globals/HUD "
+                         "are NOT carried over; local = always convert the input's globals; auto = local if the input's globals differ from "
+                         "the stock MCC ones.  Where Vista's globals are used, training off (the default) gives the map its OWN byte-faithful "
+                         "copy of Vista's matg + hudg without the training block (a LOCAL globals tag, like chronopolis); only with "
+                         "--keep-training are they the shared tags themselves (full custom-map list entry)")
+    ap.add_argument('--keep-training', action='store_true',
+                    help="keep the tutorial prompts ('hold X to ...'); by default EVERY multiplayer map gets no hudg training entries, "
+                         "because the prompts draw as an empty square on converted maps (a map whose matg would be linked gets its own "
+                         "training-less copy of Vista's matg + hudg instead; with this switch --matg link/hud use the shared tags unchanged)")
     ap.add_argument('--self-contained', action='store_true', help='do not link to the Vista shared.map (copies every dependency; experimental, much larger file)')
     ap.add_argument('--no-pull-mcc-only', action='store_true',
                     help='drop MCC-only objects (mongoose, falcon, ...) that a stock MCC map references instead of converting them: '
@@ -887,6 +927,10 @@ def main(argv=None):
                          "(256x256 in the H2EK kit tags, 16x16 in every shipped map; by default it does not taint, so ~300 tags are "
                          "linked to Vista's shared tags instead of copied)")
     _paths.add_common_options(ap, mcc=True, vista=True, assembly=True)
+    ap.add_argument('--shared-map', default=None, metavar='FILE',
+                    help='the CUSTOM shared.map (Steam-workshop mod) this multiplayer map was built against; default: found automatically (the file with the '
+                         'creation time the map recorded, next to the map / in <mod>\\halo2\\h2_maps_win64_dx11).  Its tags are compared with the '
+                         'stock MCC shared.map: the changed ones and everything that references them are copied, the rest is linked to Vista\'s')
     ap.add_argument('--overwrite', action='store_true', help='replace the output file (and the --report file) when it already exists; by default an existing file is never touched')
     ap.add_argument('--version', action='version', version='Halo 2 Map Converter %s' % __version__)
     ap.add_argument('--report', default=None, help='write the conversion report (JSON; includes the SHA-256 of the output)')
@@ -917,14 +961,17 @@ def main(argv=None):
             'standin_plan': a.standin_plan, 'limit': a.limit, 'debug': a.debug, 'mcc_maps_dir': a.mcc_maps,
             'force_output_dir': a.force_output_dir, 'overwrite': a.overwrite, 'no_deep_validate': a.no_deep_validate, 'no_limits_check': a.no_limits_check,
             'no_invariants': a.no_limits_check,
-            'matg': a.matg, 'name': a.name, 'display_name': a.display_name, 'sound_workers': a.sound_workers,
-            'no_sound_cache': a.no_sound_cache, 'sound_language': a.sound_language, 'havok_rcp': a.havok_rcp}
+            'matg': a.matg, 'name': a.name, 'name_explicit': bool(a.name), 'display_name': a.display_name, 'sound_workers': a.sound_workers,
+            'no_sound_cache': a.no_sound_cache, 'sound_language': a.sound_language, 'havok_rcp': a.havok_rcp,
+            'keep_training': a.keep_training}
     if a.no_pull_mcc_only:
         opts['pull_mcc_only'] = False
     if a.no_taint_ignore:
         opts['taint_ignore'] = ()
     if a.mcc_maps:
         opts['mcc_dat_dir'] = a.mcc_maps
+    if a.shared_map:
+        opts['shared_map'] = os.path.abspath(a.shared_map)
     if a.groups:
         opts['only_groups'] = set(a.groups.split(','))
     try:

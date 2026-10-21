@@ -119,6 +119,8 @@ one rebuilds its output from the source tag, so running it twice gives the same 
 | **gameplay tables** (`matg`, `mulg`, `scnr`, `hudg`, `char`, `goof`, `jmad` ...) | lists the two games size differently (multiplayer weapon lists, game type settings, damage groups, HUD globals), MCC-only slots, tables the engine binary-searches (section 11) |
 | **computed fields** | lists the tools compute rather than the author (per-model node flags, predicted resources) are recomputed the way the target game's tool does |
 | **locale** | the eight (Vista) or nine (MCC) language packs and the header language block |
+| **HUD bitmap scale** (0.2.0) | MCC halves the draw size of its crosshair atlas (`hud_reticles`) by name; Vista draws bitmaps at their real size.  A map-supplied atlas that is really twice the size of Vista's is area-averaged to half (`handlers/hud_scale.py`) |
+| **map-list names** (0.2.0) | `handlers/mp_level_names.py` fills empty scenario multiplayer name / description fields from the map's own text, and the converter writes the MCC menu title into the header name (Cartographer's fallback for a map with local globals) |
 
 ## 6. The planner: deciding what goes into the output
 
@@ -140,9 +142,20 @@ datums.  Some of its rules are worth knowing:
   the source map's copy is content-equal to the stock MCC `shared.map` copy.  Otherwise a local, modified copy is written.
   (Having a local copy and a shared placeholder of the same name is legal in Vista: references use whole datums, so each user keeps
   its own copy.)
+* **A custom `shared.map` changes what "unmodified" means (0.2.0).**  A multiplayer map from a workshop mod whose tags live in the mod's own
+  `shared.map` is planned against that file: the converter finds it by the creation time the map recorded, resolves the map's external tags
+  in it, compares each candidate tag with the *stock* MCC `shared.map` copy (the mod's own `textures.dat` and sound files on the mod's side,
+  the installed game's on the stock side), and converts locally what differs plus the tags that depend on it.  The rest still links to
+  Vista's `shared.map`.  Fields that differ between any two MCC builds are ignored in that comparison, so a mod that edits nothing converts
+  to the same output as a stock map.
 * **The globals tag (`matg`) decides much.**  `--matg link` keeps stock-like topology (smaller file, full map-list entry) but loses
   edits the MCC map made to its globals; `--matg local` keeps them but costs the list entry its description and preview.  The
-  default, `--matg hud`, links unless the map customised its HUD text.
+  default, `--matg hud`, uses Vista's globals unless the map customised its HUD text.  Since 0.2.0 the tutorial prompts are off by
+  default (they drew as an empty square), so where Vista's globals would be linked the map gets its own copy of Vista's `matg` and the
+  `hudg` it references, identical except for an empty training list; the shared tags the globals depend on stay listed in the map's
+  placeholder table (without them the player does not spawn when Cartographer's seasonal props are injected).  `--keep-training`
+  links the shared globals again.  A map with a local `matg` is listed by Cartographer under its header name, which the converter
+  sets to the MCC menu title.
 * **MCC-only objects** (for example the silenced SMG family) appear in stock MCC maps; by default they are converted, and
   `--no-pull-mcc-only` drops them so the result matches the stock Vista map of the same name.
 * **Vista to MCC reproduces the layout of an H2EK-built map**: `matg` first, the sound class tags, `scnr`, a depth-first walk of
@@ -280,7 +293,7 @@ Every conversion ends with checks, and the process exit code is 0 only when all 
 
 * **Classification** (`mapinfo.py`) reads only a map's header and decides: convertible Vista map (solo / multiplayer, with its
   build string), convertible MCC map (stock or H2EK style, compressed or not), a database map (`mainmenu`, `shared`,
-  `single_player_shared`: skipped), an MCC map built against a **custom `shared.map`** (skipped on purpose), or not a usable Halo 2 map
+  `single_player_shared`: skipped), an MCC map built against a **custom `shared.map`** (a multiplayer map is converted when the mod's own `shared.map` and `textures.dat` are found, see section 6; any other is skipped on purpose), or not a usable Halo 2 map
   (damaged, wrong game, Xbox or alpha build).  Classifying hundreds of files takes a fraction of a second.
 * **Planning** follows a fixed order: recursive scan (junctions and symlinks are *not* followed), classification, direction and name
   filters, removal of byte-identical duplicates (by size, then SHA-256), names, and resume decisions.  `--dry-run` does exactly this
@@ -340,6 +353,7 @@ or from Project Cartographer's open source engine code; they are not documented 
 | `h2conv\__main__.py` | the single entry point, `py -3 -m h2conv <command>` with the commands convert, rev, batch, mapinfo, excession, validate, limits, invariants, paths and gui; it is also the entry point of `h2conv.exe` in the Windows zip |
 | `h2conv\gui.py` (the window program, `Halo 2 Map Converter.exe` in the Windows zip) | a graphical front end for `h2conv\batch.py`, in two layers: a controller / model that never imports tkinter (settings, the folders, the scan and its dry-run plan, the options, the worker's command line, the progress lines, the summary of a batch report) and a thin tkinter view.  It converts nothing itself: **Convert** starts `batch run ... --isolate` as a worker process (from the Windows zip: `h2conv.exe` beside the window program), reads its output line by line, and builds the end summary from the report the worker writes.  `py -3 -m h2conv gui --selftest` checks the installation without a window |
 | `packaging\` | the Windows build: `h2conv.spec` (PyInstaller; one folder with the two programs), the two entry scripts `packaging\h2conv_cli.py` and `packaging\h2conv_gui.py`, `WINDOWS_README.txt` (copied into the zip as `README-WINDOWS.txt`) and `README.md` (how to build) |
+| `h2conv\mpnames.py` | stand-alone repair tool (`py -3 -m h2conv.mpnames`) for the blank name of an already converted multiplayer map in Cartographer's list |
 | `h2conv\paths.py` | where the converter looks for your games, for Assembly and for its caches (option, environment variable, settings file, auto-detection) |
 
 **Runtime data files.**  Besides the code the converter reads: `h2conv\data\` (shader parameter tables, extra layouts, the enum policy

@@ -16,7 +16,12 @@ planner mistake that undoes a handler is caught too.  Every rule was measured on
                   keeps them); Runtime Code Pointer is 0 or a stock constant
         scripts   the scnr syntax-node table passes handlers.scripts.validate_program (datums, salts, arity, argument types) and the
                   engine limits (36,864 nodes, 1024 scripts, 256 globals)
-        shaders   every local shad mirrors the skeleton of the stem its Template names (handlers.shaders.check_consistency)
+        shaders   every local shad has a Template that resolves to a stem (ERROR sh.null_template / sh.stem_unresolved: a NONE Template crashes
+                  the engine when the shader is drawn) and mirrors the skeleton of that stem (handlers.shaders.check_consistency)
+        spawn     multiplayer maps: the closure of the Vista shared matg is listed as shared placeholders (all 25 stock MP maps do), and, when
+                  mods/maps/carto_shared.map exists, every shared slot that Cartographer-injected content refers to is listed (stock maps'
+                  own misses allowed).  Missing slots (jmad masterchief 10231, ligh flashlight_3p 10435) leave the player uncreatable
+                  under Cartographer's seasonal / skeleton biped (chronopolis, 2026-10-20)
 """
 import ctypes
 try:
@@ -355,13 +360,16 @@ def _check_shaders(F, c, shared, tag, root, decode):
     from .handlers import shaders as SH
     d = root.u32(SH.OFF_TEMPLATE + 4)
     if d in (NULL, 0):
+        # ERROR: the engine's sky / model draw (halo2.exe sub_67FE30) reads Template -> stem+0x58 without a null check; a drawn shader with
+        # no stem crashes the game (cyberdyne_h2 `kilimanjaro`, stone_walls `battle_rifle_plastic`, sweet `water_pool`; 0 in the 44 stock maps)
+        F.add('error', 'sh.null_template', 'shad %s: the Template (stem) is NONE - the engine crashes when this shader is drawn' % tag.name)
         return
     idx = d & 0xFFFF
     src, st = c, (c.tags[idx] if idx < len(c.tags) else None)
     if st is not None and not st.addr and shared is not None and idx < len(shared.tags):
         src, st = shared, shared.tags[idx]
     if st is None or not st.addr or st.group != 'stem' or st.datum != d:
-        F.add('warning', 'sh.stem_unresolved', 'shad %s: Template 0x%08X does not resolve to a stem' % (tag.name, d))
+        F.add('error', 'sh.stem_unresolved', 'shad %s: Template 0x%08X does not resolve to a stem' % (tag.name, d))
         return
     stem_root = decode(src, st)
     probs = SH.check_consistency(root, stem_root)
@@ -371,19 +379,159 @@ def _check_shaders(F, c, shared, tag, root, decode):
 
 
 # --------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------
+# shared slots that Cartographer content reaches BY INDEX (chronopolis no-spawn, 2026-10-20)
+# --------------------------------------------------------------------------------------------------
+# Cartographer injects tags from mods\maps\carto_shared.map (the Halloween 'skeleton' biped, flood, event props ...).  An injected tag
+# that points at a NON-injected tag points at a host SHARED slot (index >= 10000); a slot the map does not list is empty, the reference
+# becomes NONE and e.g. masterchief_skeleton's hlmt loses its jmad (shared 10231): the unit gets no animation manager, object_new fails
+# and the player is never created (black screen, name X-ed out).  Every stock MP map lists the closure of the shared matg (25 of 25).
+CARTO_SHARED_REL = ('mods', 'maps', 'carto_shared.map')
+CARTO_ROOT_GROUPS = ('bipd', 'scen', 'crat', 'eqip', 'weap', 'hlmt', 'vehi', 'mode', 'jmad', 'coll', 'phmo', 'obje', 'ligh', 'item')
+# (group, lower-case name) of the carto_shared references that the stock maps (lockout, headlong, ...) leave empty too: not a defect
+CARTO_STOCK_MISSES = frozenset({
+    ('bitm', 'scenarios\\bitmaps\\solo\\sentinelhq\\shq_gel_fan'),
+    ('bitm', 'scenarios\\bitmaps\\detail_maps\\metal\\scratches'),
+    ('bitm', 'scenarios\\bitmaps\\reflection_maps\\forerunner_interiors'),
+    ('bitm', 'scenarios\\bitmaps\\detail_maps\\metal\\metal_crackle'),           # ascension, beavercreek, burial_mounds, coagulation, elongation, foundation
+    ('hlmt', 'scenarios\\objects\\special\\null_up\\null_up'),
+    ('mode', 'scenarios\\objects\\special\\null_up\\null_up'),
+})
+_SPAWN_MEMO = {}
+
+
+def carto_shared_path(maps_dir=None):
+    """mods\\maps\\carto_shared.map of the Cartographer install that owns `maps_dir` (the stock Vista maps folder), or None."""
+    d = os.path.dirname(os.path.normpath(maps_dir or _paths.vista_maps_dir()))
+    p = os.path.join(d, *CARTO_SHARED_REL)
+    return p if os.path.isfile(p) else None
+
+
+def _ref_scanner():
+    from . import planner as PL
+    return PL.RefScanner(PL.layouts('vista'))
+
+
+def shared_matg_closure(shared):
+    """Set of shared.map tag indexes: the shared matg and every tag it reaches through tagrefs (the set each stock MP map lists)."""
+    key = ('closure', getattr(shared, 'path', id(shared)))
+    hit = _SPAWN_MEMO.get(key)
+    if hit is not None:
+        return hit
+    sc = _ref_scanner()
+    root = next((t for t in shared.tags if not t.is_empty and t.group == 'matg' and t.addr), None)
+    seen, stack = set(), ([root.index] if root is not None else [])
+    while stack:
+        i = stack.pop()
+        if i in seen:
+            continue
+        seen.add(i)
+        t = shared.tags[i]
+        if not t.addr or t.group not in sc.lay:
+            continue
+        for _g, d, _off in sc.scan(shared.read_addr, t.group, t.addr):
+            if d in (0, NULL):
+                continue
+            j = d & 0xFFFF
+            if j < len(shared.tags) and shared.tags[j].datum == d and shared.tags[j].addr:
+                stack.append(j)
+    _SPAWN_MEMO[key] = seen
+    return seen
+
+
+class InjectionMisses(list):
+    """[(group, name, host slot index, (referrer group, referrer name))] of carto_shared references to non-injected tags."""
+    roots = 0
+
+
+def carto_injection_misses(carto_path):
+    """Every host shared slot that the data-bearing carto_shared tags (and what they inject) refer to without carrying the tag
+    themselves; sounds are skipped (they resolve through the gestalt)."""
+    key = ('carto', carto_path, os.path.getmtime(carto_path))
+    hit = _SPAWN_MEMO.get(key)
+    if hit is not None:
+        return hit
+    sc = _ref_scanner()
+    cs = VistaCache(carto_path)
+    out = InjectionMisses()
+    try:
+        by_datum = {t.datum: t for t in cs.tags if not t.is_empty}
+        roots = [t for t in cs.tags if not t.is_empty and t.addr and t.name and t.group in CARTO_ROOT_GROUPS]
+        out.roots = len(roots)
+        done, stack, found = set(), list(roots), {}
+        while stack:
+            t = stack.pop()
+            if t.index in done:
+                continue
+            done.add(t.index)
+            if t.group not in sc.lay:
+                continue
+            for _g, d, _off in sc.scan(cs.read_addr, t.group, t.addr):
+                u = by_datum.get(d)
+                if u is None or u.group in ('snd!', 'lsnd'):
+                    continue
+                if u.addr:
+                    stack.append(u)
+                elif u.index >= 10000:
+                    found.setdefault(u.index, (u.group, u.name or '', u.index, (t.group, t.name or '')))
+        out.extend(found[i] for i in sorted(found))
+    finally:
+        cs.close()
+    _SPAWN_MEMO[key] = out
+    return out
+
+
+def _check_shared_closure(F, listed, shared):
+    """`listed` = shared indexes the map lists as placeholders.  ERROR when part of the Vista shared matg closure is missing."""
+    closure = shared_matg_closure(shared)
+    F.count('shared matg closure tags', len(closure))
+    missing = sorted(closure - set(listed))
+    if not missing:
+        return
+    # the animation graph of the player bipeds first: it is the slot whose absence stops the player from being created
+    missing.sort(key=lambda i: (0 if (shared.tags[i].group == 'jmad' and (shared.tags[i].name or '').lower().endswith('\\masterchief\\masterchief')) else 1, i))
+    first = ['%s %s (#%d)' % (shared.tags[i].group, shared.tags[i].name, i) for i in missing[:4]]
+    F.add('error', 'spawn.matg_closure',
+          '%d of the %d tags in the Vista shared matg closure are not listed as shared placeholders (first: %s); every stock MP map lists '
+          'them and Cartographer content (seasonal events, the skeleton biped) reaches them by slot index: the reference becomes NONE and '
+          'the player cannot be created' % (len(missing), len(closure), '; '.join(first)))
+
+
+def _check_carto_injection(F, listed, misses):
+    """ERROR when a carto_shared reference lands on a host slot this map leaves empty, except the references stock maps leave empty."""
+    listed = set(listed)
+    bad = [m for m in misses if m[2] not in listed and (m[0], m[1].lower()) not in CARTO_STOCK_MISSES]
+    F.count('carto_shared host slots', len(misses))
+    if not bad:
+        return
+    first = ['%s %s (#%d, from %s %s)' % (g, n, i, via[0], via[1]) for g, n, i, via in bad[:4]]
+    F.add('error', 'spawn.carto_inject',
+          '%d Cartographer-injected reference(s) land on shared slots this map leaves empty (first: %s)' % (len(bad), '; '.join(first)))
+
+
+def _check_spawn(F, c, shared, maps_dir=None):
+    listed = {t.index for t in c.tags if t.index >= 10000 and not t.is_empty}
+    _check_shared_closure(F, listed, shared)
+    cp = carto_shared_path(maps_dir)
+    if cp is None:
+        F.count('carto_shared.map absent (injection gate skipped)')
+        return
+    _check_carto_injection(F, listed, carto_injection_misses(cp))
+
+
 GROUP_CHECKS = {
     'matg': 'gameplay', 'mulg': 'gameplay', 'goof': 'gameplay', 'scnr': 'gameplay', 'hudg': 'gameplay', 'jmad': 'gameplay',
     'bipd': 'havok', 'crea': 'havok', 'coll': 'havok', 'phmo': 'havok', 'sbsp': 'havok', 'vehi': 'havok', 'phys': 'havok',
 }
 
 
-def check_map(path, maps_dir=None, checks=('gameplay', 'havok', 'scripts', 'shaders'), stock=False):
+def check_map(path, maps_dir=None, checks=('gameplay', 'havok', 'scripts', 'shaders', 'spawn'), stock=False):
     F = Findings(path, stock)
     lay = _layouts()
     c = VistaCache(path)
     shared = None
     try:
-        if 'shaders' in checks and c.tag_count >= 10000:
+        if ('shaders' in checks or 'spawn' in checks) and c.tag_count >= 10000:
             shared = VistaCache(os.path.join(maps_dir or _paths.vista_maps_dir(), 'shared.map'))
         decode = lambda cache, t: T.decode_tag(cache.read_addr, lay[t.group], t.addr, t.group)   # noqa: E731
         if 'gameplay' in checks and c.tag_count >= 10000:
@@ -422,6 +570,8 @@ def check_map(path, maps_dir=None, checks=('gameplay', 'havok', 'scripts', 'shad
                     _check_scripts(F, t, root)
                 elif w == 'shaders':
                     _check_shaders(F, c, shared, t, root, decode)
+        if 'spawn' in checks and shared is not None and c.header.type == 1:
+            _check_spawn(F, c, shared, maps_dir)
         F.counts['seconds'] = round(time.time() - t0, 1)
     finally:
         c.close()

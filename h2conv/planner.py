@@ -78,6 +78,54 @@ BY_DESIGN_NULL = ('sound_remastered', 'empty in MCC', 'NO_DONOR', 'MCC-only:')
 # The bitmap itself is still converted when a kept local tag references it; only the cascade is cut.  Pass opts['taint_ignore'] =
 # [(group, name), ...] to choose another set, () to restore the old behaviour (CLI: --no-taint-ignore).
 DEFAULT_TAINT_IGNORE = (('bitm', 'rasterizer\\linear_corner_fade'),)
+# Tags whose copy in an H2EK-built map is the editing kit's DEFAULT placeholder, not the shipped tag: `rasterizer\invalid` is the
+# kit's 512x512 red/green "INVALID TEXTURE" checkerboard (1 bitmap, 0 sequences) in every one of the 24 H2EK maps, while the shipped MCC
+# shared.map and the Vista shared.map carry the 14-sequence / 13-bitmap atlas (same name; the Vista one is what the stock Vista
+# hudg 'Icon Bitmap' / 'Damage Indicator Bitmap' and matg 'Interface Goo Map 2' point to).  Compared by content it is "modified", so a
+# converted map with local globals (--matg hud / auto / local) copied the kit checkerboard as a LOCAL tag that shadows the shared atlas
+# and pointed hudg / matg at it.  Vista-kit maps (native Vista chronopolis, lockout, ...) never carry it.  These tags are therefore
+# forced to 'equal' (= linked to Vista's shared.map tag) in the standalone prepass.  opts['kit_placeholder_link'] = False restores the
+# old behaviour.
+KIT_PLACEHOLDER_LINK = (('bitm', 'rasterizer\\invalid'),)
+# Custom-shared support (workshop mods with their own shared.map): groups that are never compared with the stock MCC shared.map.  matg is handled
+# on its own (Vista globals clone / converted local globals, _matg_mode), scnr is the map's own, ugh! is rebuilt by the sound handler.
+# mulg is NOT special any more (2026-10-20 uncuthud): the mod's multiplayer_globals Runtime Weapons / Vehicles lists are the weapons the game
+# variants select (Uncut/DW3 points them at its own dw3\...\magnum_dw3 etc. whose HUDs sit at the Weapon HUD anchor = top-left; Vista's
+# shared mulg holds the stock weapons whose HUDs sit at anchor 0 = top-right, on top of the Uncut shield bar), so a MODIFIED mulg is converted
+# locally (handlers/gameplay.mulg_runtime still cuts the lists to the Vista lengths); an unmodified one still links to Vista's.
+CUSTOM_SHARED_SPECIAL = ('matg', 'scnr', 'ugh!')
+# groups that are compared with the stock MCC tag but never become local merely because a tag they reference is modified (taint): the mulg
+# of a mod that edits e.g. one weapon sound must keep linking to Vista's mulg (the pre-uncuthud behaviour of every such map)
+CUSTOM_SHARED_NO_TAINT = ('mulg',)
+# matg 'Language' descriptors carry the offsets of the shared.map's own string/locale tables (String Reference/Data Cache Offset): they differ between any two
+# shared.map builds with different string counts (3252880894: this is the ONLY matg difference) and say nothing about the globals' content
+CUSTOM_SHARED_RULES = {'matg': {'skip_names': ('String Reference Cache Offset', 'String Data Cache Offset')}}
+# Baseline noise of a NEWER MCC build than the installed one: every workshop shared.map built on it differs from the installed stock one in exactly
+# these fields (Rampancy 3164362918, which edits nothing, shows precisely these 4 tags) and nowhere else.
+# A tag listed here is 'equal' when every difference found starts with one of the listed field paths; any other difference keeps it 'modified'.
+CUSTOM_SHARED_NOISE = {
+    ('vehi', 'objects\\vehicles\\warthog\\warthog'): ('/Phantom Shapes/Shape Type ', '/Phantom Shapes/Shape Index '),
+    ('vehi', 'objects\\vehicles\\scorpion\\scorpion'): ('/Phantom Shapes/Shape Type ', '/Phantom Shapes/Shape Index '),
+    ('vehi', 'objects\\vehicles\\mongoose\\mongoose'): ('/Phantom Shapes/Shape Type ', '/Phantom Shapes/Shape Index '),
+    ('coll', 'scenarios\\objects\\solo\\alphagasgiant\\lights\\light_ground_up\\light_ground_up'): ('/Regions/Permutations/BSP Physics/Unknown',),
+}
+# shared shaders whose Vista copy differs from the stock MCC one (the forward shader checker over chronopolis / lockout / headlong,
+# 2026-10-20): reported when the output lists them as placeholders.  Cartographer (tag_fixes.cpp) reverts fp_arms / masterchief_visor /
+# smg_painted_metal at load; the others stay as Vista shipped them.
+VISTA_STOCK_DIFFERS_FROM_MCC = (
+    ('shad', 'objects\\characters\\elite\\shaders\\elite_honor_inset_lights'),
+    ('shad', 'objects\\characters\\elite\\shaders\\inset_lights'),
+    ('shad', 'objects\\characters\\masterchief\\fp\\shaders\\fp_arms'),
+    ('shad', 'objects\\characters\\masterchief\\shaders\\masterchief_visor'),
+    ('shad', 'objects\\gear\\human\\military\\shaders\\fusion_coil_bloom'),
+    ('shad', 'objects\\powerups\\shotgun_ammo\\shaders\\sg_ammo_box'),
+    ('shad', 'objects\\powerups\\sniper_rifle_ammo\\shaders\\sr_ammo_metal'),
+    ('shad', 'objects\\vehicles\\warthog\\shaders\\metal'),
+    ('shad', 'objects\\vehicles\\warthog\\turrets\\chaingun\\shaders\\chaingun'),
+    ('shad', 'objects\\weapons\\rifle\\covenant_carbine\\shaders\\carbine_display'),
+    ('shad', 'objects\\weapons\\rifle\\covenant_carbine\\shaders\\carbine_switch'),
+    ('shad', 'objects\\weapons\\rifle\\smg\\shaders\\smg_painted_metal'),
+)
 
 OWN_GESTALT_NAME = "i've got custom multiplayer coconuts, and i don't know why!"
 
@@ -105,16 +153,28 @@ def layouts(game):
 
 
 def _find_stock_mcc_shared():
-    """The decompressed stock MCC shared.map (<work folder>/mcc_decompressed, or inflated from the MCC install); None if unavailable."""
+    """The decompressed stock MCC shared.map (<work folder>/mcc_decompressed, or inflated from the MCC install); None if unavailable.
+    Custom-shared support: a candidate counts as THE stock shared.map only when its creation time is a stock one (mapinfo.stock_mcc_times) -
+    a workshop mod's shared.map that ended up under the stock name in the work folder must never be taken for it.  When no candidate has the
+    stock time the first existing file is returned as before (unknown stock build)."""
     try:
         from . import paths as _paths
-        from .mcc_cache import MccCache, DECOMP_DIR
-        for d in (DECOMP_DIR, _paths.mcc_maps_dir(required=False)):
+        from . import mapinfo as _MI
+        from .mcc_cache import MccCache, DECOMP_DIR, file_creation_time
+        stock_dir = _paths.stock_mcc_maps_dir()
+        want = _MI.stock_mcc_times(stock_dir).get('shared')
+        first = None
+        for d in (DECOMP_DIR, stock_dir, _paths.mcc_maps_dir(required=False)):
             if not d:
                 continue
             p = os.path.join(d, 'shared.map')
             if os.path.isfile(p):
-                return MccCache(p)
+                if first is None:
+                    first = p
+                if file_creation_time(p) == want:
+                    return MccCache(p)
+        if first is not None:
+            return MccCache(first)
     except Exception:
         pass
     return None
@@ -310,7 +370,7 @@ class PlanEntry(object):
     a tag that only exists on the Vista side, e.g. a donor-closure addition).  out_index/out_datum: local index/datum for
     convert/donor; the Vista shared.map index/datum for link; None/0xFFFFFFFF for drop."""
     __slots__ = ('src_map', 'src_index', 'group', 'name', 'action', 'out_index', 'out_datum', 'donor', 'redirect',
-                 'reason', 'twin', 'src_size', 'parent', 'redirect_key')
+                 'reason', 'twin', 'src_size', 'parent', 'redirect_key', 'shared_refs', 'no_closure')
 
     def __init__(self, src_map, src_index, group, name, action, reason='', donor=None, redirect=None):
         self.src_map = src_map
@@ -327,6 +387,8 @@ class PlanEntry(object):
         self.src_size = 0
         self.parent = None
         self.redirect_key = None
+        self.no_closure = False       # donor whose references are NOT followed (targets absent from the output become null)
+        self.shared_refs = False      # donor clone of a Vista SHARED tag (training-off globals): every reference stays on the shared slot
 
     def __repr__(self):
         return '<PlanEntry %s %s %r %s out=%s>' % (self.action, self.group, self.name, (self.src_map, self.src_index), self.out_index)
@@ -413,6 +475,20 @@ class Plan(object):
         e = self.by_name.get((group, (name or '').lower()))
         return self._out(e) if e is not None else NULL
 
+    def shared_clone_datum(self, group, name):
+        """Local datum of the Vista-shared CLONE (PlanEntry.shared_refs: the training-off matg / hudg) named (group, name), else None."""
+        e = self.by_name.get((group, (name or '').lower()))
+        if e is not None and e.shared_refs and e.action == 'donor' and e.out_datum != NULL:
+            return e.out_datum
+        return None
+
+    def shared_listed(self, index):
+        """True when shared.map slot `index` is listed as a shared placeholder of the output."""
+        s = getattr(self, '_listed_idx', None)
+        if s is None or len(s) != len(self.shared_placeholders):
+            s = self._listed_idx = {p.index for p in self.shared_placeholders}
+        return index in s
+
     def remap_vista_datum(self, vista_cache, datum):
         """Output datum for a datum read from a tag of a Vista donor map (resolved by (group, name))."""
         if datum in (0, NULL):
@@ -486,6 +562,10 @@ class Plan(object):
                 for f2, i2, off in b.donors.refs(*e.donor):
                     n += 1
                     t2 = b.donors.tag(f2, i2)
+                    if e.shared_refs:             # a clone of a shared tag: its targets are the shared slots (or the clone hudg)
+                        if self.shared_clone_datum(t2.group, t2.name) is None and not self.shared_listed(i2):
+                            bad.append(('no-entry', e.group, e.name, t2.group, t2.name, 'shared slot %d not listed' % i2))
+                        continue
                     if self.remap_name(t2.group, t2.name) == NULL:
                         bad.append(('no-entry', e.group, e.name, t2.group, t2.name, 'donor ref'))
         return n, bad
@@ -511,12 +591,22 @@ class Plan(object):
             row = {'group': e.group, 'name': e.name, 'why': why} if e else {'why': why}
             (modified if e is not None and e.action in ('convert', 'donor', 'link') else lost).append(row)
         nulls = [e for e in self.all_entries if e.action == 'drop' and e.redirect is None and 'sound_remastered' in e.reason]
+        unverified, differs = self._unverified_links(), self._vista_stock_differs()
         return {
+            'unverified_links': unverified[:max_items], 'unverified_links_count': len(unverified),
+            'mcc_differs_from_vista_stock': differs[:max_items], 'mcc_differs_from_vista_stock_count': len(differs),
             'summary': self.summary(), 'stats': dict(self.stats), 'by_action': {a: dict(c) for a, c in self.counts().items()},
             'reasons': dict(reasons.most_common()),
             'modified_kept': modified[:max_items], 'modified_kept_count': len(modified),
             'modified_but_dropped': lost[:max_items], 'modified_but_dropped_count': len(lost),
             'tainted_count': len(self.tainted),
+            'custom_shared': (dict(self.notes['custom_shared'],
+                                   candidates=self.stats.get('cs_candidates', 0), candidates_input_local=self.stats.get('cs_candidates_src', 0),
+                                   modified=self.stats.get('cs_modified', 0), modified_input_local=self.stats.get('cs_modified_src', 0),
+                                   tainted=self.stats.get('cs_tainted', 0), noise_ignored=self.stats.get('cs_noise_ignored', 0),
+                                   compare_seconds=self.stats.get('cs_seconds', 0), modified_tags=list(self.notes.get('custom_shared_modified', []))[:max_items],
+                                   globals=self.notes.get('matg', ('?',))[0], hud=self.notes.get('hud', ('?',))[0])
+                              if 'custom_shared' in self.notes else None),
             'taint_ignored': list(self.notes.get('taint_ignored', [])),
             'taint_ignored_dependents_linked': self.stats.get('taint_ignored_dependents_linked', 0),
             'matg': {'status': self.notes['matg'][0], 'differences': self.notes['matg'][1]} if 'matg' in self.notes else None,
@@ -528,6 +618,26 @@ class Plan(object):
             'pulled_from_mcc_shared': sorted(e.name for e in self.entries if e.src_map == SHARED)[:max_items],
             'pulled_from_mcc_shared_count': sum(1 for e in self.entries if e.src_map == SHARED),
         }
+
+    def _unverified_links(self):
+        """Shared placeholders of the output whose (group, name) is a tag of the INPUT map with no tag of that name in the stock MCC
+        shared maps: the Vista twin was linked by name and could not be compared with anything (report only)."""
+        b = self._builder
+        if b is None or b.msh is None:
+            return []
+        out = []
+        for t in self.shared_placeholders:
+            nk = _nk(t.group, t.name)
+            k = b.src_name.get(nk)
+            if k is not None and k[0] == SRC and nk not in b.msh_name:
+                out.append({'group': t.group, 'name': t.name, 'shared_index': t.index})
+        return out
+
+    def _vista_stock_differs(self):
+        """Shared placeholders that are known to differ between the stock MCC shared.map and the Vista shared.map (shader constants,
+        animation functions, template, bitmaps: the forward shader checker, 2026-10-20).  Vista's own copy is used (report only)."""
+        have = {_nk(t.group, t.name) for t in self.shared_placeholders}
+        return [{'group': g, 'name': n} for g, n in VISTA_STOCK_DIFFERS_FROM_MCC if _nk(g, n) in have]
 
     def counts(self):
         """{action: Counter(group)}"""
@@ -594,18 +704,35 @@ class ContentComparer(object):
     compare() -> (status, why)  status 'equal' | 'modified'.  With payload=True the raw resources are compared too:
     decoded bitmap pixels (textures.dat or in-map), geometry blkh blobs and, for snd!, the gestalt records + audio chunks."""
 
-    def __init__(self, src, shared, payload=True, dat_dir=None):
+    def __init__(self, src, shared, payload=True, dat_dir=None, dat_dir_a=None, dat_dir_b=None):
+        """dat_dir: textures.dat / sounds_*.dat folder of BOTH sides (the default, stock inputs and H2EK maps).  Custom-shared support compares a
+        workshop mod's tag with the stock one: dat_dir_a (the input side `src`) and dat_dir_b (the `shared` side) name one folder per side."""
         self.a = src
         self.b = shared
         self.lay = layouts('mcc')
         self.payload = payload
         self.dat_dir = dat_dir
+        self.dat_dir_a = dat_dir_a
+        self.dat_dir_b = dat_dir_b
         self._dats = None
+        self._dats_ab = {}
         self._maps = {}
         self._memo = {}
         self._all = False
 
     # ---- helpers ------------------------------------------------------------------------------------
+    extra_rules = None            # {group: rules dict} merged over GROUP_RULES by the caller (custom-shared planning: matg language-table offsets)
+
+    def _rules(self, group):
+        r = GROUP_RULES.get(group, {})
+        x = self.extra_rules.get(group) if self.extra_rules else None
+        if not x:
+            return r
+        m = dict(r)
+        for k, v in x.items():
+            m[k] = tuple(m.get(k, ())) + tuple(v)
+        return m
+
     def _decode(self, cache, tag):
         g = tag.group
         lay = self.lay.get(g)
@@ -707,13 +834,23 @@ class ContentComparer(object):
         why = []
         self._all = True
         try:
-            self._cmp(na, nb, self.a, self.b, GROUP_RULES.get(ta.group, {}), why)
+            self._cmp(na, nb, self.a, self.b, self._rules(ta.group), why)
         finally:
             self._all = False
         return why[:limit]
 
     # ---- payloads ------------------------------------------------------------------------------------------
-    def _dat(self):
+    def _dat(self, cache=None):
+        """DatStore of a side: dat_dir_a / dat_dir_b when given (custom-shared), else the one dat_dir."""
+        side_dir = None
+        if cache is not None:
+            side_dir = self.dat_dir_a if cache is self.a else self.dat_dir_b if cache is self.b else None
+        if side_dir:
+            ds = self._dats_ab.get(side_dir)
+            if ds is None:
+                from . import raw_mcc as R
+                ds = self._dats_ab[side_dir] = R.DatStore(side_dir)
+            return ds
         if self._dats is None:
             from . import raw_mcc as R
             self._dats = R.DatStore(self.dat_dir)
@@ -724,7 +861,7 @@ class ContentComparer(object):
         if not tag.addr:
             return []
         external = bool(cache.header['flags'] & R.HDR_FLAG_EXTERNAL_DAT)
-        buf = self._dat().get(R.TEXTURES_DAT) if external else cache.mm
+        buf = self._dat(cache).get(R.TEXTURES_DAT) if external else cache.mm
         data = cache.read_at_addr(tag.addr, 0x50)
         cnt, ptr = struct.unpack_from('<iI', data, 0x44)
         out = []
@@ -782,7 +919,8 @@ class ContentComparer(object):
         from . import raw_mcc as R
         m = self._maps.get(cache.path)
         if m is None:
-            m = R.MccMap(cache.path, dat_dir=self.dat_dir, dats=self._dat())
+            ds = self._dat(cache)
+            m = R.MccMap(cache.path, dat_dir=ds.directory if (self.dat_dir_a or self.dat_dir_b) else self.dat_dir, dats=ds)
             self._maps[cache.path] = m
         return m
 
@@ -865,7 +1003,7 @@ class ContentComparer(object):
         if na is None:
             return ('modified', 'no layout for %s' % g)
         why = []
-        rules = GROUP_RULES.get(g, {})
+        rules = self._rules(g)
         if not self._cmp(na, nb, self.a, self.b, rules, why):
             return ('modified', why[0] if why else 'differs')
         if g == 'unic':
@@ -959,6 +1097,46 @@ class _Builder(object):
         self.own_key = None
         self.t0 = time.time()
         self.comparer = None
+        self.train_hudg = None             # training-off globals (see _setup_training_globals)
+        self.clone_globals = False
+        self.custom_shared = False         # the externals resolve against a CUSTOM (workshop mod) shared.map: see _detect_custom_shared
+        self.stock = None                  # the stock MCC shared.map (custom-shared only)
+        self.cmp_shared = self.cmp_src = None
+        self._detect_custom_shared()
+
+    # ---- custom shared.map (workshop mods), step 2 ------------------------------------------------------------------------------------
+    def _detect_custom_shared(self):
+        """custom_shared = a MULTIPLAYER input with external tags whose shared.map is NOT the stock MCC one (creation time / size differ).  Then every
+        shared tag of the mod is compared with the stock MCC shared.map exactly like the tags of an H2EK-built map (prepass): changed ones, and
+        every tag that references a changed one, become LOCAL tags converted from the mod; the rest links to Vista's shared.map as for a stock map.
+        Gated: a map built against the stock shared.map plans exactly as before.  opts['custom_shared'] = False switches it off; opts
+        'stock_shared' (path) / 'stock_dat_dir' name the stock files (default: the installed game, paths.stock_mcc_maps_dir)."""
+        o = self.opts
+        if o.get('custom_shared') is False or not (self.has_ext and self.is_mp and self.linking and self.msh is not None):
+            return
+        stock = None
+        p = o.get('stock_shared')
+        if p and os.path.isfile(p):
+            from .mcc_cache import MccCache
+            stock = MccCache(p)
+        if stock is None:
+            stock = _find_stock_mcc_shared()
+        if stock is None:
+            return
+        same = (stock.header['creation_time'] == self.msh.header['creation_time'] and stock.file_size == self.msh.file_size)
+        if same:
+            return
+        # the externals of the input must resolve in THIS shared.map (same index, group and datum): a wrong file would silently map every
+        # external tag to some other tag
+        bad = [t for t in self.src.tags if t.external and (t.index >= len(self.msh.tags) or self.msh.tags[t.index].datum != t.datum
+                                                         or self.msh.tags[t.index].group != t.group)]
+        if bad:
+            raise PlannerError('the shared.map %s is not the one this map was built against: %d of its %d external tags do not match it '
+                               '(e.g. tag #%d %s)' % (self.msh.source_path, len(bad), sum(1 for t in self.src.tags if t.external), bad[0].index, bad[0].group))
+        self.custom_shared = True
+        self.stock = stock
+        self.plan.notes['custom_shared'] = {'shared_map': self.msh.source_path, 'creation_time': self.msh.header['creation_time'],
+                                            'stock_shared_map': stock.source_path, 'stock_creation_time': stock.header['creation_time']}
 
     # ------------------------------------------------------------------------------------------------------
     def warn(self, code, msg):
@@ -1033,6 +1211,127 @@ class _Builder(object):
         hits = self.donors.find(group, name)
         return hits[0] if hits else None
 
+    # ---- MCC-only stems: structurally identical Vista stem (see decide(), group 'stem') ----------------------------------------------
+    @staticmethod
+    def _stem_signature(root):
+        """Skeleton of a stem's Postprocess Definition[0] without its pass tag references: LOD (layer index, available layers, height),
+        Layers, the Implementation index of every Pass, Implementations and Remappings.  The same bytes in MCC and Vista layouts."""
+        pps = root.block('Postprocess Definition')
+        if not pps:
+            return None
+        pp = pps[0]
+        return (tuple(bytes(k.data).hex() for k in pp.block('Levels Of Detail')),
+                tuple(bytes(k.data).hex() for k in pp.block('Layers')),
+                tuple(bytes(k.data[8:10]).hex() for k in pp.block('Passes')),
+                tuple(bytes(k.data).hex() for k in pp.block('Implementations')),
+                tuple(bytes(k.data).hex() for k in pp.block('Remappings')))
+
+    def _vista_stem_signatures(self):
+        """{signature: [(map file, tag index, name)]} over the Vista stems of the donor maps (shared.map first), built once."""
+        m = getattr(self, '_vsig', None)
+        if m is None:
+            m = {}
+            dx = self.donors
+            if dx._index is None:
+                dx._build()
+            lay_v = layouts('vista')
+            for (g, _nm), lst in dx._index.items():
+                if g != 'stem':
+                    continue
+                f, i = lst[0]
+                c = dx.cache(f)
+                t = c.tags[i]
+                try:
+                    sig = self._stem_signature(T.decode_tag(c.read_addr, lay_v['stem'], t.addr, 'stem'))
+                except Exception:                                    # noqa: BLE001
+                    continue
+                if sig is not None:
+                    m.setdefault(sig, []).append((f, i, t.name))
+            self._vsig = m
+        return m
+
+    def _stem_substitute(self, key, tag):
+        """(map file, tag index, name) of the Vista stem that best replaces an MCC stem with no Vista twin by name, or None.  Only stems with an IDENTICAL
+        postprocess skeleton qualify (shaders keep their array semantics); among them: same template folder, then the longest common
+        word prefix of the names (sky_solid -> sky_two_alpha_clouds, water_pool_cube -> water_pool), then alphabetical."""
+        try:
+            cache = self.cache_of(key)
+            sig = self._stem_signature(T.decode_tag(lambda a, n: cache.read_at_addr(a, n), self.lay_m['stem'], tag.addr, 'stem'))
+        except Exception as ex:                                        # noqa: BLE001
+            self.warn('stem-substitute', '%s: %s' % (tag.name, ex))
+            return None
+        cands = self._vista_stem_signatures().get(sig) if sig is not None else None
+        if not cands:
+            return None
+        folder, _, leaf = (tag.name or '').lower().replace('/', '\\').rpartition('\\')
+        words = leaf.split('_')
+
+        def score(d):
+            f, _, l = d[2].lower().rpartition('\\')
+            w = l.split('_')
+            common = 0
+            for a, b in zip(words, w):
+                if a != b:
+                    break
+                common += 1
+            return (-(f == folder), -common, d[2].lower())
+        return sorted(cands, key=score)[0]
+
+    # ---- training-off globals (2026-10-20) ---------------------------------------------------------------------------------------------
+    def _matg_mode(self):
+        """'convert' (local globals converted from the input) or 'link' (Vista's globals) after resolving hud / auto."""
+        mode = self.opts.get('matg', 'link')
+        if self.custom_shared and mode in ('hud', 'auto'):
+            # custom shared.map: the mod's OWN globals (custom player models / representations, damage table, HUD, ...) are converted locally
+            # when they differ from the stock MCC ones in any way, or when the HUD text is customised; unchanged globals take the Vista path
+            return 'convert' if (self.plan.notes.get('matg', ('',))[0] == 'modified' or self.plan.notes.get('hud', ('',))[0] == 'custom') else 'link'
+        if mode == 'auto':           # local globals only when the input's globals differ from the stock MCC ones
+            return 'convert' if self.plan.notes.get('matg', ('',))[0] == 'modified' else 'link'
+        if mode == 'hud':            # DEFAULT: local globals only when the HUD text under matg is customised (see prepass)
+            return 'convert' if self.plan.notes.get('hud', ('',))[0] == 'custom' else 'link'
+        return mode
+
+    def _setup_training_globals(self):
+        """Training is OFF in every conversion (convert.convert sets opts['training_off']; opts keep_training / env H2CONV_KEEP_TRAINING keep it;
+        a direct planner.build_plan call without 'training_off' behaves as before, which keeps the planner oracles unchanged).  The game's tutorial prompts draw as an empty
+        square on converted maps, and Vista's SHARED hudg (the one the shared matg references) cannot be edited per map.  So an MP map whose
+        globals would be LINKED gets its OWN globals instead: clone_globals = a local copy of the Vista shared matg and of the hudg it
+        references, byte-faithful to Vista (cloned from shared.map, not from the MCC input) except that the hudg Player Training Data
+        block is emptied (donor.import_donor); every other reference of both tags stays on the shared slots (PlanEntry.shared_refs).
+        A map whose globals are converted locally keeps its converted matg (handlers/gameplay.hudg_root empties its hudg); only a hudg
+        that would still be LINKED there (stock HUD, --matg local) is replaced by the same clone."""
+        self.train_hudg = None            # (name key, Vista shared hudg tag) of the hudg that Vista's shared matg references
+        self.clone_globals = False        # the matg itself is a clone too
+        o = self.opts
+        if not o.get('training_off') or o.get('keep_training') or os.environ.get('H2CONV_KEEP_TRAINING') or not self.is_mp:
+            return
+        vm = next((t for t in self.vsh.tags if not t.is_empty and t.group == 'matg' and t.addr), None)
+        if vm is None:
+            return
+        hud = []
+        for f2, i2, _off in self.donors.refs('shared.map', vm.index):
+            t2 = self.donors.tag(f2, i2)
+            if t2.group == 'hudg':
+                hud.append(t2)
+        if not hud:
+            self.warn('training-globals', 'the Vista shared matg references no hudg: training stays as it is')
+            return
+        self.train_hudg = (_nk(hud[0].group, hud[0].name), hud[0])
+        self.clone_globals = self._matg_mode() != 'convert'
+        self.plan.notes['training_off'] = {'matg': 'clone of the Vista shared matg' if self.clone_globals else 'converted from the input',
+                                           'hudg': hud[0].name}
+
+    def _globals_clone(self, key, tag, vt, why):
+        """Donor entry that clones the Vista shared tag `vt` (matg / hudg) as a LOCAL tag; key None = a tag that exists on the Vista side only."""
+        reason = 'training off: local clone of the Vista shared %s (%s); every reference stays on the shared slots' % (vt.group, why)
+        if key is None:
+            e = PlanEntry(None, None, vt.group, vt.name, 'donor', reason, donor=('shared.map', vt.index))
+        else:
+            e = self._new(key, tag, 'donor', reason, donor=('shared.map', vt.index))
+        e.shared_refs = True
+        self.plan.stats['globals_cloned'] += 1
+        return e
+
     def decide(self, key):
         """Create (and register) the PlanEntry for an MCC tag."""
         tag = self.tag_of(key)
@@ -1054,13 +1353,12 @@ class _Builder(object):
             return self._register(self._new(key, tag, 'drop', 'extra sound gestalt (single gestalt output)'), key)
         # --- globals ---------------------------------------------------------------------------------------------
         if g == 'matg':
-            mode = opts.get('matg', 'link')
             vt = self.vsh_name.get(nk) or next((t for t in self.vsh.tags if not t.is_empty and t.group == 'matg' and t.addr), None)
-            if mode == 'auto':           # local globals only when the input's globals differ from the stock MCC ones
-                mode = 'convert' if self.plan.notes.get('matg', ('',))[0] == 'modified' else 'link'
-            elif mode == 'hud':          # DEFAULT: local globals only when the HUD text under matg is customised (see prepass)
-                mode = 'convert' if self.plan.notes.get('hud', ('',))[0] == 'custom' else 'link'
-            if mode == 'link' and self.is_mp and vt is not None:
+            mode = self._matg_mode()
+            if mode == 'link' and self.is_mp and vt is not None and self.clone_globals:
+                # training off (default): the map's OWN copy of Vista's shared globals, minus the hudg training block
+                e = self._register(self._globals_clone(key, tag, vt, 'matg'), key)
+            elif mode == 'link' and self.is_mp and vt is not None:
                 e = self._register(self._link_entry(vt, key, tag, 'shared Vista globals tag (the custom-map list validator wants a '
                                                                   'shared matg; input matg changes are not carried over)'), key)
             else:
@@ -1072,6 +1370,9 @@ class _Builder(object):
             if self.plan.globals_entry is None:
                 self.plan.globals_entry = e
             return e
+        # --- the hudg of Vista's shared matg when the globals are a training-off clone ------------------------------------------
+        if g == 'hudg' and self.clone_globals and self.train_hudg is not None and nk == self.train_hudg[0]:
+            return self._register(self._globals_clone(key, tag, self.train_hudg[1], 'hudg'), key)
         # --- MCC-only remastered sounds ------------------------------------------------------------------------------
         if g in ('snd!', 'lsnd') and lo.startswith(REMASTERED_PREFIX):
             e = self._register(self._new(key, tag, 'drop', 'MCC-only sound_remastered tag'), key)
@@ -1110,6 +1411,18 @@ class _Builder(object):
             if hit is not None:
                 e = self._new(key, tag, 'donor', 'shader family: MCC has DXBC only; donor map %s' % hit[0], donor=hit)
                 return self._register(e, key)
+            # A user-made MCC stem (cyberdyne_h2 `sky_solid`, sweet `water_pool_cube`, ...) has no Vista twin by name.  A shader whose Template is
+            # NONE crashes the engine's sky / model draw (halo2.exe sub_67FE30 reads stem+0x58 without a null check; cyberdyne_h2 crash
+            # 2026-10-20), so references are sent to a Vista stem whose postprocess skeleton is IDENTICAL (LOD, Layers, Pass implementation,
+            # Implementations, Remappings): the shader's own arrays then keep their meaning (handlers.shaders.reconcile, tier 'sub').
+            if g == 'stem':
+                sub = self._stem_substitute(key, tag)
+                if sub is not None:
+                    e = self._new(key, tag, 'drop', 'STEM_SUBSTITUTE: MCC-only stem; references go to the structurally identical Vista stem %s' % sub[2])
+                    self._register(e, key)
+                    e.redirect = self.ensure_vista(sub[0], sub[1], e)
+                    self.plan.stats['stem_substituted'] += 1
+                    return e
             # MCC-only shader code (DXBC) with no Vista twin (e.g. vrtx debug_screenspace, only listed in the MCC globals): a converted copy
             # would be an empty shell, so the tag is dropped and references become null (design decision; 0 occurrences in
             # the studied stock inputs, 1 with --matg auto on the custom map)
@@ -1121,6 +1434,9 @@ class _Builder(object):
         if vt is not None:
             act, why = self._link_verdict(key, tag)
             if act == 'link':
+                if g == 'hudg' and self.train_hudg is not None and nk == self.train_hudg[0]:
+                    # local (converted) globals whose hudg is unmodified: a linked hudg would keep Vista's training prompts
+                    return self._register(self._globals_clone(key, tag, self.train_hudg[1], 'hudg, unmodified in the input'), key)
                 return self._register(self._link_entry(vt, key, tag, why), key)
             e = self._new(key, tag, 'convert', why)
             if g == 'shad':
@@ -1174,7 +1490,95 @@ class _Builder(object):
                 e.redirect = self._ensure_vista_link(fb)
                 e.reason += '; references go to shaders\\invalid'
             return self._register(e, key)
+        if g == 'mulg' and self.map_type != 1:
+            # A campaign matg keeps its Multiplayer Globals reference, but the MCC (and stock Vista) campaign mulg is an empty aliased tag.  The
+            # engine's multiplayer starting-weapon mapping (halo2.exe sub_45C52E: weapon type -> matg+0x168 -> mulg -> weapon table) dereferences it
+            # when a campaign scenario is launched as a multiplayer game; NONE reads the garbage tag instance 0xFFFF (level1, 2026-10-20).  The Vista
+            # mulg is copied WITHOUT following its references: every target that exists in the output (the weapons of the map) keeps its link,
+            # the others (MP vehicles, sounds, names) become NONE.
+            hit = self._donor_for(g, n)
+            if hit is not None:
+                e = self._new(key, tag, 'donor', why + ': campaign launched as multiplayer needs a mulg; Vista copy from %s without closure' % hit[0], donor=hit)
+                e.no_closure = True
+                self.plan.stats['solo_mulg_donor'] += 1
+                return self._register(e, key)
         return self._register(self._new(key, tag, 'drop', why + ': dropped, references become null'), key)
+
+    # ---- campaign maps launched as multiplayer: the scenario's own starting weapons as the "map default" loadout -----------------------
+    def _profile_weapon_names(self):
+        """Lower-case tag names of Player Starting Profile[0].Primary / Secondary Weapon of the MCC scenario ([] when it has none)."""
+        scn = self.src.scenario
+        lay = self.lay_m['scnr']
+        fld = next(f for f in lay.fields if f.name == 'Player Starting Profile')
+        cache = self.src
+        raw = cache.read_at_addr(scn.addr, scn.size)
+        cnt, ptr = struct.unpack_from('<II', raw, fld.offset)
+        if cnt < 1:
+            return []
+        es = T.element_size(fld)
+        el = cache.read_at_addr(ptr, es)
+        out = []
+        for nm in ('Primary Weapon', 'Secondary Weapon'):
+            c = next((x for x in fld.children if x.name == nm), None)
+            if c is None:
+                continue
+            datum = struct.unpack_from('<I', el, c.offset + 4)[0]
+            t = cache.tag_by_datum(datum) if datum not in (0, NULL) else None
+            if t is not None and t.name:
+                out.append(t.name.lower())
+        return out
+
+    def _itmc_by_weapon(self):
+        """{weapon tag name (lower): (map file, index, itmc name)} for the Vista item collections that hold exactly one weapon (multiplayer\single_weapons\*)."""
+        m = getattr(self, '_itmc_map', None)
+        if m is None:
+            m = {}
+            dx = self.donors
+            if dx._index is None:
+                dx._build()
+            for (g, nm), lst in dx._index.items():
+                if g != 'itmc':
+                    continue
+                f, i = lst[0]
+                c = dx.cache(f)
+                t = c.tags[i]
+                try:
+                    data = c.read_tag(t)
+                    n, _p = struct.unpack_from('<II', data, 0)
+                    d = struct.unpack_from('<I', data, 20)[0]
+                    wt = c.tags[d & 0xFFFF]
+                except Exception:                                    # noqa: BLE001
+                    continue
+                if n == 1 and wt.group == 'weap' and wt.name:
+                    m.setdefault(wt.name.lower(), (f, i, t.name))
+            self._itmc_map = m
+        return m
+
+    def _solo_starting_itmc(self):
+        """A solo scenario carries its loadout in Player Starting Profile (campaign only).  Launched as a multiplayer game the engine takes the
+        starting weapons from the scenario's Starting Equipment block (6 item collections, halo2.exe sub_45D5xx), which campaign scenarios leave
+        empty - players spawn unarmed.  The Vista item collection that wraps exactly the profile's primary / secondary weapon is added to the plan
+        (a donor copy; its weapon reference resolves to the map's own weapon tag); handlers.gameplay fills Starting Equipment[0] with it."""
+        try:
+            names = self._profile_weapon_names()
+        except Exception as ex:                                        # noqa: BLE001
+            self.warn('solo-start', 'Player Starting Profile unreadable: %s' % ex)
+            return
+        picks = []
+        by_weapon = self._itmc_by_weapon()
+        for wn in names:
+            hit = by_weapon.get(wn)
+            if hit is None:
+                self.warn('solo-start', 'no Vista item collection wraps the starting weapon %s' % wn)
+                continue
+            if hit[2] in picks:
+                continue
+            e = self.ensure_vista(hit[0], hit[1], self.plan.scenario)
+            self.expand([e])
+            picks.append(hit[2])
+        if picks:
+            self.plan.notes['solo_starting_itmc'] = picks
+            self.plan.stats['solo_starting_itmc'] += len(picks)
 
     def _ensure_vista_link(self, vt):
         nk = _nk(vt.group, vt.name)
@@ -1188,6 +1592,22 @@ class _Builder(object):
     def _link_verdict(self, key, tag):
         """Link or convert a tag that exists in the Vista shared.map."""
         strict = self.opts.get('strict_link')
+        if self.custom_shared:
+            # custom shared.map: the shared tags AND the input's own tags are judged by their content status against the stock MCC shared.map
+            st = self.status.get(key)
+            if st is not None and st[0] == 'modified':
+                return 'convert', 'MODIFIED vs stock MCC shared.map: %s' % st[1]
+            cause = self.tainted.get(key)
+            if cause:
+                return 'convert', 'depends on modified tag %s' % cause
+            if st is None:
+                return 'link', 'MCC shared tag -> Vista shared.map tag of the same name' if key[0] == SHARED else \
+                    'in Vista shared.map (not compared with the stock MCC shared.map)'
+            if st[0] == 'unverifiable':
+                if strict:
+                    return 'convert', 'strict_link: cannot verify against the stock MCC shared.map'
+                return 'link', 'in Vista shared.map; unverifiable (no stock MCC shared twin)'
+            return 'link', 'unmodified (equal to the stock MCC shared.map tag)'
         if key[0] == SHARED:
             return 'link', 'MCC shared tag -> Vista shared.map tag of the same name'
         if self.src_kind == 'stock':
@@ -1210,7 +1630,156 @@ class _Builder(object):
         return 'link', 'unmodified (equal to the stock MCC shared.map tag)'
 
     # ---- Phase A: content status + taint ------------------------------------------------------------------------------------
+    def _cs_candidate(self, t):
+        """Is this tag of the input / of the mod's shared.map a candidate for 'link to the Vista shared twin unless modified'?"""
+        if t.is_null or t.external or not t.name or not t.addr or t.empty:
+            return False
+        g, lo = t.group, t.name.lower()
+        if g in SHADER_DONOR_GROUPS or g in CUSTOM_SHARED_SPECIAL:
+            return False
+        if g in ('snd!', 'lsnd') and lo.startswith(REMASTERED_PREFIX):
+            return False
+        return _nk(g, t.name) in self.vsh_name
+
+    def _cs_compare(self, cmp_, t, mt):
+        """compare() with the known baseline noise of a newer MCC build removed (CUSTOM_SHARED_NOISE): such a tag is 'equal' when EVERY
+        difference found is one of the listed fields."""
+        st = cmp_.compare(t, mt)
+        if st[0] == 'modified':
+            allowed = CUSTOM_SHARED_NOISE.get(_nk(t.group, t.name))
+            if allowed:
+                diffs = cmp_.diff_all(t, mt, 400)
+                if diffs and all(any(d.startswith(a) for a in allowed) for d in diffs):
+                    self.plan.stats['cs_noise_ignored'] += 1
+                    return ('equal', 'build noise only (%s)' % '; '.join(sorted(set(d.split(':')[0] for d in diffs)))[:80])
+        return st
+
+    def _prepass_custom_shared(self):
+        """Content status + taint for a map built against a CUSTOM shared.map (see _detect_custom_shared).  Candidates = the tags of the mod's
+        shared.map AND the input's own (non-external) tags that have a same-name tag in Vista's shared.map; each is compared with the stock MCC
+        shared.map tag of that name (textures.dat / sounds_*.dat of the MOD for the mod side, of the stock install for the stock side).  A candidate
+        that is modified, or new in the mod although a Vista tag has its name, is converted; so is every candidate that (transitively) references one."""
+        t_start = time.time()
+        stock = self.stock
+        o = self.opts
+        payload = o.get('compare_payload', True)
+        mod_dat = o.get('mcc_dat_dir') or o.get('dat_dir')
+        stock_dat = o.get('stock_dat_dir') or _paths.stock_mcc_maps_dir()
+        if payload and not (stock_dat and os.path.isfile(os.path.join(stock_dat, 'textures.dat'))):
+            raise PlannerError('custom shared.map: the stock MCC textures.dat / sounds_*.dat folder was not found (%s); it is needed to compare the bitmaps and '
+                               'sounds of the mod with the stock ones (opts stock_dat_dir / --mcc-maps of the installed game)' % stock_dat)
+        if payload and mod_dat and not os.path.isfile(os.path.join(mod_dat, 'textures.dat')):
+            raise PlannerError('custom shared.map: the mod\'s textures.dat was not found in %s' % mod_dat)
+        self.cmp_shared = ContentComparer(self.msh, stock, payload=payload, dat_dir=mod_dat, dat_dir_a=mod_dat, dat_dir_b=stock_dat)
+        self.cmp_src = ContentComparer(self.src, stock, payload=payload, dat_dir=mod_dat, dat_dir_a=mod_dat, dat_dir_b=stock_dat)
+        for c in (self.cmp_shared, self.cmp_src):
+            c.extra_rules = CUSTOM_SHARED_RULES
+        self.comparer = self.cmp_shared
+        stock_by = {}
+        for t in stock.tags:
+            if not t.is_null and t.name and t.addr:
+                stock_by.setdefault((t.group, t.name.lower()), t)
+        kit_link = set(_nk(g, n) for g, n in KIT_PLACEHOLDER_LINK) if o.get('kit_placeholder_link', True) else set()
+        cset = set()
+        for which, cache, cmp_ in ((SHARED, self.msh, self.cmp_shared), (SRC, self.src, self.cmp_src)):
+            for t in cache.tags:
+                if not self._cs_candidate(t):
+                    continue
+                key = (which, t.index)
+                cset.add(key)
+                mt = stock_by.get((t.group, t.name.lower()))
+                if mt is None:
+                    if which == SHARED:
+                        # a tag the mod added, which happens to carry the name of a Vista shared tag: it cannot be that tag
+                        self.status[key] = ('modified', 'not in the stock MCC shared.map (new tag of the mod)')
+                    else:
+                        self.status[key] = ('unverifiable', 'no stock MCC shared twin')
+                    self.plan.stats['status:' + self.status[key][0]] += 1
+                    continue
+                self.status[key] = self._cs_compare(cmp_, t, mt)
+                if which == SRC and self.status[key][0] == 'modified' and _nk(t.group, t.name) in kit_link:
+                    self.plan.notes.setdefault('kit_placeholder_linked', []).append(t.group + ' ' + t.name + ' (' + self.status[key][1] + ')')
+                    self.status[key] = ('equal', 'H2EK kit default placeholder; the shipped tag (Vista shared.map) is used')
+                    self.plan.stats['kit_placeholder_linked'] += 1
+                self.plan.stats['status:' + self.status[key][0]] += 1
+        self.plan.stats['cs_candidates'] = len(cset)
+        self.plan.stats['cs_candidates_src'] = sum(1 for k in cset if k[0] == SRC)
+        # taint: a candidate that references a modified candidate must be converted too, or the modification would vanish
+        rev = collections.defaultdict(list)
+        for key in cset:
+            for tk, _off in self.mcc_refs(key):
+                if tk in cset:
+                    rev[tk].append(key)
+        ign = self.opts.get('taint_ignore')
+        ign = DEFAULT_TAINT_IGNORE if ign is None else ign
+        ign = set(_nk(g, n) for g, n in ign)
+        seeds = [k for k in cset if self.status[k][0] == 'modified']
+        ignored = [k for k in seeds if _nk(self.tag_of(k).group, self.tag_of(k).name) in ign]
+        ign_keys = set(ignored)
+        work = collections.deque(k for k in seeds if k not in ign_keys) if self.opts.get('taint', True) else collections.deque()
+        cause = {k: self.tag_of(k).name for k in work}
+        while work:
+            k = work.popleft()
+            for p in rev.get(k, ()):
+                if p not in cause:
+                    cause[p] = cause[k]
+                    work.append(p)
+        for k in cset:
+            if self.status[k][0] != 'modified' and k in cause:
+                if self.tag_of(k).group in CUSTOM_SHARED_NO_TAINT:
+                    continue                  # uncuthud: mulg is local only when its OWN content differs (see CUSTOM_SHARED_SPECIAL)
+                self.tainted[k] = cause[k]
+        self.plan.stats['cs_modified'] = len(seeds)
+        self.plan.stats['cs_modified_src'] = sum(1 for k in seeds if k[0] == SRC)
+        self.plan.stats['cs_tainted'] = len(self.tainted)
+        self.plan.stats['tainted'] = len(self.tainted)
+        if ignored and self.opts.get('taint', True):
+            self.plan.stats['taint_ignored'] = len(ignored)
+            self.plan.notes['taint_ignored'] = sorted(self.tag_of(k).group + ' ' + self.tag_of(k).name for k in ignored)
+        self.plan.notes['custom_shared_modified'] = sorted('%s %s :: %s' % (self.tag_of(k).group, self.tag_of(k).name, self.status[k][1])
+                                                           for k in seeds)[:400]
+        # the globals: compared with the stock MCC matg (drives _matg_mode); the HUD text chain below matg
+        mg = self.src.globals_tag
+        mg_key = None
+        if mg is not None:
+            mg_key = (SHARED, mg.index) if mg.external else (SRC, mg.index)
+            mt = self.tag_of(mg_key)
+            smg = stock.tag_by_name('matg', mt.name)
+            if smg is not None and smg.addr and mt.addr:
+                cmp_ = self.cmp_shared if mg_key[0] == SHARED else self.cmp_src
+                st = cmp_.compare(mt, smg)
+                self.plan.notes['matg'] = (st[0], cmp_.diff_all(mt, smg, 60) if st[0] == 'modified' else [])
+        hud_mod = []
+        if mg_key is not None:
+            seen = set()
+            frontier = [mg_key]
+            for _depth in range(2):                      # matg -> hudg/unic, then hudg -> unic
+                nxt = []
+                for k in frontier:
+                    for tk, _off in self.mcc_refs(k):
+                        if tk in seen:
+                            continue
+                        seen.add(tk)
+                        t2 = self.tag_of(tk)
+                        if t2.group not in ('hudg', 'unic'):
+                            continue
+                        st = self.status.get(tk, ('',))[0]
+                        if st == 'modified':
+                            hud_mod.append('%s %s (modified)' % (t2.group, t2.name))
+                        elif tk in self.tainted:
+                            hud_mod.append('%s %s (references modified %s)' % (t2.group, t2.name, self.tainted[tk]))
+                        elif _nk(t2.group, t2.name) not in self.vsh_name:
+                            hud_mod.append('%s %s (custom tag, not in Vista shared.map)' % (t2.group, t2.name))
+                        if t2.group == 'hudg':
+                            nxt.append(tk)
+                frontier = nxt
+        self.plan.notes['hud'] = ('custom' if hud_mod else 'stock', hud_mod)
+        self.plan.stats['hud_custom'] = len(hud_mod)
+        self.plan.stats['cs_seconds'] = round(time.time() - t_start, 1)
+
     def prepass(self):
+        if self.custom_shared:
+            return self._prepass_custom_shared()
         if not self.linking or self.src_kind != 'standalone' or self.msh is None:
             return
         payload = self.opts.get('compare_payload', True)
@@ -1236,6 +1805,7 @@ class _Builder(object):
                 st = cmp_.compare(mg, smg)
                 self.plan.notes['matg'] = (st[0], cmp_.diff_all(mg, smg, 60) if st[0] == 'modified' else [])
         cset = set()
+        kit_link = set(_nk(g, n) for g, n in KIT_PLACEHOLDER_LINK) if self.opts.get('kit_placeholder_link', True) else set()
         for t in cands:
             key = (SRC, t.index)
             cset.add(key)
@@ -1245,6 +1815,10 @@ class _Builder(object):
                 self.plan.stats['status:unverifiable'] += 1
                 continue
             self.status[key] = cmp_.compare(t, mt)
+            if self.status[key][0] == 'modified' and kit_link and _nk(t.group, t.name) in kit_link:
+                self.plan.notes.setdefault('kit_placeholder_linked', []).append(t.group + ' ' + t.name + ' (' + self.status[key][1] + ')')
+                self.status[key] = ('equal', 'H2EK kit default placeholder; the shipped tag (Vista shared.map) is used')
+                self.plan.stats['kit_placeholder_linked'] += 1
             self.plan.stats['status:' + self.status[key][0]] += 1
         # taint: a candidate that references a modified candidate must be converted too, or the modification would vanish
         rev = collections.defaultdict(list)
@@ -1356,6 +1930,17 @@ class _Builder(object):
             self.children[id(parent)].append(e)
         return e
 
+    def _ensure_hudg_clone(self, parent):
+        """The (single) plan entry of the clone hudg: the input's own hudg of that name when it was decided, else a Vista-side entry."""
+        h = self.train_hudg[1]
+        e = self.by_name.get(self.train_hudg[0])
+        if e is None:
+            e = self._register(self._globals_clone(None, None, h, 'hudg'))
+        if e.parent is None and parent is not None:
+            e.parent = parent
+            self.children[id(parent)].append(e)
+        return e
+
     def expand(self, roots):
         stack = list(reversed(roots))
         while stack:
@@ -1377,8 +1962,17 @@ class _Builder(object):
                         # alpha_white x8).  Linked mode: a placeholder; self-contained: the MCC shared bitmap or a Vista donor copy.
                         if g2 == 'stem' or (g2 == 'bitm' and e.group == 'shad'):
                             nxt.append(self.ensure_vista(f2, i2, e))
-            elif e.action == 'donor':
+            elif e.action == 'donor' and e.shared_refs:
+                # a clone of a Vista shared tag: everything it references is a shared slot (listed through used_links / the matg closure),
+                # except the clone hudg, which is local.  Never resolved by name: a local tag that shadows a shared one must not capture them.
                 for f2, i2, off in self.donors.refs(*e.donor):
+                    t2 = self.donors.tag(f2, i2)
+                    if t2.group == 'hudg' and self.train_hudg is not None and _nk(t2.group, t2.name) == self.train_hudg[0]:
+                        nxt.append(self._ensure_hudg_clone(e))
+                    else:
+                        self.used_links.add(i2)
+            elif e.action == 'donor':
+                for f2, i2, off in ([] if e.no_closure else self.donors.refs(*e.donor)):
                     nxt.append(self.ensure_vista(f2, i2, e))
             elif e.action == 'link':
                 if e.out_index is not None and e.out_index >= LOCAL_LIMIT:
@@ -1426,12 +2020,15 @@ class _Builder(object):
         if og is not None and og.has_data and not og.external:
             self.own_key = (SRC, og.index)
         self.prepass()
+        self._setup_training_globals()
         # decisions for every local tag of the input map, in source order
         local_keys = [(SRC, t.index) for t in src.tags if not t.is_null and not t.external and t.name]
         for k in local_keys:
             self.ensure_key(k)
         roots = self.roots()
         self.expand(roots)
+        if self.map_type != 1:
+            self._solo_starting_itmc()
         # --- orphans ------------------------------------------------------------------------------------------------------------------
         scn_key = (SRC, src.scenario.index)
         r_plain = self.plain_reach([scn_key] + ([self.own_key] if self.own_key else []))
@@ -1555,6 +2152,16 @@ class _Builder(object):
             roots.add(ugh_vt.index)               # every MP map lists the shared gestalt (first shared ugh! must match)
         if plan.globals_entry is not None and plan.globals_entry.action == 'link':
             roots.add(plan.globals_entry.out_index)
+        if self.linking or self.clone_globals:
+            # EVERY stock MP map lists the closure of the Vista shared matg (25/25), also when the output matg is LOCAL: Cartographer
+            # injects content (the Halloween 'skeleton' biped, flood, event props ...) whose tags reach shared slots by INDEX, e.g.
+            # jmad masterchief 10231 and ligh flashlight_3p 10435 through masterchief_skeleton.  A slot that is not listed stays
+            # empty, the reference becomes NONE, the biped gets no animation manager and the player is never created (black
+            # screen, name X-ed out; debug.txt "OBJECT CREATION FAILED: cannot create masterchief_skeleton").  The root is the
+            # shared matg by its shared.map index, not globals_entry.out_index (a local matg has no shared index).
+            vmatg = next((t for t in sh.tags if not t.is_empty and t.group == 'matg' and t.addr), None)
+            if vmatg is not None:
+                roots.add(vmatg.index)
         # any link entry that a local tag refers to was added to used_links by expand(); kept orphans too
         if mode == 'all':
             ph = {t.index for t in sh.tags if not t.is_empty and t.addr}
@@ -1565,12 +2172,40 @@ class _Builder(object):
                     if t is not None:
                         roots.add(t.index)
             ph, stack = set(), list(roots)
-            while stack:
-                i = stack.pop()
-                if i in ph:
-                    continue
-                ph.add(i)
-                stack.extend(kids(i))
+
+            def grow():
+                while stack:
+                    i = stack.pop()
+                    if i in ph:
+                        continue
+                    ph.add(i)
+                    stack.extend(kids(i))
+            grow()
+            # Cartographer's injected content (mods\maps\carto_shared.map) reaches host shared slots BY INDEX that no stock-closure tag
+            # needs, e.g. the reindeer ghost shader -> bitm shaders\default_bitmaps\bitmaps\gray_50_percent (#10010).  When the map has a
+            # LOCAL tag of the same name nothing links to the shared one, so the slot stayed empty (katabatic / outpost / rain / sweet /
+            # stone_walls: invariants spawn.carto_inject).  The slot is listed with shared.map's own group + datum; it does not touch the
+            # local tag (names resolve to the local entries first: Plan.remap_name).  Same exceptions as invariants.CARTO_STOCK_MISSES.
+            if self.linking and self.opts.get('carto_shared', True):
+                try:
+                    from . import invariants as INV
+                    cp = INV.carto_shared_path(self.donors.maps_dir)
+                    added = []
+                    if cp:
+                        for g, nm, idx, _via in INV.carto_injection_misses(cp):
+                            if (g, (nm or '').lower()) in INV.CARTO_STOCK_MISSES or idx in ph:
+                                continue
+                            t = sh.tags[idx] if idx < len(sh.tags) else None
+                            if t is None or t.is_empty or not t.addr or t.group != g:
+                                continue
+                            added.append(t.name)
+                            stack.append(idx)
+                        grow()
+                    plan.stats['carto_slots_added'] = len(added)
+                    if added:
+                        plan.notes['carto_slots_added'] = added[:50]
+                except Exception as ex:                            # noqa: BLE001  (carto_shared.map unreadable: the invariants gate still reports)
+                    self.warn('carto-shared', '%s: %s' % (type(ex).__name__, ex))
         plan.shared_placeholders = [VistaTag(i, sh.tags[i].group, sh.tags[i].datum, 0, 0, sh.tags[i].name) for i in sorted(ph)]
         plan.stats['placeholders'] = len(ph)
 

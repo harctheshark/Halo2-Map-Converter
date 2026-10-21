@@ -34,6 +34,7 @@ try:
 except Exception:  # pragma: no cover
     pass
 
+import os
 import struct
 
 from . import node_handler
@@ -427,6 +428,16 @@ def mulg_runtime(ctx, m, v):
     n2 = _truncate_block(v, 'Vehicles', VISTA_MULG_VEHICLES)
     if n or n2:
         _stat(ctx, 'gp_mulg_list_entries_dropped', n + n2)
+    # Vista's 'Null Block' words (count/pointer pairs of blocks the Vista tag has no definition for) must be 0, as for scnr.  The stock MCC mulg
+    # has 0 in all of them; the Uncut/DW3 mod's mulg (the first one converted LOCALLY, uncuthud 2026-10-20) carries stale count/pointer pairs
+    # (0xC0: 4 / 0x0173DE10, 0xD0, 0xF0, 0xF8) left by the cache builder, which Vista would read as blocks.
+    z = 0
+    for nf in v.fields:
+        if nf.name == 'Null Block' and any(v.data[nf.offset:nf.offset + nf.size]):
+            _wr(v, nf, 0)
+            z += 1
+    if z:
+        _stat(ctx, 'gp_mulg_null_block_words_zeroed', z)
 
 
 _handled('mulg', '/Runtime', 'Weapons/Vehicles counts', 'truncated to the Vista lengths 17 / 11')
@@ -491,7 +502,61 @@ def matg_root(ctx, m, v):
         if v.blocks.get(af.offset):
             _stat(ctx, 'gp_matg_anniversary_dropped', len(v.blocks[af.offset]))
         _set_kids(v, af, [])
+    _solo_representation_guard(ctx, v)
+    _solo_ui_globals_guard(ctx, v)
     _scrub_tree(ctx, v)
+
+
+# Player Representation element: First Person Hands tagref @0, First Person Body @8, ..., Third Person Unit tagref @0xB0, variant @0xB8 (188 bytes)
+_REP_UNIT_DATUM = 0xB4
+
+
+def _solo_representation_guard(ctx, v):
+    """Solo / campaign globals leave Player Representation[2] (spartan) and [3] (elite) NONE in every stock Vista campaign map (and in the
+    MCC ones).  Cartographer's multiplayer tag patches (game_globals_prepare_lmao_representation, run from OnMapLoad when game_mode ==
+    multiplayer; xlive.dll+0x45100) dereference [spartan].Third Person Unit unconditionally: a campaign-type map picked from the custom
+    map list therefore dies in OnMapLoad (C0000005 at xlive.dll+0x445AC, 'Map Active False'; level1, arcology_playground 2026-10-20).
+    Elements 2 and 3 are copied from the first populated element (campaign never reads them), so that code reads a real unit."""
+    if getattr(ctx, 'map_type', 1) == 1:
+        return
+    f = _f(v, 'Player Representation')
+    els = v.blocks.get(f.offset) if f is not None else None
+    if not els or len(els) < 4 or any(len(e.data) < _REP_UNIT_DATUM + 4 for e in els):
+        return
+    donor = next((e for e in els[:2] if e.u32(_REP_UNIT_DATUM) not in (0, 0xFFFFFFFF)), None)
+    if donor is None:
+        _warn(ctx, 'gp_matg_no_representation', 'solo globals: no populated Player Representation to copy into [2]/[3]')
+        return
+    for i in (2, 3):
+        if els[i].u32(_REP_UNIT_DATUM) in (0, 0xFFFFFFFF):
+            els[i].data[:] = donor.data
+            _stat(ctx, 'gp_matg_solo_representation_filled')
+
+
+# Interface Tags element: Main Menu UI Globals @0x80, Single Player UI Globals @0x88, Multiplayer UI Globals @0x90 (tagref = group word + datum)
+_UI_SP, _UI_MP = 0x88, 0x90
+
+
+def _solo_ui_globals_guard(ctx, v):
+    """Same family as the representation guard: a campaign matg leaves Interface Tags[0].Multiplayer UI Globals NONE (stock Vista and MCC alike).
+    Cartographer injects 'multiplayer\\game_variant_settings\\multiplayer_game_settings' on every map load and stores it in
+    tag_get_fast(Interface Tags[0].Multiplayer UI Globals)+0x10/+0x14 (xlive.dll+0xAD962..0xAD96D, a WRITE); tag_get_fast(NONE) is a stray
+    heap address -> C0000005 at xlive.dll+0xACD6A, 'Map Active False' (m1_assault, 01a_tutorial_coop 2026-10-20).  The Single Player UI Globals tag
+    has the same wigl layout (32 bytes), so the multiplayer slot is pointed at it; a solo map never opens the multiplayer variant UI."""
+    if getattr(ctx, 'map_type', 1) == 1:
+        return
+    f = _f(v, 'Interface Tags')
+    els = v.blocks.get(f.offset) if f is not None else None
+    if not els or len(els[0].data) < _UI_MP + 8:
+        return
+    e = els[0]
+    if e.u32(_UI_MP + 4) not in (0, 0xFFFFFFFF):
+        return
+    if e.u32(_UI_SP + 4) in (0, 0xFFFFFFFF):
+        _warn(ctx, 'gp_matg_no_ui_globals', 'solo globals: no Single Player UI Globals to copy into the Multiplayer UI Globals slot')
+        return
+    e.data[_UI_MP:_UI_MP + 8] = e.data[_UI_SP:_UI_SP + 8]
+    _stat(ctx, 'gp_matg_solo_ui_globals_filled')
 
 
 # ------------------------------------------------------------------------------------------------
@@ -639,6 +704,47 @@ def _zone_games(ctx, m, v):
 
 for _p in ('/Spawn Data/Static Respawn Zones', '/Spawn Data/Static Initial Spawn Zones'):
     node_handler('scnr', _p, prio=110)(_zone_games)
+
+
+# Starting Equipment element (0x9C bytes): Flags @0, Game Type 1..4 (enum16) @4/@6/@8/@0xA, Item Collection 1..6 tagrefs @0x3C + 8*k
+_SE_SIZE, _SE_ITMC = 0x9C, 0x3C
+_SE_GAME_TYPE_ALL = 0x0C        # Game Type 1 of the stock multiplayer element (zanzibar, lockout ...): applies to every game type
+
+
+@node_handler('scnr', '', prio=130)
+def scnr_solo_starting_equipment(ctx, m, v):
+    """A solo scenario takes its loadout from Player Starting Profile (campaign only).  Launched as a multiplayer game the engine builds the
+    starting weapons from Starting Equipment[0].Item Collection 1/2 ('map default' primary / secondary, halo2.exe sub_45D5xx); campaign scenarios
+    leave the block empty, so players spawn unarmed.  The planner added the Vista item collections that wrap the profile's own primary / secondary
+    weapon (plan.notes['solo_starting_itmc']); they become Item Collection 1 / 2 of one element.  A block the author filled is left alone."""
+    if getattr(ctx, 'map_type', 1) == 1:
+        return
+    plan = getattr(ctx, 'plan', None)
+    picks = (getattr(plan, 'notes', None) or {}).get('solo_starting_itmc')
+    if not picks:
+        return
+    from .. import donor as D
+    f = _f(v, 'Starting Equipment')
+    if f is None:
+        return
+    kids = v.blocks.get(f.offset) or []
+    if kids and any(struct.unpack_from('<I', k.data, _SE_ITMC + 8 * i + 4)[0] not in (0, 0xFFFFFFFF) for k in kids for i in range(6)):
+        return
+    data = bytearray(_SE_SIZE)
+    struct.pack_into('<H', data, 4, _SE_GAME_TYPE_ALL)
+    n = 0
+    for i in range(6):
+        dat = 0xFFFFFFFF
+        if i < len(picks):
+            dat = D.out_datum(ctx, 'itmc', picks[i])
+            if dat != 0xFFFFFFFF:
+                n += 1
+        struct.pack_into('<4sI', data, _SE_ITMC + 8 * i, b'cmti', dat)
+    if not n:
+        return
+    el = T.Node(v.group, T.child_path(v.path, f), f.children, _SE_SIZE, data)
+    _set_kids(v, f, [el])
+    _stat(ctx, 'gp_solo_starting_equipment', n)
 
 
 @node_handler('scnr', '/Spawn Data', prio=110)
@@ -896,6 +1002,20 @@ def _donor_ref_to_output(ctx, vcache, group_word, datum):
 @node_handler('hudg', '', prio=110)
 def hudg_root(ctx, m, v):
     _scrub_tree(ctx, v)
+    # DEFAULT ON since 2026-10-20 (user: "turn training off by default for all conversions"): empty the LOCAL hudg's Player Training
+    # Data.  The game's tutorial prompts ('hold X to ...') draw a frame around the text; on converted maps they showed as an empty
+    # square (2026-10-20, chronopolis; the training-less build fixed it in game).  Nothing in the map data differs from Vista's
+    # (docs/FACTS [hudmsg3]), so this is a workaround, not a fix.  Keep the prompts with opts['keep_training'] (convert
+    # --keep-training) or env H2CONV_KEEP_TRAINING=1.  A map with LINKED globals uses Vista's own hudg, which cannot be changed here.
+    _o = getattr(ctx, 'opts', None) or {}
+    if not (_o.get('keep_training') or os.environ.get('H2CONV_KEEP_TRAINING')):
+        _tf = _f(v, 'Player Training Data')
+        if _tf is not None and (v.blocks.get(_tf.offset) or []):
+            _n = len(v.blocks.get(_tf.offset) or [])
+            _set_kids(v, _tf, [])
+            _stat(ctx, 'gp_hudg_training_entries_removed', _n)
+            _warn(ctx, 'gp_hudg_training_disabled', 'hudg Player Training Data emptied (%d entries; the game shows no tutorial prompts; '
+                                                    '--keep-training keeps them)' % _n)
     icon = _f(v, 'Icon Bitmap')
     dmg = _f(v, 'Damage Indicator Bitmap')
     btn = _f(v, 'Button Icons')

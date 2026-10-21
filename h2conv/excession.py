@@ -789,14 +789,14 @@ def _check_mapinfo(issues, root, kind, rel, data, engine, seen_guids, seen_stems
         if not os.path.isfile(mp):
             issues.append(Issue('error', 'map_missing', "maps/%s.map does not exist (the game cannot load this entry)" % last, jrel, 'game'))
         elif engine == 'Halo2':
-            r = MI.identify(mp, deep=False)
+            r = MI.identify(mp, deep=True)
             if r.status == 'invalid':
                 issues.append(Issue('error', 'map_invalid', 'maps/%s.map is not a usable cache file: %s' % (last, r.reason), jrel, 'game'))
             elif r.fmt == 'vista':
                 issues.append(Issue('error', 'map_is_vista', 'maps/%s.map is a Halo 2 Vista (v8) map; MCC needs version 13' % last, jrel, 'game'))
             elif r.fmt == 'mcc':
-                if r.custom_shared:
-                    issues.append(Issue('error', 'map_custom_shared', 'maps/%s.map needs a custom shared.map (unsupported)' % last, jrel, 'game'))
+                if r.custom_shared and not r.custom_shared_dir:
+                    issues.append(Issue('error', 'map_custom_shared', 'maps/%s.map needs a custom shared.map that is not next to it (unsupported)' % last, jrel, 'game'))
                 if r.compressed:
                     issues.append(Issue('info', 'map_compressed', 'maps/%s.map is chunk-compressed (fine for MCC, H2EK maps are not)' % last, jrel, 'hygiene'))
                 want = 'multiplayer' if kind == 'multiplayer' else 'solo'

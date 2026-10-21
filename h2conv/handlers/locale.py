@@ -496,10 +496,20 @@ def set_unic_node(vista_node, ranges):
             struct.pack_into('<iI', vista_node.data, f.offset, 0, 0)
 
 
-def patch_matg_node(vista_node, entries):
-    """Write the 9 language entries {0,0,count,size,index_off,data_off,0} at matg+0x188."""
+def patch_matg_node(vista_node, entries, keep_tail=False):
+    """Write the 9 language entries {0,0,count,size,index_off,data_off,0} at matg+0x188.  keep_tail: leave the last dword of every
+    entry as it is (a byte-faithful clone of Vista's shared matg keeps the tool's stale value there)."""
     for L, (c, s, i, d) in enumerate(entries):
-        struct.pack_into('<7I', vista_node.data, MATG_LANG_OFF + PACK_ENTRY * L, 0, 0, c, s, i, d, 0)
+        o = MATG_LANG_OFF + PACK_ENTRY * L
+        if keep_tail:
+            struct.pack_into('<6I', vista_node.data, o, 0, 0, c, s, i, d)
+        else:
+            struct.pack_into('<7I', vista_node.data, o, 0, 0, c, s, i, d, 0)
+
+
+def _is_clone(ctx, node):
+    """True for a matg node imported as a clone of Vista's shared matg (donor.import_donor registers it)."""
+    return any(node is n for n in (getattr(ctx, 'extra', None) or {}).get('clone_matg_nodes', ()))
 
 
 def shared_matg_entries(ctx):
@@ -582,7 +592,7 @@ def locale_matg_node(ctx, mcc_node, vista_node):
         st.matg_nodes.append(vista_node)
     # counts/sizes are final now; the absolute offsets are written by apply_to_builder
     _blob, entries, _pack = st.build(ctx, 0)
-    patch_matg_node(vista_node, matg_entries(ctx, st, entries))
+    patch_matg_node(vista_node, matg_entries(ctx, st, entries), _is_clone(ctx, vista_node))
 
 
 @post_pass(prio=50)
@@ -614,7 +624,7 @@ def finish_locale(ctx, converted):
     ctx.locale_blob = blob
     ctx.language_pack = pack if st.header_pack else None       # offsets relative to the blob start
     for n in st.matg_nodes:
-        patch_matg_node(n, matg_entries(ctx, st, entries))
+        patch_matg_node(n, matg_entries(ctx, st, entries), _is_clone(ctx, n))
     c = st.counts()
     _stat(ctx, 'locale_strings_english', c[0])
     _stat(ctx, 'locale_blob_bytes', len(blob))
@@ -642,7 +652,7 @@ def apply_to_builder(ctx, builder):
     blob, entries, pack = st.build(ctx, base)
     builder.set_locale(blob, pack if st.header_pack else None)
     for n in st.matg_nodes:
-        patch_matg_node(n, matg_entries(ctx, st, entries))
+        patch_matg_node(n, matg_entries(ctx, st, entries), _is_clone(ctx, n))
     return base
 
 

@@ -54,6 +54,52 @@ OFF_LOD_BIAS = 0x3C          # enum16 Shader LOD Bias
 MCC_LOD_LOWEST = 7
 VISTA_LOD_FALLBACK = 4       # '1/4 Size'
 
+# ---- Added Depth Bias Offset (shad +0x54, float) : MCC unit -> Vista unit (pitscreen, 2026-10-20) --------------------------------------
+# Both engines feed the tag value straight into the D3D9 render state DEPTHBIAS (id 195): Vista halo2.exe sub_669E9A
+# `SetRenderState(195, shad+0x54 + extra)`, MCC halo2.dll sub_18095AB30 (same sum), and MCC sub_180961440 NEGATES it (reverse Z).  But the
+# depth buffers differ: Vista = D24 forward Z, bias = absolute depth units (b); MCC = DXGI D32_FLOAT_S8X24 (dword_1819948A8 = 0x14, set only in
+# sub_18095E8E0) reverse Z, D3D11 rasterizer DepthBias = int(b * (2^24 - 1)) (handler sub_180960AE0), and for a FLOAT depth buffer D3D11 scales it
+# by 2^(exponent(depth) - 23), i.e. it is RELATIVE to the depth value d' = 1 - d_vista ~ n/z.  Pull toward the camera, world units, b = 0.001
+# (cyberdyne_h2 monitor overlays), near 0.06 / far 1024 wu (Vista defaults dword_868150 / dword_868154):
+#     z = 3 wu: MCC 0.005 wu, Vista 0.15 wu      z = 10: 0.013 vs 1.67      z = 30: 0.029 vs 15.0 wu (a different room's wall is no occluder).
+# No single Vista value reproduces a distance-relative bias.  The rule used: the Vista value b*d'(Z_REF) never pulls farther than MCC does at any
+# distance up to Z_REF (MCC's absolute depth bias is >= b*d' everywhere: 2*b*2^floor(log2 d') >= b*d').  Z_REF = 32 wu.  Only CONVERTED shader tags
+# of H2EK-built inputs pass through here (tags linked to Vista's shared.map keep Vista's own values; stock Aspyr-built maps, header flag 0x08, are not
+# touched so their conversions stay byte-identical).  Slope-scaled bias (+0x58) has the same meaning in both and is kept.
+# H2CONV_DEPTH_BIAS_REF=<wu> overrides Z_REF, 0 keeps the MCC value unchanged (A/B builds).
+# FLOOR: a converted magnitude never drops below 1e-6 (the smallest value stock Vista content uses on world surfaces, 17 capital_ship shaders: >= 16 D24
+# steps at any distance) and never grows: tiny MCC decal biases (-5e-5 ammo decals) keep a usable separation instead of vanishing to ~1e-7.
+OFF_DEPTH_BIAS = 0x54
+DEPTH_NEAR, DEPTH_FAR, DEPTH_BIAS_Z_REF = 0.06, 1024.0, 32.0
+DEPTH_BIAS_FLOOR = 1e-6
+
+
+def depth_bias_vista(bias, fac):
+    """MCC Added Depth Bias Offset -> Vista value: bias * fac, but not below DEPTH_BIAS_FLOOR in magnitude and never larger than the MCC value."""
+    mag = min(abs(bias), max(abs(bias) * fac, DEPTH_BIAS_FLOOR))
+    return math.copysign(mag, bias)
+
+
+def _stock_built_input(ctx):
+    """True for a map built by Aspyr's pipeline (header flag bit3 = textures.dat / sounds_*.dat, i.e. the stock MCC maps).  Their shader values are left
+    exactly as before (stock conversions stay byte-identical: the lockout goldens); the rescale is for maps authored with the H2EK, whose values were
+    tuned in the MCC engine."""
+    try:
+        return bool(ctx.src.header['flags'] & 0x0008)
+    except Exception:                                              # noqa: BLE001
+        return False
+
+
+def depth_bias_factor(z_ref=None):
+    """d'(z_ref) = 1 - d_vista(z_ref): the factor that turns an MCC Added Depth Bias Offset into the Vista value (1.0 = unchanged)."""
+    if z_ref is None:
+        v = os.environ.get('H2CONV_DEPTH_BIAS_REF', '').strip()
+        z_ref = float(v) if v else DEPTH_BIAS_Z_REF
+    if z_ref <= 0:
+        return 1.0
+    n, f = DEPTH_NEAR, DEPTH_FAR
+    return n * f / ((f - n) * z_ref) - n / (f - n)
+
 PP_STATIC = ('Bitmaps', 'Pixel Constants', 'Vertex Constants', 'Bitmap Properties', 'Color Properties', 'Value Properties')
 PP_ANIM = ('Overlays', 'Overlay References', 'Animated Parameters', 'Animated Parameter References')
 PP_SKELETON = ('Levels Of Detail', 'Layers', 'Passes', 'Implementations')
@@ -575,11 +621,19 @@ def _baseline_dims(ctx, name, donor_cache):
     return _vista_bitmap_dims(dn.cache, dn.tag) if dn is not None else None
 
 
+DEFAULT_2D_NAME = 'rasterizer\\default_2d'
+LOG_DIM_TOLERANCE = 5e-3        # a kept Log Bitmap Dimension within this of ln(max(w,h))*ln(2) is left alone
+
+
 def fix_log_dims(ctx, shad_root, donor_cache=None):
     """Bitmaps[].Log Bitmap Dimension must describe the bitmap the OUTPUT contains.  A stored value is kept when that bitmap
     has the size the value was computed for (MCC's own bitmap, or the donor's) and recomputed (ln(max(w,h))*ln(2)) when the
     output bitmap differs - e.g. the shader links a Vista bitmap of another resolution.  Keeping unchanged values preserves the
-    tool's rasterizer/default_2d quirk (0.0 mostly, 0.9609 in 27 Vista shaders)."""
+    tool's rasterizer/default_2d quirk (0.0 mostly, 0.9609 in 27 Vista shaders).
+    A kept value is still checked against the formula for the OUTPUT bitmap (tolerance LOG_DIM_TOLERANCE): the Vista twin's value can
+    be stale for the author's bitmap - e.g. rasterizer\\linear_corner_fade is 16x16 in every shipped map (1.922) but 256x256 in the
+    author's kit tags (3.844), and the twin keeps 1.922 although the baseline (the author's own bitmap) equals the output.
+    The formula holds for 2,190 of 2,190 MCC and 1,435 of 1,435 Vista shared references; default_2d and null refs are never touched."""
     n = 0
     for pp in _blk(shad_root, 'Postprocess Definition'):
         for k in _blk(pp, 'Bitmaps'):
@@ -592,7 +646,11 @@ def fix_log_dims(ctx, shad_root, donor_cache=None):
                 continue
             base = _baseline_dims(ctx, lab[1], donor_cache)
             if base and idx < len(base) and base[idx] == dims[idx]:
-                continue
+                if lab[1].lower() == DEFAULT_2D_NAME:
+                    continue                                   # the tool's null bitmap keeps whatever the twin stores (0.0 / 0.9609)
+                want = bitmap_log_dimension(lab[1], *dims[idx])
+                if abs(k.f32(8) - want) <= LOG_DIM_TOLERANCE:
+                    continue                                   # consistent already (float noise only)
             k.set_f32(8, bitmap_log_dimension(lab[1], *dims[idx]))
             n += 1
     ctx.stats['shad_log_dims_recomputed'] += n
@@ -934,7 +992,42 @@ def reconcile(ctx, mcc_root, vis_root, name):
         if vpp.u32(0) == NULL:
             vpp.set_u32(0, od)
     if si is None:
-        ctx.warn('shad_no_vista_stem', 'no Vista stem named %s: the MCC postprocess is kept unchanged (the engine cannot run it)' % stem_name, name)
+        # A Template of NONE crashes the engine when the shader is drawn (halo2.exe sub_67FE30, cyberdyne_h2 sky, 2026-10-20), so a shader
+        # on a user-made stem must always end up on a real Vista stem:
+        if od != NULL:
+            # 1. the planner redirected the MCC-only stem to a Vista stem with an IDENTICAL skeleton (planner._stem_substitute): the
+            #    shader's own postprocess keeps its meaning (same Layers, Passes, Implementations and Remappings)
+            lab = D.out_label(ctx, od)
+            ctx.stats['shad_stem_substituted'] += 1
+            ctx.warn('shad_stem_substituted', 'MCC-only stem %s: the Template is the structurally identical Vista stem %s; the MCC postprocess is kept' % (
+                stem_name, lab[1] if lab else '0x%08X' % od), name)
+            return 'sub'
+        # 2. no identical Vista stem: take the postprocess (and Template) of the Vista shader of the same name, if the Vista maps have one
+        tw = None
+        spec = getattr(getattr(ctx, 'cur_entry', None), 'twin', None)
+        if spec:
+            try:
+                tw = D.open_donor(ctx, spec)
+            except Exception:                                              # noqa: BLE001
+                tw = None
+        if tw is None:
+            tw = D.find(ctx, 'shad', name) if name else None
+        if tw is not None:
+            tname = _template_name(tw.cache, tw.tag)
+            td = D.out_datum(ctx, 'stem', tname) if tname else NULL
+            tpps = _blk(ctx.decode_vista(tw.cache, tw.tag), 'Postprocess Definition')
+            if td != NULL and len(tpps) == 1:
+                new_pp = _import_pp_from(ctx, tw, tpps[0], name)
+                new_pp.set_u32(0, td)
+                vis_root.blocks[OFF_PP] = [new_pp]
+                vis_root.set_u32(OFF_TEMPLATE + 4, td)
+                ctx.stats['shad_stem_from_twin'] += 1
+                ctx.warn('shad_stem_from_twin', 'MCC-only stem %s has no identical Vista stem: postprocess and Template taken from the Vista shader %s '
+                         '(stem %s); the MCC parameters of this shader are lost' % (stem_name, tw.tag.name, tname), name)
+                return 'T-twin'
+        ctx.stats['shad_stem_unresolved'] += 1
+        ctx.warn('shad_no_vista_stem', 'no Vista stem named %s, none with the same skeleton and no Vista twin shader: the Template is NONE and the engine '
+                 'crashes when this shader is drawn (invariants sh.null_template)' % stem_name, name)
         return 'nostem'
     if si.same:
         return 'D'
@@ -1107,10 +1200,20 @@ def shad_root(ctx, mcc_node, vis_node):
         vis_node.set_u16(OFF_LOD_BIAS, VISTA_LOD_FALLBACK)
         ctx.stats['shad_lod_bias_7_to_4'] += 1
     name = _shad_name(ctx, mcc_node)
+    # 1b. Added Depth Bias Offset: MCC float-depth (relative) unit -> Vista D24 (absolute) unit, see depth_bias_factor()
+    bias = vis_node.f32(OFF_DEPTH_BIAS)
+    fac = depth_bias_factor()
+    if bias != 0.0 and fac != 1.0 and not _stock_built_input(ctx):
+        nb = depth_bias_vista(bias, fac)
+        if nb != bias:
+            vis_node.set_f32(OFF_DEPTH_BIAS, nb)
+            ctx.stats['shad_depth_bias_rescaled'] += 1
+            ctx.warn('shad_depth_bias_rescaled', 'Added Depth Bias Offset %.3g (MCC float-depth unit) -> %.3g (Vista D24 unit, x%.3g, floor %g)' % (
+                bias, nb, fac, DEPTH_BIAS_FLOOR), name)
     tier = reconcile(ctx, mcc_node, vis_node, name)
     ctx.stats['shad_tier:%s' % tier] += 1
     fix_log_dims(ctx, vis_node)
-    if tier not in ('D', 'none', 'notemplate', 'unresolved', 'nostem'):
+    if tier not in ('D', 'none', 'notemplate', 'unresolved', 'nostem', 'sub'):
         sync_predicted_resources(ctx, vis_node)
 
 

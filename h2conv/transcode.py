@@ -678,26 +678,44 @@ class VistaRefs(object):
 
 class MccShared(dict):
     """{'shared','single_player_shared','mainmenu'} -> MccCache|None, opened lazily (decompressed stock MCC maps).
-    Search order: explicit dir, <work folder>/mcc_decompressed, directory of the source map, stock MCC folder."""
+    Search order: explicit dir, <work folder>/mcc_decompressed, directory of the source map, stock MCC folder.
+    custom-shared support: `shared_map` (an explicit shared.map path, the one a workshop mod's map was built against) wins for 'shared';
+    `want_times` = the creation FILETIMEs the map recorded ([mainmenu, shared, single_player_shared], header 0x50..0x60): among the existing
+    candidates the file with that creation time is preferred (a mod's folder may hold a shared.map next to a map that was built against the
+    stock one, or the other way round); nothing recorded / nothing matching = the first existing file as before."""
     NAMES = {'shared': 'shared.map', 'single_player_shared': 'single_player_shared.map', 'mainmenu': 'mainmenu.map'}
+    SLOT = {'mainmenu': 0, 'shared': 1, 'single_player_shared': 2}
 
-    def __init__(self, dirs=()):
+    def __init__(self, dirs=(), shared_map=None, want_times=None):
         dict.__init__(self)
         self.dirs = [d for d in dirs if d] + [d for d in (MCC_DECOMP, _paths.mcc_maps_dir(required=False)) if d]
+        self.shared_map = shared_map
+        self.want_times = tuple(want_times) if want_times else ()
 
     def get(self, key, default=None):
         if key not in self:
-            from .mcc_cache import MccCache
+            from .mcc_cache import MccCache, pick_shared_map
             cache = None
-            for d in self.dirs:
-                p = os.path.join(d, self.NAMES[key])
-                if os.path.isfile(p):
-                    try:
-                        cache = MccCache(p)
-                    except Exception:
-                        cache = None
-                    if cache is not None:
-                        break
+            if key == 'shared' and self.shared_map and os.path.isfile(self.shared_map):
+                try:
+                    cache = MccCache(self.shared_map)
+                except Exception:
+                    cache = None
+            if cache is None:
+                want = self.want_times[self.SLOT[key]] if len(self.want_times) == 3 else 0
+                cands = [os.path.join(d, self.NAMES[key]) for d in self.dirs]
+                if want:
+                    # best match first; a candidate that fails to open falls through to the next one (as before)
+                    from .mcc_cache import file_creation_time
+                    cands = [p for p in cands if os.path.isfile(p) and file_creation_time(p) == want] + cands
+                for p in cands:
+                    if os.path.isfile(p):
+                        try:
+                            cache = MccCache(p)
+                        except Exception:
+                            cache = None
+                        if cache is not None:
+                            break
             self[key] = cache
         return dict.get(self, key, default)
 

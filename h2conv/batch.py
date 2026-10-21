@@ -19,7 +19,7 @@ Directions
 
 Per-map failures are caught, recorded and never stop the batch; the summary lists failed / skipped maps with reasons and the
 output directories.  Skipped on purpose: shared / single_player_shared / mainmenu databases, MCC maps that need a CUSTOM
-shared.map (unsupported), byte-identical duplicates, maps already converted (resume), outputs that already exist (mcc2vista).
+shared.map AND use tags from it when that shared.map is not found in the mod (a multiplayer map whose mod ships it is converted: the tags the mod changed are copied; a map that uses none of its tags is converted with the mod's own textures.dat), byte-identical duplicates, maps already converted (resume), outputs that already exist (mcc2vista).
 """
 import ctypes
 try:
@@ -233,6 +233,7 @@ class Options(object):
         self.force = False              # vista2mcc: convert again although the package already holds this exact source
         self.overwrite = False          # mcc2vista: replace an existing output file
         self.suffix = ''                # mcc2vista: appended to the output name (e.g. '_mcc' so it does not look like the stock map)
+        self.avoid_stock_names = False  # mcc2vista: the names of the stock Vista maps (lockout, headlong, ...) count as taken: a map with such a stem gets the numeric suffix
         self.matg = 'hud'               # mcc2vista --matg
         self.isolate = False            # run every conversion in its own python process (hard crashes / hangs cannot stop the batch)
         self.timeout = 3600             # seconds per map in isolate mode
@@ -372,6 +373,7 @@ class Plan(object):
         self.package = None              # ModPackage (real or virtual) for vista2mcc
         self.package_note = ''
         self.vista_used = set()
+        self.stock_names = set()         # --avoid-stock-names: lower-case stems of the stock Vista maps (also in vista_used)
         self.notes = []
 
     def count(self, **kw):
@@ -390,6 +392,18 @@ def make_plan(root, opts, records=None, log=None):
     excl = [d for d in (opts.mcc_out, opts.vista_out) if d]
     recs = records if records is not None else MI.scan_folder(root, recursive=opts.recursive, exclude=excl, deep=opts.deep)
     plan = Plan(root, opts)
+    plan.stock_names = set()
+    if getattr(opts, 'avoid_stock_names', False):
+        # remakes of stock maps keep the stock stem (03_lockout, headlong ...): the names of the stock Vista maps (the install's own, plus the 43 of
+        # a stock Cartographer folder) are reserved, so the same numeric suffix rule as for two outputs of one batch applies
+        plan.stock_names = set(n.lower() for n in _paths.STOCK_VISTA_MAP_NAMES)
+        try:
+            vm = _paths.vista_maps_dir(opts.vista_maps, required=False)
+            if vm and os.path.isdir(vm):
+                plan.stock_names |= set(os.path.splitext(n)[0].lower() for n in os.listdir(vm) if n.lower().endswith('.map'))
+        except Exception:                                                       # noqa: BLE001 - the built-in list is enough
+            pass
+        plan.vista_used |= plan.stock_names
     # ---- vista2mcc needs the package for stem planning --------------------------------------------------------------------------
     need_pkg = opts.direction in ('auto', 'vista2mcc') and any(r.fmt == 'vista' and r.status == 'ok' for r in recs)
     if need_pkg and not opts.mcc_out:
@@ -506,7 +520,11 @@ def make_plan(root, opts, records=None, log=None):
             elif it.stem.lower() == _mcc_base(r, opts.suffix).lower():
                 it.naming, it.naming_note = 'sanitised', "'%s' is not a valid Cartographer map name; sanitised to '%s'" % (wanted, it.stem)
             else:
-                it.naming, it.naming_note = 'suffix', "name '%s' is already used by another output of this batch; '%s' chosen" % (_mcc_base(r, opts.suffix), it.stem)
+                base_nm = _mcc_base(r, opts.suffix)
+                if base_nm.lower() in plan.stock_names:
+                    it.naming, it.naming_note = 'suffix', "name '%s' is the name of a stock Vista map; '%s' chosen" % (base_nm, it.stem)
+                else:
+                    it.naming, it.naming_note = 'suffix', "name '%s' is already used by another output of this batch; '%s' chosen" % (base_nm, it.stem)
             if os.path.exists(it.out_path):
                 if opts.overwrite:
                     it.naming, it.naming_note = 'replaces', 'output %s exists and --overwrite replaces it' % it.out_path
@@ -579,12 +597,30 @@ class ConvertError(Exception):
     pass
 
 
+def _mod_data_dir(item):
+    """Folder with the mod's OWN textures.dat / sounds_*.dat for an MCC map of a mod that was built against a custom shared.map but uses no
+    tag from it (mapinfo: status ok, MapRecord.data_dir).  Its bitmaps and sounds live there, not in the installed game's files.  None for
+    every other map (the --mcc-maps folder / the installed game is used, as before)."""
+    d = getattr(item.rec, 'data_dir', None)
+    return d if d and os.path.isdir(d) else None
+
+
+def _mod_shared_map(item):
+    """The CUSTOM shared.map of a multiplayer map built against one (mapinfo: status ok, MapRecord.custom_shared_map), else None.  The converter compares
+    its tags with the stock shared.map and copies what the mod changed (custom-shared support)."""
+    p = getattr(item.rec, 'custom_shared_map', None)
+    return p if p and os.path.isfile(p) else None
+
+
 def _forward_inprocess(item, out_file, opts):
     """MCC -> Vista with h2conv.convert.convert_map."""
     from h2conv import convert as F
     o = {'quiet': True, 'name': item.stem, 'matg': opts.matg}
-    if opts.mcc_maps:
-        o['mcc_maps_dir'] = o['mcc_dat_dir'] = opts.mcc_maps
+    data_dir = _mod_data_dir(item) or opts.mcc_maps
+    if data_dir:
+        o['mcc_maps_dir'] = o['mcc_dat_dir'] = data_dir
+    if _mod_shared_map(item):
+        o['shared_map'] = _mod_shared_map(item)
     fn = opts.converters.get('mcc2vista')
     if fn is not None:
         rep = call_filtered(fn, item.src, out_file, name=item.stem, quiet=True, vista_maps=opts.vista_maps)
@@ -645,8 +681,11 @@ def _subprocess_convert(item, out_file, opts):
     if item.direction == 'mcc2vista':
         cmd = child_command('convert') + [item.src, out_file, '--name', item.stem, '--quiet', '--report', rep_path,
                                           '--vista-maps', vista_maps, '--matg', opts.matg]
-        if opts.mcc_maps:
-            cmd += ['--mcc-maps', opts.mcc_maps]
+        data_dir = _mod_data_dir(item) or opts.mcc_maps
+        if data_dir:
+            cmd += ['--mcc-maps', data_dir]
+        if _mod_shared_map(item):
+            cmd += ['--shared-map', _mod_shared_map(item)]
     else:
         cmd = child_command('rev') + [item.src, out_file, '--name', item.stem, '--quiet', '--report', rep_path,
                                       '--vista-maps', vista_maps]
@@ -764,7 +803,8 @@ def _convert_item(item, plan, opts):
             raise ConvertError('output is not a valid %s map: %s' % (want_fmt, got.reason or got.label()))
         item.out_size = os.path.getsize(staged)
         item.report = _brief_report(rep)
-        if got.name and got.name.lower() != item.stem.lower():
+        titled = isinstance(rep, dict) and rep.get('header_name_source') in ('mapinfo', 'display-name') and rep.get('header_name') == got.name
+        if got.name and got.name.lower() != item.stem.lower() and not titled:     # (a MapInfo title / --display-name in the header name is intended: list name)
             item.warnings.append("the converter wrote the internal map name '%s', not '%s' (did it ignore name=?)" % (got.name, item.stem))
         if got.kind != item.rec.kind:
             item.warnings.append('scenario type changed in conversion: %s -> %s' % (item.rec.kind, got.kind))
@@ -1075,6 +1115,8 @@ def main(argv=None):
     r.add_argument('--force', action='store_true', help='vista2mcc: convert again even if the package already holds this exact source')
     r.add_argument('--overwrite', action='store_true', help='mcc2vista: replace existing output files')
     r.add_argument('--suffix', default='', help='mcc2vista: text appended to the output name, e.g. _mcc')
+    r.add_argument('--avoid-stock-names', action='store_true',
+                   help='mcc2vista: the names of the stock Vista maps (lockout, headlong, ...) count as taken, so a remake with a stock stem gets the numeric suffix (_2, _3, ...)')
     r.add_argument('--matg', choices=('hud', 'link', 'local', 'auto'), default='hud')
     r.add_argument('--isolate', action='store_true', help='run every conversion in its own python process')
     r.add_argument('--jobs', type=int, default=1, help='parallel conversions (needs --isolate; max 4)')
@@ -1152,7 +1194,7 @@ def main(argv=None):
             assembly_dir=_paths.pick('assembly', a.assembly_dir)[0],          # None = the bundled copy
             dry_run=a.dry_run, only=_split(a.only), exclude=_split(a.exclude),
             kinds=('multiplayer', 'solo') if a.kind == 'all' else (a.kind,), limit=a.limit, force=a.force, overwrite=a.overwrite,
-            suffix=a.suffix, matg=a.matg, isolate=a.isolate, jobs=a.jobs, timeout=a.timeout, hash_duplicates=not a.no_dedupe, hash_sources=not a.no_hash,
+            suffix=a.suffix, avoid_stock_names=a.avoid_stock_names, matg=a.matg, isolate=a.isolate, jobs=a.jobs, timeout=a.timeout, hash_duplicates=not a.no_dedupe, hash_sources=not a.no_hash,
             sort_maps=not a.keep_order, refresh_metadata=a.refresh_metadata, package_title=a.package_title or st['package_title'],
             remember=not a.no_remember, recursive=not a.no_recursive, settings_path=a.settings, report=a.report, quiet=a.quiet, list_plan=a.list,
             cancel_file=a.cancel_file, announce=a.announce)
