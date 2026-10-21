@@ -4,7 +4,7 @@ This file is the honest ledger of the Halo 2 Map Converter: what went wrong whil
 fixed, what is still wrong, and how to work around it.  It is written for people who want to use converted maps and for
 people who want to help.
 
-Version 0.2.0 (pre-release).  Sections 1 and 3 are current for 0.2.0; section 2.1 lists what changed since 0.1.0 at its end.
+Version 0.3.0 (pre-release).  Sections 1 and 3 are current for 0.3.0; section 2.1 lists what changed in 0.2.0 and in 0.3.0 at its end.
 
 ## 1. How much has actually been tested
 
@@ -22,7 +22,8 @@ Two kinds of evidence are used throughout this file.  Please keep them apart.
 | Stock map round trips | MCC stock `headlong` to Vista is about 99.7 % field-equal to the stock Vista `headlong` (the remainder are real differences between the two games' versions of the content).  **Checked** |
 | MCC to Vista, played | A custom (MCC editing kit) `headlong` and a custom `chronopolis`, including its custom HUD pickup text, in Project Cartographer |
 | Vista to MCC, played | In MCC: the vehicle driver and gunner seats on a converted custom map (confirmed 2026-10-14), the water on converted custom maps, `Holidays Grave` and `corpsys` (confirmed 2026-10-15), and the sky fix on `Bikini Bottom` (section 2.2; confirmed 2026-10-15) |
-| MCC to Vista, workshop maps with their own `shared.map` (0.2.0) | 125 multiplayer maps of six workshop mods: 113 converted with 0 errors from the format validator, the limits check and the invariants (the other 12 are the Halo CE ports, section 3.3).  **Checked, not played.**  The tutorial-prompt frame went away on a converted `chronopolis` (**played**) |
+| MCC to Vista, workshop maps with their own `shared.map` (0.2.0, 0.3.0) | 125 multiplayer maps of six workshop mods: all 125 convert with 0 errors from the format validator, the limits check and the invariants (113 in 0.2.0; the other 12, the Halo CE ports, since 0.3.0, section 2.1).  **Checked, not all played.**  Played: workshop maps of the Digtacular and Uncut mods; the tutorial-prompt frame went away on a converted `chronopolis`; with the patched `halo2.exe` a converted `chronopolis` shows its description and the team menu works (section 3.3) |
+| MCC to Vista, campaign maps from the multiplayer lobby | **Experimental.**  Several load and play, others crash; allies can be hostile, cutscenes do not play (section 3.3) |
 | Window program and Windows zip | New in 0.1.0, the least used part: it runs the same batch engine as the command line (the tested part).  **Checked:** three conversions made with `h2conv.exe` are byte-identical to the Python source's (except the header's creation time); a batch with `--isolate`, the sound transcoder's helper processes and the stop request work in the frozen program; the window's logic runs in automated tests without a screen.  **Not checked:** how the window looks on other screens (high-DPI), on Windows 10, or on a PC without Python or the Visual C++ runtime |
 | Everything else | **Not played.**  In particular campaign / solo maps, network play between machines, most of the community archive, sounds in every language |
 
@@ -64,8 +65,9 @@ engine-level comparison of every shader against its source.
 **Custom HUD pickup text vanished.**
 *Cause:* the default behaviour linked the map's globals to Vista's shared globals, which throws away the map's own HUD messages.
 *Fix:* `--matg hud` (now the default) keeps the map's own globals only when its HUD text is customised.
-*Trade-off:* a map with local globals loses its description and preview in the Cartographer map list, because Cartographer's list check rejects them
-(the map still loads).  Use `--matg link` to get the full list entry and give up the HUD edits.
+*Trade-off:* a map with local globals loses its description, preview and team changing in the Cartographer map list, because Cartographer's list check rejects them
+(the map still loads).  Use `--matg link --training-via-script` to get the full list entry and give up the HUD edits, or patch `halo2.exe` (README, "The map list
+entry, teams and the `halo2.exe` patch").
 *Status:* fixed, played on `chronopolis`.
 
 **Tables the engine searches were in the wrong order.**
@@ -124,6 +126,41 @@ code), and **not yet confirmed in game**.
   chunk without its 4-byte checksum trailer is accepted.
 * **Campaign maps started from the multiplayer lobby crashed on load** (Cartographer dereferences a player-representation entry and a
   multiplayer-UI entry that campaign globals leave empty); the converter fills both, and also fills the starting weapons from the scenario's own starting profile.  Campaign maps are still unreliable (3.3).
+
+**Added or fixed in 0.3.0.**  Same rule: unless a line says "played", the status is *checked* and **not yet confirmed in game**.
+
+* **The 12 Halo CE ports of workshop mod 3583572796 (`bloodgulch`, `wizard`, `beavercreek` ...) failed with "shader has no Template"** in 0.2.0:
+  they use Halo CE shader templates that exist in MCC only as Direct3D 11 code.  Now 30 templates (with 25 passes and one vertex shader) are carried
+  as ready-made Direct3D 9 programs (`h2conv\data\ce_port\`, README and THIRD_PARTY_NOTICES say what they are made from).  Most come from the
+  HLSL source of the Halo 2 editing kit: that source reproduces the mod's Direct3D 11 code byte for byte, so it is the program the maps hold, and its Direct3D 11
+  branch is compiled for Direct3D 9 with only the texture-sampling calls rewritten.  One pass that has no source (`scopeblur`) is translated from
+  its Direct3D 11 code statement by statement.  Every program is checked numerically against the Direct3D 11 code in the mod's map (random and extreme
+  inputs) before it is entered into the table.  The water of `beavercreek` needs a vertex shader that MCC re-wrote (it computes a divided screen
+  position per vertex); it is ported as a private vertex shader `water_pool_static__ce` and checked lane for lane.  The data is used only for the
+  exact tags it was made for (a digest check), only for maps built against a custom `shared.map`; every other conversion is unchanged.  All 12
+  maps convert with 0 errors from the built-in checks.  *Status:* checked, not played.
+* **A converted map could not change teams in the lobby, and showed only its name in the map list.**  The lobby takes the team limits from the
+  custom-map list entry, which `halo2.exe` fills from the scenario's multiplayer info block, but only after it has checked that the globals tag is a
+  shared one (README, "The map list entry, teams and the `halo2.exe` patch").  The converter now writes the info block (names, description, team
+  limits from the mod's MapInfo file) and offers two ways to get the full entry: the six-byte `halo2.exe` patch (*played*: description and team changing work on
+  a converted `chronopolis`) or `--matg link --training-via-script` (*checked*).  `--mp-info`, `--mp-info-dir` and `--description` write the whole block.
+* **No preview picture in the map list.**  The list draws the preview only if it is exactly 440 x 414 pixels (anything else is dropped without a
+  message); a map's own 2048 x 2048 preview was never shown.  `--mp-info` can name a 440 x 414 bitmap of the map or of `mainmenu.map`; the README's example
+  names the placeholder `mainmenu.map` holds (`unknown_map`, a grid with a question mark).  *Status:* checked on the file, not yet seen in game.
+* **A campaign level hung the graphics card in Vista** (the driver's timeout reset, then a crash a moment later).  It was traced in game to the
+  hologram overlay drawn on the extra `truth` variant that one mod (Mombasa Mayhem) adds to the Regret hologram model; the overlay on the sections of that
+  variant hangs, on Regret's own sections it does not.  The cause inside the engine was not found.  A placement of a model with a hologram shader that
+  names a variant other than the model's first (default) variant now gets the default variant, so the Truth hologram shows the stock Regret look.
+  `--keep-hologram-variants` switches this off.  A script that picks the variant by name while the game runs is not covered.  *Status:* a workaround, checked on
+  the file; the same change made by hand avoided the hang in game.
+* **Checkpoint saves** of campaign maps are kept (the default).  The new switch `--no-checkpoints` turns them into no-ops, for a map whose save crashes.
+* **Game variants with a chosen starting weapon gave nothing on a campaign map.**  The engine finds the weapon through the multiplayer globals' weapon table, which
+  a campaign map leaves almost empty.  The empty slots now point at the weapons of the scenario's own starting profile.
+* **Very large campaign maps lost all their sounds.**  The runtime flag index in the sound tables (`Pitch Range`) is an unsigned 16-bit field in the
+  engine, and the converter used a signed one, so a map with more than about 32,000 such flags (4,450 sounds in one level) failed the sound step and was written without sound
+  data.  The limits are now the engine's own.  *Status:* checked (the maps come out with their sounds); not yet played, and whether the engine copes with
+  4,450 sounds in one campaign is untested.
+* **`--description TEXT`** sets the map description in every language (language pack and info block).
 
 ### 2.2 Vista to MCC
 
@@ -255,15 +292,20 @@ handle it, but that is a guess.  *Workaround:* none from the converter; the map 
 ### 3.3 Inputs that are not supported
 
 * **Campaign (single-player) maps for Vista / Project Cartographer: unsupported / experimental.**  Cartographer launches a custom campaign map
-  through its multiplayer path and some campaign maps crash it; of the campaign maps tried, only one small test map loads.  The converter
-  writes campaign maps, but they cannot be expected to work.  Multiplayer maps are the supported case.
-* **The 12 Halo CE ports of workshop mod 3583572796** (`bloodgulch`, `wizard`, `beavercreek` and the rest of its Halo CE ports) fail with
-  "shader has no Template": 115 to 133 of their shaders use Halo CE shader templates that exist in MCC only as DirectX 11 bytecode, and
-  Vista has no equivalent.  Converting them would need a translator from that bytecode to Direct3D 9 (not part of this tool); the converter
-  reports an error instead of writing a map that would crash when a shader is drawn.
-* **Maps with their own globals show only a name** in Cartographer's custom map list (no description, no preview).  This is Cartographer's
-  own list check; the map plays normally.  It affects every converted multiplayer map by default (2.1, "Tutorial prompts"); `--keep-training`
-  on a map without custom globals keeps the full entry.
+  through its multiplayer path.  Several campaign maps load and can be played from the multiplayer lobby, others crash it (0.2.0: three of the
+  four maps tried loaded and played).  Known problems of the mode itself: allies can be hostile, cutscenes do not play, and the Truth hologram of one mod shows the stock
+  Regret look (2.1, 0.3.0).  The converter writes campaign maps, but they cannot be expected to work.  Multiplayer maps are the supported case.
+* **The 12 Halo CE ports of workshop mod 3583572796** convert since 0.3.0 (2.1) but have not been played; they pass every built-in check.  The
+  Direct3D 9 programs they need are carried as a table of compiled programs that is valid only for that mod's exact templates; a different
+  mod's Halo CE templates, or a changed template, are reported as failed ("shader has no Template") instead of being guessed.
+* **Maps with their own globals show only a name** in Cartographer's custom map list (no description, no preview) and **the lobby cannot change
+  teams for them.**  This is Cartographer's own list check (`halo2.exe`); the map plays normally.  It affects every converted multiplayer map by
+  default (2.1, "Tutorial prompts").  Ways out: the six-byte `halo2.exe` patch, or `--matg link --training-via-script`, or `--keep-training` on a
+  map without custom globals (README, "The map list entry, teams and the `halo2.exe` patch").  Delete `Maps\Data Files\.h2mdat` after switching:
+  Cartographer caches the entry it made earlier.  The Project Cartographer developers plan to ship an equivalent change.
+* **Maps that need their own globals with `--matg link --training-via-script`:** the map then uses Vista's shared globals, so what a mod keeps
+  in its own globals (custom HUD text and pickup prompts, damage tables, player and weapon settings, the weapon lists that game variants choose from) does not
+  work for that map.
 * **MCC campaign maps built against a custom `shared.map`**, and multiplayer maps whose mod `shared.map` or `textures.dat` cannot be found, are
   skipped.  Batch mode detects them (from the build times recorded in the header) and warns.  The single-map command `h2conv.convert` does not
   run that check; run `py -3 -m h2conv.mapinfo <map>` first, and look for the status "skip" with the reason "depends on a CUSTOM shared.map".

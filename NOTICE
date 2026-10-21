@@ -1,4 +1,4 @@
-Halo 2 Map Converter 0.1.0
+Halo 2 Map Converter 0.3.0
 Copyright (C) 2026 harctheshark
 
 This program is free software: you can redistribute it and/or modify
@@ -35,4 +35,5 @@ OpenSSL, libffi and other libraries inside it), Tcl/Tk 8.6, numpy 2.2.6 and scip
 Microsoft Visual C++ runtime DLLs.  Their licence texts are in the LICENSES folder of the zip; THIRD_PARTY_NOTICES.md, section 1b, lists them.
 
 Halo, Halo 2 and Halo: The Master Chief Collection are trademarks of Microsoft
-Corporation.  This is an unofficial fan project.  No game files are included.
+Corporation.  This is an unofficial fan project.  No game files are included; the compiled shader programs in h2conv/data/ce_port are derived
+from the Halo 2 editing kit's shader source and a workshop mod's shaders, see THIRD_PARTY_NOTICES.md.

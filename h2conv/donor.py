@@ -433,13 +433,19 @@ def _must_copy(ctx, loc):
     return False
 
 
-def _relocate_pointer(ctx, node, off, size_off, cache, kind, label):
-    """node.data[off] = raw offset dword (loc<<30 | offset), size at size_off (or None).  Copy or keep."""
+def _relocate_pointer(ctx, node, off, size_off, cache, kind, label, rebase_mainmenu=False):
+    """node.data[off] = raw offset dword (loc<<30 | offset), size at size_off (or None).  Copy or keep.
+    rebase_mainmenu (donor = mainmenu.map, PlanEntry.mainmenu_raw): a pointer into the donor itself (loc 0) becomes loc 1 (mainmenu.map) with the same
+    offset, the bytes stay where they are (the map-list preview bitmap: stock zanzibar / needle / ... do exactly this)."""
     ptr = struct.unpack_from('<I', node.data, off)[0]
     size = struct.unpack_from('<I', node.data, size_off)[0] if size_off is not None else 0
     if size == 0 or ptr in (0, NULL):
         return False
     loc, fo = ptr >> 30, ptr & 0x3FFFFFFF
+    if rebase_mainmenu and loc == LOC_SELF:
+        struct.pack_into('<I', node.data, off, (LOC_MAINMENU << 30) | fo)
+        ctx.stats['donor_raw_rebased_mainmenu'] += 1
+        return False
     if not _must_copy(ctx, loc):
         ctx.stats['donor_raw_kept'] += 1
         return False
@@ -455,14 +461,14 @@ def _relocate_pointer(ctx, node, off, size_off, cache, kind, label):
     return True
 
 
-def relocate_raw(ctx, root, cache, label=None):
+def relocate_raw(ctx, root, cache, label=None, rebase_mainmenu=False):
     """Raw-resource pointers of the donor tag: bitmap pixel streams (bitm element +0x1C / size +0x34) and geometry blocks
     (geometry_block_info +0x00 / size +0x04).  Sound chunks (snd!/ugh!) are NOT relocated (warn)."""
     g = root.group
     if g == 'bitm':
         f = root.field('Bitmaps')
         for el in root.blocks.get(f.offset, []) if f is not None else []:
-            _relocate_pointer(ctx, el, 0x1C, 0x34, cache, 'bitmap', label)
+            _relocate_pointer(ctx, el, 0x1C, 0x34, cache, 'bitmap', label, rebase_mainmenu)
     for (grp, path, info_off) in GEOMETRY_SITES:
         if grp != g:
             continue
@@ -510,7 +516,12 @@ def import_donor(ctx, d, entry=None):
         root = ctx.decode_vista(d.cache, d.tag)
         shared_refs = bool(getattr(entry, 'shared_refs', False))
         remap_tree(ctx, root, d.cache, label, shared_refs=shared_refs)
-        relocate_raw(ctx, root, d.cache, label)
+        mm_raw = bool(getattr(entry, 'mainmenu_raw', False))
+        relocate_raw(ctx, root, d.cache, label, mm_raw)
+        if mm_raw and root.group == 'bitm' and entry is not None and getattr(entry, 'out_datum', None) not in (None, NULL):
+            f = root.field('Bitmaps')
+            for el in root.blocks.get(f.offset, []) if f is not None else []:
+                struct.pack_into('<I', el.data, 0x4C, entry.out_datum)          # Vista +0x4C = the bitmap tag's own datum (bitmaps.py parent_datum)
         if shared_refs and root.group == 'hudg':
             _strip_training(ctx, root, label)
         if shared_refs and root.group == 'matg':

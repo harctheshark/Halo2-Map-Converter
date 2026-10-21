@@ -472,7 +472,13 @@ def convert_map(src_path, out_path, vista_maps=None, self_contained=False, repor
     # training is OFF unless --keep-training / H2CONV_KEEP_TRAINING: the planner then gives an MP map whose globals would be linked its own
     # training-less copy of Vista's matg + hudg (planner._setup_training_globals), gameplay.hudg_root empties a converted hudg
     opts['training_off'] = not (opts.get('keep_training') or os.environ.get('H2CONV_KEEP_TRAINING'))
-    log = lambda m: _log(opts, m)                                  # noqa: E731
+    # ... through the HUD globals by default (2026-10-20 [lglob] behaviour, restored 2026-10-21: EVERY MP map keeps its OWN, local
+    # matg; the custom-map list shows the full entry on a patched halo2.exe).  --training-via-script / H2CONV_TRAINING_VIA_SCRIPT=1 is the
+    # opt-in alternative: a STARTUP SCRIPT (hud_enable_training false, handlers/scripts.add_training_off_script) with Vista's SHARED matg/hudg
+    # linked, which also gives the full list entry on an UNPATCHED Cartographer (use it with --matg link; --training-via-hudg wins over it).
+    opts['training_script'] = bool(opts['training_off'] and (opts.get('training_via_script') or os.environ.get('H2CONV_TRAINING_VIA_SCRIPT'))
+                                   and not (opts.get('training_via_hudg') or os.environ.get('H2CONV_TRAINING_VIA_HUDG')))
+    log = lambda m: _log(opts, m)                                # noqa: E731
     name_opt = opts.get('name')
     if name_opt:
         why = LIM.check_map_name(name_opt)
@@ -497,6 +503,8 @@ def convert_map(src_path, out_path, vista_maps=None, self_contained=False, repor
     _paths.refuse_existing(out_path, opts, report_path)            # R16: before any work is done
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     stem = os.path.splitext(os.path.basename(out_path))[0]
+    from .handlers import mp_level_names as _MPN
+    _MPN.resolve_mp_info(opts, stem)                 # --mp-info FILE, else <--mp-info-dir>\\<output stem>.json: opts['mp_info_resolved'] / ['mp_info_path']
     if len(stem) > LIM.MAP_STEM_MAX:
         log('WARNING: the file stem %r is longer than %d characters - Cartographer skips such files in its custom map list' % (stem, LIM.MAP_STEM_MAX))
     report['output'] = out_path
@@ -512,8 +520,8 @@ def convert_map(src_path, out_path, vista_maps=None, self_contained=False, repor
     plan, strs, planner_name = make_plan(src, mcc_shared, vista, opts, log)
     report['planner'] = planner_name
     report['options'] = {k: v for k, v in sorted(opts.items()) if k in (
-        'name', 'display_name', 'matg', 'self_contained', 'pull_mcc_only', 'sound_workers', 'no_sound_cache', 'sound_language',
-        'havok_rcp', 'only_groups', 'no_handlers', 'limit', 'taint_ignore', 'keep_training') and (v not in (None, False) or k == 'taint_ignore' and v == ())}
+        'name', 'display_name', 'description', 'mp_info', 'mp_info_dir', 'mp_info_path', 'matg', 'self_contained', 'pull_mcc_only', 'sound_workers', 'no_sound_cache', 'sound_language',
+        'havok_rcp', 'only_groups', 'no_handlers', 'limit', 'taint_ignore', 'keep_training', 'training_via_hudg', 'training_via_script', 'no_mapinfo_teams', 'no_checkpoints', 'keep_hologram_variants') and (v not in (None, False) or k == 'taint_ignore' and v == ())}
     ctx = X.Ctx(src, mcc_shared, vista, plan, strs, opts=opts, map_type=map_type)
     ctx.extra['out_path'] = out_path
     ctx.extra['converted'] = {}
@@ -907,17 +915,44 @@ def main(argv=None):
                          'map does not share the file name of the stock Vista map; the scenario path is left unchanged')
     ap.add_argument('--display-name', default=None, metavar='TEXT',
                     help='text of the localized map name shown in the custom map list (all 8 languages), <=31 chars')
+    ap.add_argument('--mp-info', default=None, metavar='JSON',
+                    help='multiplayer maps: write the scenario\'s multiplayer info block (names, 9 descriptions, preview bitmap, max teams) from '
+                         'this JSON file - added when the scenario has none, else updated (English names, descriptions, preview, max teams only '
+                         'where zero; map id / sort order / flags kept).  See README.md, "The multiplayer info file"')
+    ap.add_argument('--mp-info-dir', default=None, metavar='DIR',
+                    help='folder of per-map info files: <DIR>\\<output file stem>.json is used as --mp-info when it exists (an explicit --mp-info wins)')
+    ap.add_argument('--description', default=None, metavar='TEXT',
+                    help="the map's description (all languages): written into the language pack and the scenario's multiplayer "
+                         "description fields, replacing the source's")
     ap.add_argument('--matg', choices=('hud', 'link', 'local', 'auto'), default='hud',
                     help="globals tag: hud (default) = the input's globals converted locally when the map's HUD text (matg -> hudg -> unic, e.g. "
                          "custom pickup prompts) is customised, else Vista's globals; link = Vista's globals, the MCC edits to the globals/HUD "
                          "are NOT carried over; local = always convert the input's globals; auto = local if the input's globals differ from "
                          "the stock MCC ones.  Where Vista's globals are used, training off (the default) gives the map its OWN byte-faithful "
                          "copy of Vista's matg + hudg without the training block (a LOCAL globals tag, like chronopolis); only with "
-                         "--keep-training are they the shared tags themselves (full custom-map list entry)")
+                         "--keep-training or --training-via-script are they the shared tags themselves (full entry on an unpatched Cartographer)")
+    ap.add_argument('--no-checkpoints', action='store_true',
+                    help="campaign maps: turn the scenario's checkpoint saves (game_save ...) into no-ops.  Checkpoints are kept by "
+                         "default")
     ap.add_argument('--keep-training', action='store_true',
                     help="keep the tutorial prompts ('hold X to ...'); by default EVERY multiplayer map gets no hudg training entries, "
                          "because the prompts draw as an empty square on converted maps (a map whose matg would be linked gets its own "
                          "training-less copy of Vista's matg + hudg instead; with this switch --matg link/hud use the shared tags unchanged)")
+    ap.add_argument('--training-via-script', action='store_true',
+                    help="turn the tutorial prompts off with a STARTUP SCRIPT (hud_enable_training false) instead of the HUD globals: with --matg link "
+                         "the map keeps Vista's SHARED matg/hudg, which makes the custom-map list show the full entry (name, description, preview, "
+                         "teams) on an UNPATCHED Cartographer too.  Default: the map keeps its own local matg whose hudg has no training block (the "
+                         "full entry then needs the patched halo2.exe)")
+    ap.add_argument('--training-via-hudg', action='store_true',
+                    help="(the default) turn the tutorial prompts off through the HUD globals; wins over --training-via-script")
+    ap.add_argument('--no-mapinfo-teams', action='store_true',
+                    help="multiplayer: do NOT fill the scenario's max-teams-per-game-type (and a missing Multiplayer level-data element) from the mod's "
+                         "MapInfo JSON ('MaximumTeamsByGameCategory'); by default a map whose scenario has no limits gets them, because the lobby's "
+                         "team menu reads them from the custom-map list entry (zero = teams cannot be changed)")
+    ap.add_argument('--keep-hologram-variants', action='store_true',
+                    help="keep the non-default variants of models that have a Hologram Shader (e.g. the Mombasa Mayhem 'truth' variant of "
+                         "regret_holo).  By default such placements get the model's default variant, because Vista's hologram overlay "
+                         "drawn on that variant hangs the GPU (env H2CONV_KEEP_HOLOGRAM_VARIANTS=1 does the same)")
     ap.add_argument('--self-contained', action='store_true', help='do not link to the Vista shared.map (copies every dependency; experimental, much larger file)')
     ap.add_argument('--no-pull-mcc-only', action='store_true',
                     help='drop MCC-only objects (mongoose, falcon, ...) that a stock MCC map references instead of converting them: '
@@ -961,9 +996,9 @@ def main(argv=None):
             'standin_plan': a.standin_plan, 'limit': a.limit, 'debug': a.debug, 'mcc_maps_dir': a.mcc_maps,
             'force_output_dir': a.force_output_dir, 'overwrite': a.overwrite, 'no_deep_validate': a.no_deep_validate, 'no_limits_check': a.no_limits_check,
             'no_invariants': a.no_limits_check,
-            'matg': a.matg, 'name': a.name, 'name_explicit': bool(a.name), 'display_name': a.display_name, 'sound_workers': a.sound_workers,
+            'matg': a.matg, 'name': a.name, 'name_explicit': bool(a.name), 'display_name': a.display_name, 'description': a.description, 'mp_info': a.mp_info, 'sound_workers': a.sound_workers,
             'no_sound_cache': a.no_sound_cache, 'sound_language': a.sound_language, 'havok_rcp': a.havok_rcp,
-            'keep_training': a.keep_training}
+            'keep_training': a.keep_training, 'training_via_hudg': a.training_via_hudg, 'training_via_script': a.training_via_script, 'mp_info_dir': a.mp_info_dir, 'no_mapinfo_teams': a.no_mapinfo_teams, 'no_checkpoints': a.no_checkpoints, 'keep_hologram_variants': a.keep_hologram_variants}
     if a.no_pull_mcc_only:
         opts['pull_mcc_only'] = False
     if a.no_taint_ignore:

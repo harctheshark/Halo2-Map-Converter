@@ -620,6 +620,12 @@ def finish_locale(ctx, converted):
         _stat(ctx, 'locale_display_name_strings', n)
         if not n:
             _warn(ctx, 'locale_display_name', "no string 'name' in the map's language pack: --display-name %r has no effect" % dn)
+    dd = (getattr(ctx, 'opts', None) or {}).get('description')
+    if dd:
+        n = st.override_text('description', dd)
+        _stat(ctx, 'locale_description_strings', n)
+        if not n:
+            _warn(ctx, 'locale_description', "no string 'description' in the map's language pack: --description has no effect there")
     blob, entries, pack = st.build(ctx, 0)
     ctx.locale_blob = blob
     ctx.language_pack = pack if st.header_pack else None       # offsets relative to the blob start

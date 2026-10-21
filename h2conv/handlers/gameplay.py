@@ -747,6 +747,166 @@ def scnr_solo_starting_equipment(ctx, m, v):
     _stat(ctx, 'gp_solo_starting_equipment', n)
 
 
+def _mulg_solo_weapon_fallback(ctx, root, cache, entry):
+    """Post hook of the Vista mulg copied into a solo map (planner._decide_empty).  Runtime Weapons is the table the engine maps a game variant's
+    explicit starting weapon (Magnum, Shotgun, Sniper ... or Random) through (halo2.exe sub_45C52E, element i at +8*i).  The campaign map only holds
+    the weapons it uses, so most slots are NONE and an explicit choice would give nothing.  The empty slots are pointed at the scenario's own
+    starting-profile weapons (alternating, at least two distinct ones, so the engine's 'Random' loop always finds a second weapon); a unit that
+    already holds the weapon does not get a duplicate (sub_53A2A6)."""
+    if getattr(ctx, 'map_type', 1) == 1:
+        return
+    plan = getattr(ctx, 'plan', None)
+    names = (getattr(plan, 'notes', None) or {}).get('solo_starting_weapons') or []
+    datums = []
+    for nm in names:
+        dd = D.out_datum(ctx, 'weap', nm)
+        if dd != 0xFFFFFFFF and dd not in datums:
+            datums.append(dd)
+    if len(datums) < 2:
+        return
+    rt = root.blocks.get(next((f.offset for f in root.fields if f.name == 'Runtime'), -1)) or []
+    if not rt:
+        return
+    wf = next((f for f in rt[0].fields if f.name == 'Weapons'), None)
+    els = rt[0].blocks.get(wf.offset) if wf is not None else None
+    if not els:
+        return
+    n = 0
+    for i, el in enumerate(els):
+        if len(el.data) >= 8 and struct.unpack_from('<I', el.data, 4)[0] in (0, 0xFFFFFFFF):
+            struct.pack_into('<4sI', el.data, 0, b'paew', datums[n % len(datums)])
+            n += 1
+    if n:
+        _stat(ctx, 'gp_solo_mulg_weapons_filled', n)
+
+
+from .. import donor as D                                        # noqa: E402  (post hook registration)
+D.post_hook('mulg')(_mulg_solo_weapon_fallback)
+
+
+@node_handler('wgit', '', prio=130)
+def wgit_solo_mp_no_cursor(ctx, m, v):
+    """EXPERIMENT (opt-in, H2CONV_SOLO_MP_NO_CURSOR=1, solo maps only).  level1 launched through the multiplayer lobby crashed twice (20:00 and 20:55,
+    50 s after the game started) when the campaign pause screen (screen id 18, sp_pause_game) closed: halo2.exe sub_48AA97 builds the screen's mouse
+    cursor textures with D3DXCreateTexture and dereferences the result without a check (null read at halo2.exe+0x8ABFD).  A screen without a Mouse
+    Cursor Definition takes the early-out branch of that function (no texture is created).  Cost: that screen no longer swaps the cursor."""
+    import os
+    if getattr(ctx, 'map_type', 1) == 1 or not os.environ.get('H2CONV_SOLO_MP_NO_CURSOR'):
+        return
+    f = _f(v, 'Mouse Cursor Definition')
+    if f is None or v.u32(f.offset + 4) in (0, 0xFFFFFFFF):
+        return
+    struct.pack_into('<II', v.data, f.offset, 0xFFFFFFFF, 0xFFFFFFFF)
+    _stat(ctx, 'gp_wgit_cursor_cleared')
+
+
+# ------------------------------------------------------------------------------------------------
+# Truth rule: hologram models fall back to their default variant
+# ------------------------------------------------------------------------------------------------
+# Vista draws the Hologram Shader overlay of a model (hlmt Hologram Shader, scenery `prophet` / hlmt regret_holo) with the SECTIONS of the placed
+# variant; the stock game only ever does that for the stock Regret hologram variant.  The Mombasa Mayhem mod adds a variant `truth` to
+# regret_holo; the overlay on its sections 0/1/3/5/6/10/11/12 hangs the GPU (TDR) in Vista, with all tag data equal to stock and no engine table
+# found.  Decision (2026-10-21): every placement of a model that HAS a Hologram Shader and names a variant other than the model's FIRST
+# variant (variant 0 = the default look) gets an empty Variant Name, i.e. the default variant.  Scenario placements with a Variant Name:
+# Scenery, Bipeds, Vehicles, Weapons, Crates (the plugin has the field there only); the palette is the block that follows the placement block.
+# Opt-out: opts['keep_hologram_variants'] (convert --keep-hologram-variants) or env H2CONV_KEEP_HOLOGRAM_VARIANTS=1.  Harmless on any map
+# where no hologram model has a non-default variant placed (stock maps: nothing fires).
+_HOLO_SHARED_MAPS = ('shared', 'single_player_shared', 'mainmenu')
+
+
+def _holo_keep(ctx):
+    return bool((getattr(ctx, 'opts', None) or {}).get('keep_hologram_variants') or os.environ.get('H2CONV_KEEP_HOLOGRAM_VARIANTS'))
+
+
+def _holo_tag(ctx, datum):
+    """(MCC tag, cache that holds its data) of a tag referenced from the scenario being converted (external tags resolve to the shared map)."""
+    cache = ctx.cur_cache
+    tag = cache.tag_by_datum(datum)
+    if tag is None:
+        return None, None
+    if tag.external:
+        for nm in _HOLO_SHARED_MAPS:
+            sh = ctx.mcc_shared.get(nm)
+            if sh is None or tag.index >= len(sh.tags):
+                continue
+            st = sh.tags[tag.index]
+            if st.datum == tag.datum and st.group == tag.group and st.has_data:
+                return st, sh
+        return None, None
+    return tag, cache
+
+
+def _holo_model_info(ctx, datum):
+    """None, or (object tag name, hlmt name, lower-case name of the hlmt's first variant or '', Hologram Shader name) of an object tag whose
+    model has a non-NONE Hologram Shader.  Cached per datum."""
+    cache = ctx.extra.setdefault('gp_holo_models', {})
+    if datum in cache:
+        return cache[datum]
+    info = None
+    obj, oc = _holo_tag(ctx, datum)
+    if obj is not None:
+        on = ctx.decode_mcc(obj, oc)
+        mf = _f(on, 'Model')
+        if mf is not None and mf.type == 'tagref' and not _ref_is_null(on, mf):
+            hm, hc = _holo_tag(ctx, struct.unpack_from('<I', on.data, mf.offset + 4)[0])
+            if hm is not None and hm.group == 'hlmt':
+                hn = ctx.decode_mcc(hm, hc)
+                hf = _f(hn, 'Hologram Shader')
+                if hf is not None and hf.type == 'tagref' and not _ref_is_null(hn, hf):
+                    first = ''
+                    vf = next(iter(_block_fields(hn, 'Variants')), None)
+                    vk = (hn.blocks.get(vf.offset) or []) if vf is not None else []
+                    if vk:
+                        first = hc.string_id(struct.unpack_from('<I', vk[0].data, 0)[0]).lower()
+                    holo = hc.tag_by_datum(struct.unpack_from('<I', hn.data, hf.offset + 4)[0])
+                    info = (obj.name, hm.name, first, holo.name if holo is not None else '?')
+    cache[datum] = info
+    return info
+
+
+@node_handler('scnr', '', prio=135)
+def scnr_hologram_variant_fallback(ctx, m, v):
+    if _holo_keep(ctx):
+        return
+    for i, mf in enumerate(m.fields):
+        if mf.type not in BLOCK_TYPES or not mf.children:
+            continue
+        vn = next((c for c in mf.children if c.name == 'Variant Name' and c.type == 'stringid'), None)
+        pi = next((c for c in mf.children if c.name == 'Palette Index'), None)
+        pal = next((f for f in m.fields[i + 1:] if f.type in BLOCK_TYPES), None)
+        if vn is None or pi is None or pal is None or not pal.children or pal.children[0].type != 'tagref':
+            continue
+        vf = _fat(v, mf.name, mf.offset)
+        if vf is None:
+            continue
+        vvn = next((c for c in (vf.children or ()) if c.name == 'Variant Name' and c.type == 'stringid'), None)
+        mk, vk, pk = m.blocks.get(mf.offset) or [], v.blocks.get(vf.offset) or [], m.blocks.get(pal.offset) or []
+        if vvn is None or not mk:
+            continue
+        if len(mk) != len(vk):
+            _warn(ctx, 'hologram_variant_unaligned', 'scnr %s: MCC %d and Vista %d elements; hologram variants not checked' % (mf.name, len(mk), len(vk)))
+            continue
+        for k, me in enumerate(mk):
+            sid = struct.unpack_from('<I', me.data, vn.offset)[0]
+            if sid in (0, NULL):
+                continue
+            pidx = struct.unpack_from('<h', me.data, pi.offset)[0]
+            if not 0 <= pidx < len(pk):
+                continue
+            try:
+                info = _holo_model_info(ctx, struct.unpack_from('<I', pk[pidx].data, pal.children[0].offset + 4)[0])
+                name = ctx.mcc_string(sid) if info is not None else ''
+            except Exception as ex:                                 # noqa: BLE001  an undecodable object must not stop the conversion
+                _warn(ctx, 'hologram_variant_probe_failed', 'scnr %s[%d] palette %d: %s' % (mf.name, k, pidx, ex))
+                continue
+            if info is None or name.lower() == info[2]:
+                continue
+            struct.pack_into('<I', vk[k].data, vvn.offset, 0)
+            _stat(ctx, 'gp_hologram_variant_fallback')
+            _warn(ctx, 'hologram_variant_fallback', "scnr %s[%d] %s (hlmt %s, Hologram Shader %s): variant '%s' -> default (variant 0 '%s')" % (
+                mf.name, k, info[0], info[1], info[3], name, info[2]))
+
+
 @node_handler('scnr', '/Spawn Data', prio=110)
 def scnr_spawn_data(ctx, m, v):
     mfs, vfs = _block_fields(m, 'Dynamic Spawn Overloads'), _block_fields(v, 'Dynamic Spawn Overloads')
@@ -1005,7 +1165,7 @@ def hudg_root(ctx, m, v):
     # DEFAULT ON since 2026-10-20 (user: "turn training off by default for all conversions"): empty the LOCAL hudg's Player Training
     # Data.  The game's tutorial prompts ('hold X to ...') draw a frame around the text; on converted maps they showed as an empty
     # square (2026-10-20, chronopolis; the training-less build fixed it in game).  Nothing in the map data differs from Vista's
-    # (docs/FACTS [hudmsg3]), so this is a workaround, not a fix.  Keep the prompts with opts['keep_training'] (convert
+    # (see HOW_IT_WORKS.md, section 14), so this is a workaround, not a fix.  Keep the prompts with opts['keep_training'] (convert
     # --keep-training) or env H2CONV_KEEP_TRAINING=1.  A map with LINKED globals uses Vista's own hudg, which cannot be changed here.
     _o = getattr(ctx, 'opts', None) or {}
     if not (_o.get('keep_training') or os.environ.get('H2CONV_KEEP_TRAINING')):

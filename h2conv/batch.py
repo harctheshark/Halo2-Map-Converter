@@ -235,6 +235,7 @@ class Options(object):
         self.suffix = ''                # mcc2vista: appended to the output name (e.g. '_mcc' so it does not look like the stock map)
         self.avoid_stock_names = False  # mcc2vista: the names of the stock Vista maps (lockout, headlong, ...) count as taken: a map with such a stem gets the numeric suffix
         self.matg = 'hud'               # mcc2vista --matg
+        self.mp_info_dir = None         # mcc2vista --mp-info-dir: <dir>\\<output stem>.json = the multiplayer info block (names, descriptions, preview, teams) of that map
         self.isolate = False            # run every conversion in its own python process (hard crashes / hangs cannot stop the batch)
         self.timeout = 3600             # seconds per map in isolate mode
         self.jobs = 1                   # parallel conversions (isolate mode only, max 4)
@@ -616,6 +617,8 @@ def _forward_inprocess(item, out_file, opts):
     """MCC -> Vista with h2conv.convert.convert_map."""
     from h2conv import convert as F
     o = {'quiet': True, 'name': item.stem, 'matg': opts.matg}
+    if getattr(opts, 'mp_info_dir', None):
+        o['mp_info_dir'] = opts.mp_info_dir
     data_dir = _mod_data_dir(item) or opts.mcc_maps
     if data_dir:
         o['mcc_maps_dir'] = o['mcc_dat_dir'] = data_dir
@@ -681,6 +684,8 @@ def _subprocess_convert(item, out_file, opts):
     if item.direction == 'mcc2vista':
         cmd = child_command('convert') + [item.src, out_file, '--name', item.stem, '--quiet', '--report', rep_path,
                                           '--vista-maps', vista_maps, '--matg', opts.matg]
+        if getattr(opts, 'mp_info_dir', None):
+            cmd += ['--mp-info-dir', opts.mp_info_dir]
         data_dir = _mod_data_dir(item) or opts.mcc_maps
         if data_dir:
             cmd += ['--mcc-maps', data_dir]
@@ -1118,6 +1123,8 @@ def main(argv=None):
     r.add_argument('--avoid-stock-names', action='store_true',
                    help='mcc2vista: the names of the stock Vista maps (lockout, headlong, ...) count as taken, so a remake with a stock stem gets the numeric suffix (_2, _3, ...)')
     r.add_argument('--matg', choices=('hud', 'link', 'local', 'auto'), default='hud')
+    r.add_argument('--mp-info-dir', default=None, metavar='DIR',
+                   help='mcc2vista: folder of per-map multiplayer info files; <DIR>\\<output stem>.json gives that map its list names, descriptions, preview bitmap and max teams')
     r.add_argument('--isolate', action='store_true', help='run every conversion in its own python process')
     r.add_argument('--jobs', type=int, default=1, help='parallel conversions (needs --isolate; max 4)')
     r.add_argument('--timeout', type=int, default=3600, help='seconds per map in --isolate mode')
@@ -1194,7 +1201,7 @@ def main(argv=None):
             assembly_dir=_paths.pick('assembly', a.assembly_dir)[0],          # None = the bundled copy
             dry_run=a.dry_run, only=_split(a.only), exclude=_split(a.exclude),
             kinds=('multiplayer', 'solo') if a.kind == 'all' else (a.kind,), limit=a.limit, force=a.force, overwrite=a.overwrite,
-            suffix=a.suffix, avoid_stock_names=a.avoid_stock_names, matg=a.matg, isolate=a.isolate, jobs=a.jobs, timeout=a.timeout, hash_duplicates=not a.no_dedupe, hash_sources=not a.no_hash,
+            suffix=a.suffix, avoid_stock_names=a.avoid_stock_names, matg=a.matg, mp_info_dir=os.path.abspath(a.mp_info_dir) if a.mp_info_dir else None, isolate=a.isolate, jobs=a.jobs, timeout=a.timeout, hash_duplicates=not a.no_dedupe, hash_sources=not a.no_hash,
             sort_maps=not a.keep_order, refresh_metadata=a.refresh_metadata, package_title=a.package_title or st['package_title'],
             remember=not a.no_remember, recursive=not a.no_recursive, settings_path=a.settings, report=a.report, quiet=a.quiet, list_plan=a.list,
             cancel_file=a.cancel_file, announce=a.announce)

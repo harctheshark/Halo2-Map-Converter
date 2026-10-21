@@ -23,6 +23,8 @@ What the 'shad' node handler does (after the generic conversion copied the struc
                                                           ranges); MCC value arrays kept and aligned with the Vista stem's by the
                                                           verified per-stem edits in ARRAY_EDITS (drop / insert / tail-pad / swap)
         S  as X, animated, no Vista twin               -> animation arrays dropped (static shader)
+        ce Template is a Halo-CE port template (planner._ce_entry / h2conv.ce_port): the output stem is the MCC stem converted field by field, so the MCC
+                                                          postprocess is already right for it (the tier-D situation, no Vista stem to reconcile with)
         T  arrays do not fit (no verified edit), or an animated shader on a changed stem
                                                        -> postprocess [0] taken from the Vista twin (same name AND Template), else from
                                                           the stem's representative Vista shader (T-rep)
@@ -992,6 +994,12 @@ def reconcile(ctx, mcc_root, vis_root, name):
         if vpp.u32(0) == NULL:
             vpp.set_u32(0, od)
     if si is None:
+        # Halo-CE port template (planner._ce_entry, h2conv.ce_port): the output stem IS the MCC stem converted field by field (same skeleton, same Remappings,
+        # D3D9 code ported from the DXBC), so the shader's MCC postprocess is already right for it - the tier-D situation
+        pe = getattr(getattr(ctx, 'plan', None), 'by_name', {}).get(('stem', stem_name.lower()))
+        if od != NULL and pe is not None and getattr(pe, 'ce_port', None):
+            ctx.stats['shad_stem_ce_port'] += 1
+            return 'ce'
         # A Template of NONE crashes the engine when the shader is drawn (halo2.exe sub_67FE30, cyberdyne_h2 sky, 2026-10-20), so a shader
         # on a user-made stem must always end up on a real Vista stem:
         if od != NULL:
@@ -1213,7 +1221,7 @@ def shad_root(ctx, mcc_node, vis_node):
     tier = reconcile(ctx, mcc_node, vis_node, name)
     ctx.stats['shad_tier:%s' % tier] += 1
     fix_log_dims(ctx, vis_node)
-    if tier not in ('D', 'none', 'notemplate', 'unresolved', 'nostem', 'sub'):
+    if tier not in ('D', 'none', 'notemplate', 'unresolved', 'nostem', 'sub', 'ce'):
         sync_predicted_resources(ctx, vis_node)
 
 
@@ -1271,14 +1279,26 @@ def _donor_or_empty(ctx, entry):
 
 @tag_handler('vrtx')
 def vrtx_from_donor(ctx, entry):
+    if getattr(entry, 'ce_port', None):
+        return _ce_port_tag(ctx, entry)
     return _donor_or_empty(ctx, entry)
 
 
 @tag_handler('spas')
 def spas_from_donor(ctx, entry):
+    if getattr(entry, 'ce_port', None):
+        return _ce_port_tag(ctx, entry)
     return _donor_or_empty(ctx, entry)
 
 
 @tag_handler('stem')
 def stem_from_donor(ctx, entry):
+    if getattr(entry, 'ce_port', None):
+        return _ce_port_tag(ctx, entry)
     return _donor_or_empty(ctx, entry)
+
+
+def _ce_port_tag(ctx, entry):
+    """Halo-CE port template (planner._ce_entry): the mod's stem / pass converted field by field, D3D9 code from the registry (h2conv.ce_port)."""
+    from .. import ce_port
+    return ce_port.build_tag(ctx, entry)

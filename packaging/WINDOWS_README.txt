@@ -1,4 +1,4 @@
-Halo 2 Map Converter - the Windows programs (version 0.2.0, a pre-release)
+Halo 2 Map Converter - the Windows programs (version 0.3.0, a pre-release)
 ==========================================================================
 
 Convert Halo 2 maps between Halo 2 Vista / Project Cartographer and Halo 2: The Master Chief Collection (MCC), in both directions.
@@ -32,7 +32,11 @@ Good to know
   the first time, as it does for most small programs without a signature.  Check the archive against SHA256SUMS.txt on the release page
   (in a Command Prompt:  certutil -hashfile <zip file> SHA256).  The full source code is in the release, and the licence is GPL-3.0.
 * MCC multiplayer maps from workshop mods that ship their own shared.map are converted; campaign maps that need a custom shared.map, and maps whose shared.map is not found, are listed and skipped.
-* Campaign (single-player) maps do not work reliably in Project Cartographer yet: treat MCC to Vista campaign conversion as experimental (README.md, "Limits you should know before you start").
+* The 12 Halo CE port maps of workshop mod 3583572796 convert as well (new in 0.3.0).
+* Converted multiplayer maps keep their own globals.  For the full entry in Cartographer's map list and for changing teams in the lobby, Cartographer's
+  halo2.exe needs a six-byte patch (or convert with --matg link --training-via-script, which gives up the map's own globals).  README.md explains both
+  ("The map list entry, teams and the halo2.exe patch").  After patching or after converting a map again, delete Maps\Data Files\.h2mdat once.
+* Campaign (single-player) maps are still experimental in Project Cartographer: treat MCC to Vista campaign conversion as unsupported (README.md, "Limits you should know before you start").
 * The input maps are only read.  Nothing is overwritten unless you tick the box that says so.
 * Where things are kept:
     %APPDATA%\H2MapConverter\settings.json            your folder choices (also shared with h2conv.exe)

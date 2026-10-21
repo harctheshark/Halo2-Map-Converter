@@ -16,28 +16,34 @@ directions: with a **window program** (pick a folder, let it find the maps, conv
 In the Windows zip the same commands are `h2conv.exe convert`, `h2conv.exe rev`, `h2conv.exe batch` and so on
 (see [The Windows programs](#the-windows-programs)); the examples in this file are written for Python.
 
-**Version 0.2.0, a pre-release.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
+**Version 0.3.0, a pre-release.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
 program) and `h2conv.exe` (the command line), which needs no Python, and this **source** (a Python package, run with `py -3 -m h2conv`).
 Both do the same conversions (see "Status" below for how that was checked).
 It has been run over hundreds of community maps and several fixes were confirmed by playing, but most converted maps have not
 been played.  Read [Status](#status-what-has-and-has-not-been-tested) and [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) before relying on it.
 
-**New in 0.2.0:** MCC multiplayer maps from Steam workshop mods that ship their **own `shared.map`** now convert (0.1.0 skipped them);
-the tutorial prompts that drew as an empty square on converted multiplayer maps are switched off by default; custom maps show the MCC menu
-title in Cartographer's map list; and a number of fixes for converted maps (see [RELEASE_NOTES.md](RELEASE_NOTES.md)).
+**New in 0.3.0:** the 12 **Halo CE port maps** of workshop mod 3583572796 (`bloodgulch`, `wizard`, `beavercreek` and the others) now convert:
+their 30 MCC-only shader templates are ported to Direct3D 9; converted multiplayer maps get their names, description and team limits written
+into the scenario's **multiplayer info block**, and `--mp-info`, `--mp-info-dir` and `--description` write the whole block (a description per
+language, a preview image); how to get the **full custom-map-list entry and team changing in the lobby** for a map with its own globals;
+several fixes for campaign maps started from Cartographer's multiplayer lobby (see [RELEASE_NOTES.md](RELEASE_NOTES.md)).  0.2.0 added the workshop maps with their own `shared.map`, the
+tutorial prompts off by default and the MCC menu title in the map list.
 
 ### Limits you should know before you start
 
-* **Campaign (single-player) maps do not work reliably in Vista / Project Cartographer yet.**  Cartographer starts a custom campaign map
-  through its multiplayer path, and some campaign maps crash it; of the campaign maps tried, only one small test map loads.  The converter
-  still writes campaign maps, but treat **MCC to Vista campaign conversion as unsupported / experimental**.  Multiplayer maps are the
+* **Maps with their own globals need a small patch of Cartographer's `halo2.exe` for the full map-list entry and for changing teams in the
+  lobby.**  Every converted multiplayer map keeps its own globals (the tutorial prompts are removed from them, and workshop mods put their own
+  HUD text and settings there).  Cartographer's custom map list check rejects such a map: the list then shows only the map's name (no
+  description, no preview picture) **and the lobby cannot change teams for it**.  Two ways out, both described under "The map list entry,
+  teams and the `halo2.exe` patch" below: a six-byte patch of your own copy of `halo2.exe` (not distributed with this project), or
+  `--matg link --training-via-script`, which works on an unpatched Cartographer but gives up the map's own globals.  After changing maps,
+  delete `Maps\Data Files\.h2mdat` once (Cartographer caches the old list entry).
+* **Campaign (single-player) maps are still experimental in Vista / Project Cartographer.**  Cartographer starts a custom campaign map
+  through its multiplayer path.  Several campaign maps load and can be played from the multiplayer lobby, others crash it.  Known problems:
+  allies can be hostile in this mode, cutscenes do not play, and the Truth hologram of one mod shows the stock Regret look (see
+  [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)).  Treat **MCC to Vista campaign conversion as unsupported / experimental**.  Multiplayer maps are the
   supported case.
-* **The 12 Halo CE port maps of workshop mod 3583572796 are not supported** (`bloodgulch`, `wizard`, `beavercreek` and the others of that
-  mod).  Their shader templates exist in MCC only as DirectX 11 bytecode, and Halo 2 Vista has no equivalent to convert them to.  They are
-  reported as failed.
-* **A map that carries its own globals shows only its name** (no description and no preview picture) in Project Cartographer's custom map
-  list.  Since 0.2.0 that is the normal case for a converted multiplayer map (see "Names in Cartographer's map list" below); the map
-  still plays normally.
+* **The 12 Halo CE port maps convert, but have not been played yet.**  They pass every built-in check; see "Status" below.
 
 ## Why
 
@@ -53,7 +59,9 @@ played in Project Cartographer.
   contains unchanged are linked instead of copied, exactly like stock Vista multiplayer maps.
   Multiplayer maps from Steam workshop mods that ship **their own `shared.map`** are converted too: the tags the mod changed are
   converted and stored in the map, everything else still links to Vista's `shared.map`, and the mod's own `textures.dat` and sound
-  files are used.  (Campaign maps: see "Limits you should know before you start".)
+  files are used.  The Halo CE port maps of workshop mod 3583572796 convert as well: the shader templates they use exist in MCC only as
+  Direct3D 11 code, so the converter carries ready-made Direct3D 9 versions of them (HOW_IT_WORKS.md, section 10.3).  (Campaign maps: see
+  "Limits you should know before you start".)
 * **Vista to MCC.**  Reads a Vista map and writes a self-contained MCC map in the style the MCC editing kit produces.  Content
   that exists in MCC's stock maps is taken from there (MCC "donor" tags); everything the custom map adds is converted.
   Custom shaders are converted by a faithful port of their compiled Direct3D 9 code to MCC's Direct3D 11 shader format, not by
@@ -81,15 +89,17 @@ How it works in detail: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
   * Vista to MCC, in MCC: the driver and gunner seats of vehicles on a converted custom map (confirmed 2026-10-14), the water on
     converted custom maps, `Holidays Grave` and `corpsys` (confirmed 2026-10-15), and the sky fix on `Bikini Bottom`: a floor that
     showed as flat sky colour no longer does (confirmed 2026-10-15; `--plan-opt sky_depth=mcc` switches the fix off).
-* **Not played:** most of the archive.  Campaign / solo maps (MCC to Vista: known not to work reliably, see above) and play between two machines are tested least.  Several details
+* **Not played:** most of the archive.  Campaign / solo maps (MCC to Vista: experimental, see above) and play between two machines are tested least.  Several details
   are known to differ from the source games or are unverified in the engine; they are listed, with workarounds, in
   [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
-* **0.2.0, workshop maps with their own `shared.map`:** a batch over the 125 multiplayer maps of six workshop mods that use one converted
-  113 of them with no errors from the built-in checks (format, references, engine limits, gameplay and shader checks).  The other 12 are
-  the Halo CE ports named above.  This is again a structural result: **those maps were checked by program, not played**.  The only
-  0.2.0 change confirmed by playing so far is that the empty-square frame of the tutorial prompts disappears on a converted `chronopolis`
-  when the prompts are removed.  The other fixes of 0.2.0 were derived from the games' own code and data and checked on the files; they
-  are listed in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) (section 2.1) as "not yet confirmed in game".
+* **Workshop maps with their own `shared.map` (0.2.0, extended in 0.3.0):** a batch over the 125 multiplayer maps of six workshop mods that use
+  one converts **all 125 with no errors** from the built-in checks (format, references, engine limits, gameplay and shader checks); in 0.2.0
+  the 12 Halo CE ports among them were reported as failed.  This is a structural result: **those maps were checked by program, not all played**.
+  Confirmed by playing so far: workshop maps of the Digtacular and Uncut mods load and play; the tutorial-prompt square is gone; the
+  spawn fix for Cartographer's seasonal events; names in the map list; and, with the patched `halo2.exe`, the description and team changing in the
+  lobby on a converted `chronopolis`.  The fixes of 0.3.0 for the Halo CE ports, the preview image and the campaign maps were derived from
+  the games' own code and data and checked on the files; they are listed in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) (section 2.1) as "not
+  yet confirmed in game".
 * **Newest, least used:** the window program and the Windows zip.  They run the same batch engine as the command line, which is the part
   that has been tested at scale.  What was checked: three conversions made with `h2conv.exe` (MCC to Vista `lockout`, Vista to MCC `lockout`
   and `Holidays Grave`) are byte-for-byte identical to the Python source's output (apart from the creation time in the header); the sound
@@ -102,7 +112,8 @@ If a converted map misbehaves, please report it (see "Reporting a problem" in th
 
 ## Requirements
 
-You must own and install the games; this project contains no maps, textures, sounds or tags from them.
+You must own and install the games; this project contains no maps, textures, sounds or tags from them (the only data derived from the games' own files is
+the table of compiled shader programs for the Halo CE ports, see THIRD_PARTY_NOTICES.md).
 
 | you need | for |
 |---|---|
@@ -118,7 +129,9 @@ You must own and install the games; this project contains no maps, textures, sou
 
 **Included in this download** (so you do not need to fetch them): the tag layout files of
 [Assembly](https://github.com/XboxChaos/Assembly) (release 2026.02.16, GPL-3.0, in `h2conv\data\assembly\`), a build of libopus
-(`h2conv\third_party\opus.dll`, BSD-3-Clause) and 14 extra tag layouts (`h2conv\data\plugins_extra\`).  Details and licences:
+(`h2conv\third_party\opus.dll`, BSD-3-Clause), 14 extra tag layouts (`h2conv\data\plugins_extra\`) and, new in 0.3.0, the compiled
+Direct3D 9 shader programs of the Halo CE ports (`h2conv\data\ce_port\`; they are derived from the Halo 2 editing kit's shader source and the
+workshop mod's shaders, and are described in the third-party notices).  Details and licences:
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).  To try a different Assembly (a newer release, or your own edited layouts),
 pass its folder with `--assembly-dir` or set `H2CONV_ASSEMBLY`; an installed Assembly folder and the unpacked Assembly source are both accepted.
 The **Windows zip** also contains the Python runtime, numpy, scipy, Tcl / Tk and the Visual C++ runtime DLLs they need, packed with PyInstaller
@@ -155,7 +168,7 @@ or modded MCC maps in a sub-folder or in another folder.
 
 ## The Windows programs
 
-The release's **Windows zip** (`Halo2-Map-Converter-0.2.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
+The release's **Windows zip** (`Halo2-Map-Converter-0.3.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
 `Halo2MapConverter`, with two programs that share their libraries and need no Python and no installer:
 
 * **`Halo 2 Map Converter.exe`** - the window program.  You choose a root folder; it scans that folder and every folder below it, recognises
@@ -264,7 +277,7 @@ py -3 -m h2conv.batch run "<folder with Vista maps>" --direction vista2mcc --mcc
 
 `--direction auto` (the default) converts Vista maps to MCC and MCC maps to Vista in one pass.  Useful switches: `--only a,b*` and
 `--exclude` (file-name patterns), `--kind multiplayer|solo`, `--limit N`, `--force` (Vista to MCC: convert again even if the package
-already holds this exact source), `--overwrite` (MCC to Vista: replace existing output files), `--avoid-stock-names` (MCC to Vista: remakes of stock maps get a numeric suffix), `--isolate` (every map in its own
+already holds this exact source), `--overwrite` (MCC to Vista: replace existing output files), `--avoid-stock-names` (MCC to Vista: remakes of stock maps get a numeric suffix), `--mp-info-dir DIR` (MCC to Vista: a folder of multiplayer info files, one per output map), `--isolate` (every map in its own
 process, so a crash cannot stop the batch; add `--jobs N`, at most 4, to run several at once), `--report result.json`.  Run
 `py -3 -m h2conv.batch run --help` for all of them.  Maps already converted are skipped on the next run, so an interrupted batch can
 simply be started again.
@@ -296,28 +309,89 @@ py -3 -m h2conv.convert "<mod>\maps\<name>.map" "<Documents>\My Games\Halo 2\Map
 Converted workshop maps are 14 to 95 MB (about 240 to 1,300 tags stored in the map) and take 8 to 20 seconds each.  Campaign maps of such
 mods are not converted (see "Limits you should know before you start").
 
-## Names in Cartographer's map list
+## The map list entry, teams and the `halo2.exe` patch
 
-Project Cartographer lists a custom map by the name stored in the map's scenario, with a description and a preview, **only** when the
-map uses Vista's own shared globals.  A map with its **own globals** makes Cartographer fall back to the map's header name, with no description
-and no preview.  Since 0.2.0 every converted multiplayer map carries its own globals by default (see the next section), so the converter
-writes a good name into the header name instead:
+**What Cartographer does.**  Project Cartographer lists a custom map with a name, a description, a preview and the number of teams each game
+type allows (the lobby's team menu reads that number) **only** when the map uses Vista's own shared globals: the check in `halo2.exe` that
+fills the list entry (it reads those fields from the scenario's *multiplayer info block*) refuses a map whose globals tag is stored in the map.
+For such a map Cartographer falls back to an entry that has only the map's header name, no description, no preview, **and zero teams**, so the
+lobby cannot change teams.  A converted multiplayer map has its own globals by default (tutorial prompts removed; and workshop mods put their own HUD text,
+damage tables and other settings there), so this is the normal case.
 
-* the title the MCC menu shows for the map (from the mod's `multiplayer\<name>.json`), cut to what the header can hold (31 plain ASCII
-  characters, no `|`, never exactly the name of a stock map);
-* with `--name`, the header name is that name, and `--display-name TEXT` always wins;
-* the **file name** is not changed.
+**What the converter writes for the list.**  The list entry is made from the multiplayer info block of the scenario, once the check passes.  The
+converter fills that block:
+
+* the map's name in all nine language slots (the title the MCC menu shows, from the mod's `multiplayer\<name>.json`, or the map's own name text) and
+  a description (from the same MapInfo file or the map's own text), and the team limits per game type from the mod's MapInfo
+  (`MaximumTeamsByGameCategory`; `--no-mapinfo-teams` leaves the limits alone).  Limits that the map's author set are never overwritten.  A map
+  whose scenario has no such block gets one when the MapInfo file has team limits (without a preview picture);
+* `--display-name TEXT` and `--description TEXT` replace the name and the description in every language;
+* `--mp-info FILE` (or `--mp-info-dir DIR`, which uses `<DIR>\<output file name without .map>.json` for each map, also with `batch run`) writes the whole
+  block from a small JSON file, including a description per language and the preview image; see the next section;
+* the same title is written into the map's **header name**, which is what Cartographer shows when the check fails (31 plain ASCII characters
+  at most, no `|`, never exactly the name of a stock map); with `--name` the header name is that name, and `--display-name` always wins.  The
+  **file name** is not changed.
 
 Maps built with the editing kit often leave the name and description fields of the scenario empty, which showed as a blank name in the list;
-0.2.0 fills them from the map's own text.  A map converted earlier can be repaired in place with
+the converter fills them from the map's own text.  A map converted earlier can be repaired in place with
 `py -3 -m h2conv.mpnames <map.map> <fixed.map>` (add `--check` to only report).
+
+**Getting the full entry and team changing: choose one.**
+
+1. **Patch your own copy of Cartographer's `halo2.exe`** (six bytes; the patched file is not part of this project and must not be passed on: it is
+   Microsoft's program).  Make a backup copy of `halo2.exe` first.  With a hex editor change the six bytes at **file offset `0x4F947`**
+   (virtual address `0x44F947`)
+
+   ```
+   0F 8C EF 03 00 00     (jl rel32)      ->      90 90 90 90 90 90     (six NOPs)
+   ```
+
+   It is the conditional jump right after `cmp eax, 2710h` (bytes `3D 10 27 00 00`) in the function that fills the list entry (`sub_44F690`): the
+   test that the globals tag must be a shared one.  In the `halo2.exe` we tested (MD5 `16b1453ee91aa4fd64735550a9aeefa0`) the 11-byte sequence
+   `3D 10 27 00 00 0F 8C EF 03 00 00` occurs once, at that place; nothing after the jump uses the globals index.  With the patch a map with its
+   own globals gets the full entry (name, descriptions, preview, teams), and team changing works in the lobby (confirmed in game on a converted
+   `chronopolis`).  The Project Cartographer developers have said they plan to ship an equivalent change; once they do you will not need this.
+   **After switching `halo2.exe` or after converting a map again, delete `Maps\Data Files\.h2mdat` once** (in your Halo 2 `Maps` folder, for
+   example `Documents\My Games\Halo 2\Maps\Data Files\.h2mdat`): Cartographer caches the list entry it made earlier, including a failed one, and
+   rebuilds the file when it is missing.
+2. **Keep Vista's shared globals: `--matg link --training-via-script`.**  The map then uses the shared globals tag and the tutorial prompts are turned off by a startup script
+   (`hud_enable_training false`) instead of an edit of the globals.  This gives the full entry and team changing on an **unpatched**
+   Cartographer, but the map's own globals are not carried over: custom HUD text, changed damage tables, custom player and weapon settings that
+   a mod keeps in its globals do not work.  Without `--matg link` the script route is used only for a map whose globals were not changed at all.
+
+## The multiplayer info file (`--mp-info`)
+
+`--mp-info FILE` (single conversion) and `--mp-info-dir DIR` (a folder of such files; for `batch run` too) take a UTF-8 JSON file like this:
+
+```
+{
+  "names": "Chronopolis",
+  "descriptions": "A short description.",
+  "bitmap": "ui\\screens\\game_shell\\pregame_lobby\\unknown_map",
+  "max_teams": [8, 2, 8, 8, 8, 8, 8, 8, 8, 2, 0, 0, 0, 0, 0, 0],
+  "map_id": -1,
+  "sort_order": 0,
+  "flags": 0
+}
+```
+
+Everything is optional.  `names` and `descriptions` are either one string (used for all nine languages) or a list of nine, in the engine's order:
+English, Japanese, German, French, Spanish, Italian, Korean, Chinese, Portuguese.  A name is 31 characters at most, a description 127.
+`max_teams` has 16 numbers, the most teams allowed per game type: index 1 Capture the Flag, 2 Slayer, 3 Oddball, 4 King of the Hill, 5 Race, 6 Headhunter,
+7 Juggernaut, 8 Territories, 9 Assault (the other indices are not game types; the numbers above are the defaults).  `bitmap` is the **preview image**: the name of
+a bitmap of the map or of Vista's `mainmenu.map`.  The list shows it only when it is exactly 440 x 414 pixels (a different size is silently ignored); the
+`unknown_map` above is a 440 x 414 picture that `mainmenu.map` already holds, so the converted map stores a few hundred bytes that point at it, not an
+image.  If the map already has a multiplayer info block, its names, descriptions and preview are replaced and the team limits are filled only where the
+map has none; the map id, sort order and flags of an existing block are kept.
 
 ## Tutorial prompts (training)
 
 The tutorial ("training") prompts of Halo 2 drew as an **empty square** on converted multiplayer maps.  Since 0.2.0 they are **off by default**:
 a converted multiplayer map carries its own copy of Vista's globals (identical to Vista's apart from the empty training list), which is why
-its list entry shows only the name.  `py -3 -m h2conv.convert ... --keep-training` brings the prompts back; a map whose globals are unchanged
-then links to Vista's shared globals again and gets the full list entry (name, description, preview).
+its list entry needs the `halo2.exe` patch above.  `py -3 -m h2conv.convert ... --keep-training` brings the prompts back; a map whose globals are unchanged
+then links to Vista's shared globals again and gets the full list entry (name, description, preview, teams) on an unpatched Cartographer.
+`--training-via-script` (with `--matg link`) turns the prompts off in a different way and also gets the full entry on an unpatched Cartographer;
+see the previous section.
 
 ## Settings and environment variables
 
@@ -399,11 +473,17 @@ py -3 -m h2conv.excession validate <package folder>     check an Excession mod p
 | option | meaning |
 |---|---|
 | `--name NAME` | internal map name and file name (letters, digits, `_`, `-`, space; at most 31 characters) |
-| `--display-name TEXT` | the name shown in the map list (all 8 languages, and the header name that Cartographer shows for a map with its own globals).  Without it a workshop map uses the MCC menu title |
+| `--display-name TEXT` | the name shown in the map list (all languages, and the header name that Cartographer shows when the list check fails).  Without it a workshop map uses the MCC menu title |
+| `--description TEXT` | the map's description, in every language: the language pack and the scenario's multiplayer info block |
+| `--mp-info FILE`, `--mp-info-dir DIR` | write the scenario's multiplayer info block from a JSON file (names, descriptions per language, preview image, team limits); `--mp-info-dir` takes `<DIR>\<output file name>.json` for each map (also an option of `batch run`).  See "The multiplayer info file" |
+| `--no-mapinfo-teams` | do not fill the team limits per game type from the mod's MapInfo file |
 | `--keep-training` | keep the tutorial prompts (off by default since 0.2.0: they drew as an empty square); a map with unchanged globals then links to Vista's shared globals again |
+| `--training-via-script` | turn the tutorial prompts off with a startup script instead of an edit of the map's globals; with `--matg link` the map keeps Vista's shared globals and gets the full map-list entry on an unpatched Cartographer (see "The map list entry, teams and the `halo2.exe` patch") |
+| `--no-checkpoints` | campaign maps: turn the scenario's checkpoint saves into no-ops.  Checkpoints are kept by default |
+| `--keep-hologram-variants` | keep non-default variants of models that have a hologram shader.  By default a placement that uses such a variant gets the model's default variant instead, because the Truth variant of one mod's hologram hangs the graphics card in Vista |
 | `--shared-map FILE` | the custom `shared.map` of the workshop mod the map was built against (default: found automatically, see "Maps from workshop mods") |
 | `--matg hud` (default) | use Vista's globals, except use the map's own globals when the map customised its HUD text (custom pickup prompts keep working).  Where Vista's globals are used, the map gets its own copy of them without the tutorial prompts (`--keep-training` links the shared ones instead) |
-| `--matg link` / `local` / `auto` | always use Vista's globals / always convert the map's globals / convert them only if they differ from stock.  Local globals cost the map-list entry its description and preview (Cartographer's list check rejects them) |
+| `--matg link` / `local` / `auto` | always use Vista's globals / always convert the map's globals / convert them only if they differ from stock.  Local globals cost the map-list entry its description, preview and team changing unless `halo2.exe` is patched (Cartographer's list check rejects them); `link` gives up the map's own globals |
 | `--self-contained` | do not link to Vista's `shared.map`; copy everything (much bigger file; experimental) |
 | `--no-pull-mcc-only` | for stock MCC maps: drop MCC-only objects instead of converting them |
 | `--mcc-maps`, `--vista-maps`, `--assembly-dir` | the folders (see "Settings and environment variables") |
@@ -428,10 +508,13 @@ known-issues file), plus the same three folder options.
   map: a Vista map (those go through `rev`, Vista to MCC), a damaged or cut-off download, or some other file.  `mapinfo` tells you what a `.map` is.
 * **The converted map does not appear in the game's list (MCC to Vista):** the file must be directly in `Documents\My Games\Halo 2\Maps`
   (not in a sub-folder), its name at most 31 characters; then restart the game or type `reload_maps`.
-* **The map shows only its name in Cartographer's custom map list (no description, no preview):** expected for a map with its own globals,
-  which is every converted multiplayer map unless you pass `--keep-training` and the map has no custom globals; see "Names in Cartographer's map list".
+* **The map shows only its name in Cartographer's custom map list (no description, no preview), or the team menu in the lobby does nothing:**
+  expected for a map with its own globals on an unpatched `halo2.exe`, which is every converted multiplayer map unless you pass
+  `--keep-training` and the map has no custom globals; see "The map list entry, teams and the `halo2.exe` patch".  If you patched `halo2.exe` or
+  changed the map and the list still shows the old entry, delete `Maps\Data Files\.h2mdat` and start the game again.
 * **A converted campaign (solo) map crashes or does not start in Cartographer:** known; campaign conversion for Cartographer is experimental
-  and unsupported (see "Limits you should know before you start").
+  and unsupported (see "Limits you should know before you start").  A graphics driver reset on a campaign map was traced to the Truth hologram
+  of one mod; that placement now uses the default variant unless you pass `--keep-hologram-variants`.
 * **An MCC map from a workshop mod is skipped ("depends on a CUSTOM shared.map that was not found"):** keep the map in the mod's own folder
   (`<mod>\maps\`, with `<mod>\halo2\h2_maps_win64_dx11\` holding `shared.map` and `textures.dat`) or pass `--shared-map`.
 * **The map loads but looks or behaves wrongly, or the game crashes:** see [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md), then report it.
@@ -444,7 +527,7 @@ known-issues file), plus the same three folder options.
 
 * [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) - architecture in plain language and the engine facts it relies on
 * [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) - problems met and solved, what is still open, workarounds
-* [RELEASE_NOTES.md](RELEASE_NOTES.md) - what is in 0.2.0 (and 0.1.0)
+* [RELEASE_NOTES.md](RELEASE_NOTES.md) - what is in 0.3.0 (and 0.2.0, 0.1.0)
 * [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) - licences of the bundled and required components
 
 ## Credits
@@ -476,7 +559,9 @@ Halo Studios, Bungie, the Project Cartographer team, the Assembly project or Exc
 Collection are trademarks of Microsoft Corporation; the names are used here only to say which games the tool works with.
 
 **No game files are included.**  You must own the games.  The tool only reads files from your own installations and writes new files into
-folders you choose.  It never connects to the internet and never uploads anything.
+folders you choose.  It never connects to the internet and never uploads anything.  (The one data set derived from the games' tools is the
+table of compiled Direct3D 9 shader programs for the Halo CE ports in `h2conv\data\ce_port\`; what it is made from is stated in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).)
 
 **Converted maps contain copied game content.**  A converted map embeds tags, textures, sounds and shader code copied from your copies
 of the games and the work of the original map authors.  Use converted maps for your own play and preservation.  Do not redistribute them

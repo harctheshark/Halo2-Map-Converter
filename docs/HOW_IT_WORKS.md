@@ -121,6 +121,7 @@ one rebuilds its output from the source tag, so running it twice gives the same 
 | **locale** | the eight (Vista) or nine (MCC) language packs and the header language block |
 | **HUD bitmap scale** (0.2.0) | MCC halves the draw size of its crosshair atlas (`hud_reticles`) by name; Vista draws bitmaps at their real size.  A map-supplied atlas that is really twice the size of Vista's is area-averaged to half (`handlers/hud_scale.py`) |
 | **map-list names** (0.2.0) | `handlers/mp_level_names.py` fills empty scenario multiplayer name / description fields from the map's own text, and the converter writes the MCC menu title into the header name (Cartographer's fallback for a map with local globals) |
+| **multiplayer info block** (0.3.0) | the same module fills the team limits per game type from the mod's MapInfo file, builds the scenario's multiplayer info block when the map has none, and writes the whole block (names and descriptions in nine languages, preview bitmap, team limits) from an `--mp-info` JSON file; the planner adds the preview bitmap as a small donor tag whose pixels stay in `mainmenu.map` (section 14) |
 
 ## 6. The planner: deciding what goes into the output
 
@@ -148,14 +149,18 @@ datums.  Some of its rules are worth knowing:
   the installed game's on the stock side), and converts locally what differs plus the tags that depend on it.  The rest still links to
   Vista's `shared.map`.  Fields that differ between any two MCC builds are ignored in that comparison, so a mod that edits nothing converts
   to the same output as a stock map.
-* **The globals tag (`matg`) decides much.**  `--matg link` keeps stock-like topology (smaller file, full map-list entry) but loses
-  edits the MCC map made to its globals; `--matg local` keeps them but costs the list entry its description and preview.  The
-  default, `--matg hud`, uses Vista's globals unless the map customised its HUD text.  Since 0.2.0 the tutorial prompts are off by
+* **The globals tag (`matg`) decides much.**  `--matg link` uses Vista's globals (smaller file; the map-list entry is complete only together with
+  `--keep-training` or `--training-via-script`, see below) but loses
+  edits the MCC map made to its globals; `--matg local` keeps them but costs the list entry its description, preview and team limits (on an
+  unpatched `halo2.exe`, section 14).  The default, `--matg hud`, uses Vista's globals unless the map customised its HUD text (for a custom
+  `shared.map` also when its globals differ from the stock ones).  Since 0.2.0 the tutorial prompts are off by
   default (they drew as an empty square), so where Vista's globals would be linked the map gets its own copy of Vista's `matg` and the
   `hudg` it references, identical except for an empty training list; the shared tags the globals depend on stay listed in the map's
   placeholder table (without them the player does not spawn when Cartographer's seasonal props are injected).  `--keep-training`
-  links the shared globals again.  A map with a local `matg` is listed by Cartographer under its header name, which the converter
-  sets to the MCC menu title.
+  links the shared globals again.  `--training-via-script` (0.3.0) is the other way to switch the prompts off: the map keeps Vista's shared `matg`
+  and `hudg` and gets a one-statement startup script `disable_training` (`hud_enable_training false`; the engine keeps one master flag for the
+  prompts and a startup script runs after every module's map initialisation), which is what lets an unpatched `halo2.exe` accept the map.
+  A map with a local `matg` is listed by Cartographer under its header name, which the converter sets to the MCC menu title.
 * **MCC-only objects** (for example the silenced SMG family) appear in stock MCC maps; by default they are converted, and
   `--no-pull-mcc-only` drops them so the result matches the stock Vista map of the same name.
 * **Vista to MCC reproduces the layout of an H2EK-built map**: `matg` first, the sound class tags, `scnr`, a depth-first walk of
@@ -214,7 +219,7 @@ template" that lists passes and how the shader's arrays of bitmaps and constants
 MCC's compiled shader code is DXBC and cannot be loaded by Vista.  So the converter does the following.
 
 1. **Code is donated, not translated.**  The templates, passes and vertex shaders (`stem`, `spas`, `vrtx`) come from the stock Vista
-   maps (the donor mechanism).  Every MCC shader template has a Vista twin.
+   maps (the donor mechanism).  Every shader template of the stock MCC maps has a Vista twin (the Halo CE ports are the exception, section 10.3).
 2. **Each shader's values are re-laid onto the Vista template.**  A shader tag contains arrays (bitmap list, vertex constants, pixel
    constants) whose *positions* mean different things in the two games' templates.  The converter decodes the MCC arrays into
    **named parameters** (base map, bump map, detail tiling, specular colour ...) using tables learned from the stock maps of both
@@ -260,6 +265,36 @@ since then is **faithful port only, no guessing**:
 5. **An independent check of the written file** (`shader_check.py`) reads the output map, not the converter's records, and verifies
    for each converted shader that every paired bitmap slot holds the bitmap the Vista pass reads and every paired constant has the
    Vista value.  The check has a negative control: it flags the old, wrong conversions.
+
+### 10.3 MCC to Vista: the Halo CE port templates (0.3.0)
+
+The Halo CE port maps of workshop mod 3583572796 use about 37 shader templates, passes and vertex shaders that exist in no Halo 2 Vista map and,
+in MCC, only as compiled Direct3D 11 code (DXBC).  Section 10.1 says "every MCC shader template has a Vista twin"; for these maps that is not true, and
+before 0.3.0 their shaders ended up without a template (an error in `validate`, a crash in game).  The converter now carries ready-made Direct3D 9
+versions (`h2conv\data\ce_port\`, used by `h2conv\ce_port.py`; nothing is compiled while a map is converted):
+
+1. **Where the programs come from.**  The Halo 2 editing kit installs the HLSL source of its passes.  Recompiled with the MCC tool's recipe, that source
+   reproduces, byte for byte, the DXBC the mod's maps carry (942 elements of 133 passes), which proves that the source is the program in the map.  The
+   Direct3D 11 branch of the source is what MCC runs (the other branch is Halo 2's original program and is *not* the same), so it is that branch which
+   is compiled for Direct3D 9 (`ps_2_0`, `ps_2_0` and `ps_3_0`, the three variants of a Vista pixel shader) after a rewrite of the texture-sampling
+   calls only (`dx11to9.py`); every arithmetic statement is kept.  A pass with no source (`scopeblur`) is recovered from its DXBC statement by
+   statement (`dxbc9.py`).
+2. **Every program is proven.**  Before it is entered into the table, each Direct3D 9 program is run next to the DXBC of the map with the converter's two
+   interpreters (random and extreme inputs, the alpha test of the pass emulated on the Direct3D 9 side, the vertex shader of the pass checked against its
+   MCC namesake).  Anything not proven is not in the table.
+3. **Lanes MCC defines.**  MCC's vertex wrapper defines every texture-coordinate lane a shader leaves unwritten as a constant (0), where Vista's shader of the
+   same name writes 1 into the z lane of a 2-D coordinate.  Where a pixel shader reads such a lane, it is compiled with the lane pinned to MCC's value, and only
+   when both vertex shaders agree that the lane is constant; otherwise the pass is not ported.
+4. **A re-authored vertex shader.**  MCC's `water_pool_static` (used by `beavercreek`) computes a divided screen position per vertex where Vista's writes the
+   reflection vector, and no constant lane explains the difference.  The editing kit holds the HLSL of that vertex shader too; it is compiled for `vs_2_0`
+   (two statements differ from the Direct3D 11 text), proven lane for lane against the DXBC and together with every ported pixel shader, and written to the map
+   as a private vertex shader `water_pool_static__ce`.  A stock-named pass whose MCC structure differs from Vista's (`lightmap_tex_detail_alpha_test`, one texture
+   less) is ported under `<name>__ce` the same way.
+5. **Gate.**  The data is used only when the input was built against a custom `shared.map`, the data files are present, and the MCC tag has exactly the
+   registered canonical form (name plus a SHA-256 of the tag with references by name and string ids by text).  A look-alike from another mod is not
+   ported and falls back to the old behaviour (reported as "shader has no Template"); every other conversion is byte for byte what it was before.
+
+`h2conv\ce_port_build.py` is the developer tool that made the table (it needs the workshop mod and the editing kit); the converter never calls it.
 
 ## 11. Tables the engine binary-searches
 
@@ -330,6 +365,17 @@ or from Project Cartographer's open source engine code; they are not documented 
   that the map author shipped is faithfully carried over as is.
 * Vista draws the sky first with the depth test off; MCC draws it after the opaque geometry with the depth test on (reverse Z).  This
   was read from the disassembly of both games and confirmed by one A/B test in MCC, not by a full set of in-game measurements.
+* The custom map list entry (0.3.0).  Cartographer builds a custom map's list entry by calling a `halo2.exe` function (`sub_44F690`, the "vanilla list
+  validator").  It copies the map's English name, the nine descriptions, the preview bitmap and sixteen "most teams per game type" bytes from the first
+  element of the scenario's multiplayer info block (Level Data, Multiplayer, 0xC64 bytes per element), but only after every check passed, and the
+  very first tag-table check is that the globals tag's datum index is at least 10,000, i.e. a shared tag (`cmp eax, 2710h` / `jl` at virtual address
+  `0x44F942..0x44F94D`).  A map with its own globals fails there; Cartographer then stores the header name only, with all team limits 0.  The lobby does
+  not read the scenario: it reads that entry, and a limit of 0 gives an empty team menu.  Nothing after the jump uses the globals index, which is why
+  replacing the `jl` by six NOPs gives the full entry (README, "The map list entry, teams and the `halo2.exe` patch").  The preview is accepted only as a
+  bitmap whose first element is 440 x 414, format A8R8G8B8, no mipmaps, one zlib stream of 728,640 bytes whose raw pointer may name `mainmenu.map`
+  (top two bits of the offset); a bitmap tag of the map itself and `mainmenu.map`'s `unknown_map` both qualify.
+* The tutorial prompts have one master flag (byte 1765 of the 1,768-byte player training globals block, set to 1 at every map load); the script
+  function `hud_enable_training` only stores its argument there, and startup scripts run after every module's map initialisation.
 * The scenario simulation table is indexed with 9 bits, so it can hold only about 508 entries (a few more are appended by
   Cartographer at run time); the converter merges duplicates if a table would be larger and warns if it still does not fit.
 
@@ -353,11 +399,13 @@ or from Project Cartographer's open source engine code; they are not documented 
 | `h2conv\__main__.py` | the single entry point, `py -3 -m h2conv <command>` with the commands convert, rev, batch, mapinfo, excession, validate, limits, invariants, paths and gui; it is also the entry point of `h2conv.exe` in the Windows zip |
 | `h2conv\gui.py` (the window program, `Halo 2 Map Converter.exe` in the Windows zip) | a graphical front end for `h2conv\batch.py`, in two layers: a controller / model that never imports tkinter (settings, the folders, the scan and its dry-run plan, the options, the worker's command line, the progress lines, the summary of a batch report) and a thin tkinter view.  It converts nothing itself: **Convert** starts `batch run ... --isolate` as a worker process (from the Windows zip: `h2conv.exe` beside the window program), reads its output line by line, and builds the end summary from the report the worker writes.  `py -3 -m h2conv gui --selftest` checks the installation without a window |
 | `packaging\` | the Windows build: `h2conv.spec` (PyInstaller; one folder with the two programs), the two entry scripts `packaging\h2conv_cli.py` and `packaging\h2conv_gui.py`, `WINDOWS_README.txt` (copied into the zip as `README-WINDOWS.txt`) and `README.md` (how to build) |
+| `h2conv\ce_port.py`, `h2conv\data\ce_port\` | MCC to Vista: the Halo CE port shader templates (section 10.3): the registry and the table of Direct3D 9 programs, and the code that writes the ported tags |
+| `h2conv\ce_port_build.py`, `h2conv\dx11to9.py`, `h2conv\dxbc9.py` | developer tools that made the Halo CE port table (the converter does not call them): the editing-kit source to the table, the Direct3D 11 to 9 source rewrite, the DXBC to HLSL translator |
 | `h2conv\mpnames.py` | stand-alone repair tool (`py -3 -m h2conv.mpnames`) for the blank name of an already converted multiplayer map in Cartographer's list |
 | `h2conv\paths.py` | where the converter looks for your games, for Assembly and for its caches (option, environment variable, settings file, auto-detection) |
 
 **Runtime data files.**  Besides the code the converter reads: `h2conv\data\` (shader parameter tables, extra layouts, the enum policy
-table and two block-alignment tables), `h2conv\data\assembly\` (Assembly's layout and HaloScript XML files), `h2conv\rev\data\` (tag group
+table and two block-alignment tables), `h2conv\data\ce_port\` (the Halo CE port registry and Direct3D 9 programs, section 10.3), `h2conv\data\assembly\` (Assembly's layout and HaloScript XML files), `h2conv\rev\data\` (tag group
 table, null-word and default tables, register layouts) and `h2conv\third_party\opus.dll`.  The Assembly files are read from the bundled copy
 unless you point the converter at another set with `--assembly-dir`.
 

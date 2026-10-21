@@ -122,6 +122,8 @@ FUNCTION_ALIASES = {
 #   ('const', value)        replace the call by this constant of the call's return type
 #   ('noop', None)          replace the call by (print "")
 #   ('cmp_distance', None)  real distance used in a comparison: pick the constant that makes the comparison true
+SOLO_MP_SAVE_CALLS = ('game_save', 'game_save_cancel', 'game_save_no_timeout', 'game_save_immediate', 'game_save_unsafe')
+
 MCC_ONLY_POLICY = {
     ('game_tick_rate', ()): ('const', VISTA_TICK_RATE),
     ('game_tick_rate_scalar', ()): ('const', 1),
@@ -370,6 +372,12 @@ class ProgramConverter(object):
         self._print_tok = None
         self.tag_order = collections.OrderedDict()      # mcc tag datum -> converted datum, in first-use (node index) order
         self.use_unverified = bool((getattr(services, "opts", None) or {}).get("hs_unverified_globals"))
+        # OPT-IN since 2026-10-21 (was default on 2026-10-20): the level1 "checkpoint crash" turned out to be a GPU hang (nvlddmkm TDR) from the
+        # Truth hologram, not game_save, so checkpoints are kept again by default (user).  opts['no_checkpoints'] (convert --no-checkpoints) or
+        # env H2CONV_NO_CHECKPOINTS=1 still turns game_save* into no-ops on solo maps.  Multiplayer maps are never touched.
+        _o = getattr(services, 'opts', None) or {}
+        self.solo_mp_no_save = getattr(services, 'map_type', 1) != 1 and bool(
+            _o.get('no_checkpoints') or os.environ.get('H2CONV_NO_CHECKPOINTS'))
         self._build_parents()
 
     # ---- helpers ----
@@ -488,6 +496,10 @@ class ProgramConverter(object):
         if plan is None:
             self.stats['fn_unknown_opcode'] += 1
             self.warn('hs_fn_unknown', 'function opcode %d is not in the MCC table' % op)
+            self._to_noop(g)
+            return
+        if self.solo_mp_no_save and plan.name in SOLO_MP_SAVE_CALLS:
+            self.stats['fn_solo_mp_save_noop'] += 1
             self._to_noop(g)
             return
         kids = self.children(g)
@@ -794,6 +806,77 @@ def _make_elements(parent, fname, raws):
     return f.offset, out
 
 
+TRAINING_OFF_SCRIPT = 'disable_training'      # name of the synthesised startup script (see add_training_off_script)
+
+
+def training_off_script_wanted(ctx):
+    """True when the planner chose the SCRIPT route for 'training off' (plan.notes['training_off']['route'] == 'script': a multiplayer map
+    whose globals are Vista's SHARED matg/hudg, which cannot be edited per map).  Stub contexts (tests) have no plan -> False."""
+    notes = getattr(getattr(ctx, 'plan', None), 'notes', None)
+    t = notes.get('training_off') if isinstance(notes, dict) else None
+    return bool(isinstance(t, dict) and t.get('route') == 'script')
+
+
+def add_training_off_script(conv, scripts_out, tables, ctx=None):
+    """Append ONE startup script `disable_training` = (begin (hud_enable_training false)) to the converted program.
+
+    Why (HOW_IT_WORKS.md, section 14): halo2.exe keeps a single master flag for the HUD tutorial ("training") prompts, byte +1765 of the 1768-byte
+    'player training globals' block (module sub_4B3E55 / initialize_for_new_map sub_4B3E73 sets it to 1 at every map load);
+    sub_4B62F8 (per-player state machine) and sub_4B6720 (the prompt frame/text draw) return at once when it is 0, and the script function
+    hud_enable_training (Vista opcode 0x279 -> sub_4F0DE5 -> sub_4B428F) just stores its argument there.  A startup script (script type 0) is
+    started by hs_runtime_initialize_for_new_map (sub_496BFD) and first evaluated in the tick loop (sub_496DF7), i.e. after every module's
+    map initialisation, so it wins.  This switches the prompts off WITHOUT touching the shared hudg, so the map can keep Vista's shared
+    matg and the custom-map list validator (halo2.exe sub_44F690, wants a shared matg) passes -> full list entry (description, preview,
+    max teams per game type).
+
+    Shapes copied from the compiled stock scripts (zanzibar/dune/needle): root = group node (opcode 0, type = return type, flags 8) whose first
+    child is the function-name node of `begin` (opcode 0, type 2, flags 9); statement = group (opcode = function, flags 8) + function-name
+    node (same opcode, flags 9) + constant (opcode = type = boolean 5, flags 9, value 00 FF FF FF).  Appended at the END of the Scripts block
+    so every existing script index stays valid.  Returns the number of nodes added, 0 when it could not be done (a warning is raised)."""
+    warn = getattr(ctx, 'warn', None) or (lambda code, msg: None)
+    v = tables.vista['fn']
+    op = next((o for o, f in v.items() if f['name'] == 'hud_enable_training' and f['args'] == ('boolean',)), None)
+    if op is None:
+        warn('hs_training_off_script', 'the Vista function table has no hud_enable_training(boolean): training prompts stay on')
+        return 0
+    if any(s[:len(TRAINING_OFF_SCRIPT)] == TRAINING_OFF_SCRIPT.encode('ascii') for s in scripts_out):
+        return 0                                                    # idempotent
+    if len(scripts_out) >= MAX_SCRIPTS:
+        warn('hs_training_off_script', 'script limit %d reached: training prompts stay on' % MAX_SCRIPTS)
+        return 0
+    n = conv.n
+    need = 5
+    free = [i for i, r in enumerate(n) if r.free][:need]
+    while len(free) < need:
+        if len(n) >= MAX_NODES:
+            warn('hs_training_off_script', 'no free syntax nodes (limit %d): training prompts stay on' % MAX_NODES)
+            return 0
+        n.append(Rec.unpack(FREE_RECORD))
+        free.append(len(n) - 1)
+    pool = conv.pool
+    placeholder = len(pool) > 0 and pool.count(0xCD) == len(pool)       # script-less map: the pool is only the 0xCD filler
+    if placeholder:
+        del pool[:]
+    t_begin, t_fn, t_false = conv.pool_token('begin'), conv.pool_token('hud_enable_training'), conv.pool_token('false')
+    if placeholder:
+        pool.extend(b'\xcd' * 1023)                                      # stock script-less-pool shape (needle/street_sweeper: tokens + 1023 x 0xCD)
+    i_root, i_bfn, i_stmt, i_fn, i_const = free
+    dat = lambda i: (salt_for(i) << 16) | i                              # noqa: E731
+    mk = lambda i, o, vt, fl, nxt, sa, val: setattr_rec(n, i, Rec(salt_for(i), o, vt, fl, nxt, sa, val))   # noqa: E731
+    mk(i_root, 0, VT_VOID, PERMANENT, NONE32, t_begin, struct.pack('<I', dat(i_bfn)))
+    mk(i_bfn, 0, VT_FUNCTION_NAME, PERMANENT | PRIMITIVE, dat(i_stmt), t_begin, b'\0\0\0\0')
+    mk(i_stmt, op, VT_VOID, PERMANENT, NONE32, t_fn, struct.pack('<I', dat(i_fn)))
+    mk(i_fn, op, VT_FUNCTION_NAME, PERMANENT | PRIMITIVE, dat(i_const), t_fn, b'\0\0\0\0')
+    mk(i_const, VT_BOOLEAN, VT_BOOLEAN, PERMANENT | PRIMITIVE, NONE32, t_false, pack_constant(VT_BOOLEAN, False))
+    name = TRAINING_OFF_SCRIPT.encode('ascii')
+    scripts_out.append(name + b'\0' * (0x20 - len(name)) + struct.pack('<HHI', 0, VT_VOID, dat(i_root)))
+    return need
+
+
+def setattr_rec(nodes, i, rec):
+    nodes[i] = rec
+
+
 def convert_scenario_scripts(ctx, mcc_node, vista_node, tables=None):
     """Rebuild the script blocks of `vista_node` (scnr main struct) from the MCC scnr node.
 
@@ -841,6 +924,13 @@ def convert_scenario_scripts(ctx, mcc_node, vista_node, tables=None):
 
     scripts_out = [fix_root(r, 0x24) for r in scripts_raw]
     globals_out = [fix_root(r, 0x24) for r in globals_raw]
+    if training_off_script_wanted(ctx):
+        # training OFF for a map that keeps Vista's SHARED globals: a startup script instead of a hudg edit (see add_training_off_script)
+        if add_training_off_script(conv, scripts_out, t, ctx):
+            ctx.stats['hs:training_off_script'] += 1
+            ctx.warn('hs_training_off_script', 'startup script %s = (hud_enable_training false) added: the tutorial prompts are off while the map '
+                                               'keeps Vista\'s shared globals (full custom-map list entry); --training-via-hudg uses a hudg edit '
+                                               'instead' % TRAINING_OFF_SCRIPT)
 
     # --- write the Vista blocks ---
     off, els = _make_elements(vista_node, 'Script Expressions', [r.pack() for r in conv.n])

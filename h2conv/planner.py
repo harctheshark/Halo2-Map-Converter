@@ -370,7 +370,7 @@ class PlanEntry(object):
     a tag that only exists on the Vista side, e.g. a donor-closure addition).  out_index/out_datum: local index/datum for
     convert/donor; the Vista shared.map index/datum for link; None/0xFFFFFFFF for drop."""
     __slots__ = ('src_map', 'src_index', 'group', 'name', 'action', 'out_index', 'out_datum', 'donor', 'redirect',
-                 'reason', 'twin', 'src_size', 'parent', 'redirect_key', 'shared_refs', 'no_closure')
+                 'reason', 'twin', 'src_size', 'parent', 'redirect_key', 'shared_refs', 'no_closure', 'ce_port', 'mainmenu_raw')
 
     def __init__(self, src_map, src_index, group, name, action, reason='', donor=None, redirect=None):
         self.src_map = src_map
@@ -389,6 +389,8 @@ class PlanEntry(object):
         self.redirect_key = None
         self.no_closure = False       # donor whose references are NOT followed (targets absent from the output become null)
         self.shared_refs = False      # donor clone of a Vista SHARED tag (training-off globals): every reference stays on the shared slot
+        self.ce_port = None           # ce_port.decision() dict: a Halo-CE port template (stem / spas) converted from the mod with D3D9 code from the registry
+        self.mainmenu_raw = False     # donor from mainmenu.map whose pixel pointers stay on mainmenu.map (rebased) instead of being copied (the preview bitmap)
 
     def __repr__(self):
         return '<PlanEntry %s %s %r %s out=%s>' % (self.action, self.group, self.name, (self.src_map, self.src_index), self.out_index)
@@ -612,6 +614,7 @@ class Plan(object):
             'matg': {'status': self.notes['matg'][0], 'differences': self.notes['matg'][1]} if 'matg' in self.notes else None,
             'remastered_without_legacy_twin': [e.name for e in nulls][:max_items], 'remastered_without_legacy_twin_count': len(nulls),
             'no_donor': [e.name for e in self.all_entries if 'NO_DONOR' in e.reason][:max_items],
+            'ce_port': self._ce_report(),
             'empty_mcc_tags': [{'group': e.group, 'name': e.name, 'action': e.action, 'reason': e.reason[:120]}
                                for e in self.all_entries if 'empty in MCC' in e.reason][:max_items],
             'empty_mcc_tags_count': sum(1 for e in self.all_entries if 'empty in MCC' in e.reason),
@@ -645,6 +648,13 @@ class Plan(object):
         for e in self.all_entries:
             out[e.action][e.group] += 1
         return out
+
+    def _ce_report(self):
+        """the Halo-CE port templates this plan converted (None when the feature did not apply)"""
+        if not any(e.ce_port for e in self.all_entries):
+            return None
+        from . import ce_port as CEP
+        return CEP.summary(self)
 
     def summary(self):
         c = collections.Counter(e.action for e in self.all_entries)
@@ -1102,6 +1112,7 @@ class _Builder(object):
         self.custom_shared = False         # the externals resolve against a CUSTOM (workshop mod) shared.map: see _detect_custom_shared
         self.stock = None                  # the stock MCC shared.map (custom-shared only)
         self.cmp_shared = self.cmp_src = None
+        self._ce_memo = {}                 # key -> ce_port decision | None  (Halo-CE port templates, see _ce_decision)
         self._detect_custom_shared()
 
     # ---- custom shared.map (workshop mods), step 2 ------------------------------------------------------------------------------------
@@ -1277,6 +1288,63 @@ class _Builder(object):
             return (-(f == folder), -common, d[2].lower())
         return sorted(cands, key=score)[0]
 
+    # ---- Halo-CE port templates (h2conv.ce_port) -------------------------------------------------------------------------------------
+    def _ce_decision(self, key, tag):
+        """ce_port.decision() for an MCC stem / spas / vrtx, or None.  GATED: only inputs built against a CUSTOM shared.map (self.custom_shared), opts['ce_port'] not False, the
+        registry data present, and the MCC tag equal (canonical digest) to the registered one.  Everything else plans exactly as before.  A pass that needs private
+        vertex shaders (registry `private_vrtx`) is ported only when the vertex shaders it references are the registered ones too."""
+        if tag.group not in ('stem', 'spas', 'vrtx') or not self.custom_shared or self.opts.get('ce_port', True) is False:
+            return None
+        if key in self._ce_memo:
+            return self._ce_memo[key]
+        dec = None
+        try:
+            from . import ce_port as CEP
+            reg = CEP.registry()
+            if reg is not None and (tag.name or '').lower() in reg.table(tag.group):
+                cache = self.cache_of(key)
+                node = T.decode_tag(lambda a, n: cache.read_at_addr(a, n), self.lay_m[tag.group], tag.addr, tag.group)
+
+                def name_of(d):
+                    if d in (0, NULL):
+                        return None
+                    t = cache.tag_by_datum(d)
+                    return (t.group, (t.name or '').lower()) if t is not None else ('?', d)
+
+                def sid_of(s):
+                    if s in (0, NULL):
+                        return ''
+                    try:
+                        return cache.string_id(s)
+                    except Exception:                                          # noqa: BLE001
+                        return '<bad %08X>' % s
+                dec = CEP.decision(tag.group, tag.name, node, name_of, sid_of, reg)
+                if dec is not None and dec.get('private_vrtx'):
+                    got = set()
+                    for tk, _off in self.mcc_refs(key):
+                        rt = self.tag_of(tk)
+                        if rt.group == 'vrtx' and self._ce_decision(tk, rt) is not None:
+                            got.add((rt.name or '').lower())
+                    if not set(n.lower() for n in dec['private_vrtx']) <= got:
+                        dec = None
+        except Exception as ex:                                                # noqa: BLE001
+            self.warn('ce-port', '%s %s: %s' % (tag.group, tag.name, ex))
+            dec = None
+        self._ce_memo[key] = dec
+        return dec
+
+    def _ce_entry(self, key, tag, dec):
+        """The 'convert' entry of a Halo-CE port template.  A stock-named pass whose MCC structure differs from Vista's is converted under its private name
+        (<name>__ce): this MCC tag key is the one the ported stems reference, while Vista donors keep reaching the Vista pass of the stock name by name."""
+        priv = dec.get('private')
+        e = self._new(key, tag, 'convert', 'CE_PORT: Halo-CE port %s%s (D3D9 code from the registry, proven against the DXBC)' % (
+            {'stem': 'template', 'spas': 'pass', 'vrtx': 'vertex shader'}[tag.group], ' under the private name %s' % priv if priv else ''))
+        if priv:
+            e.name = priv
+        e.ce_port = dec
+        self.plan.stats['ce_port:%s' % tag.group] += 1
+        return self._register(e, key)
+
     # ---- training-off globals (2026-10-20) ---------------------------------------------------------------------------------------------
     def _matg_mode(self):
         """'convert' (local globals converted from the input) or 'link' (Vista's globals) after resolving hud / auto."""
@@ -1299,7 +1367,9 @@ class _Builder(object):
         references, byte-faithful to Vista (cloned from shared.map, not from the MCC input) except that the hudg Player Training Data
         block is emptied (donor.import_donor); every other reference of both tags stays on the shared slots (PlanEntry.shared_refs).
         A map whose globals are converted locally keeps its converted matg (handlers/gameplay.hudg_root empties its hudg); only a hudg
-        that would still be LINKED there (stock HUD, --matg local) is replaced by the same clone."""
+        that would still be LINKED there (stock HUD, --matg local) is replaced by the same clone.
+        2026-10-21: with opts['training_script'] (convert --training-via-script, OPT-IN: the clone route is the default again since the same day) a map
+        whose matg stays LINKED gets no clone at all - route 'script', see below."""
         self.train_hudg = None            # (name key, Vista shared hudg tag) of the hudg that Vista's shared matg references
         self.clone_globals = False        # the matg itself is a clone too
         o = self.opts
@@ -1307,6 +1377,12 @@ class _Builder(object):
             return
         vm = next((t for t in self.vsh.tags if not t.is_empty and t.group == 'matg' and t.addr), None)
         if vm is None:
+            return
+        if o.get('training_script') and self._matg_mode() != 'convert':
+            # SCRIPT ROUTE (opt-in --training-via-script): the map keeps Vista's SHARED matg/hudg (no clone) and handlers/scripts.py
+            # adds the startup script (hud_enable_training false).  A LOCAL matg makes halo2.exe's custom-map validator (sub_44F690, 0x44F942: the
+            # globals datum index must be >= 10000) fail, and then the lobby has no max-teams-per-game-type for the map -> teams cannot be changed.
+            self.plan.notes['training_off'] = {'route': 'script', 'matg': 'Vista shared matg (linked)', 'hudg': 'Vista shared hudg (unchanged)'}
             return
         hud = []
         for f2, i2, _off in self.donors.refs('shared.map', vm.index):
@@ -1318,7 +1394,7 @@ class _Builder(object):
             return
         self.train_hudg = (_nk(hud[0].group, hud[0].name), hud[0])
         self.clone_globals = self._matg_mode() != 'convert'
-        self.plan.notes['training_off'] = {'matg': 'clone of the Vista shared matg' if self.clone_globals else 'converted from the input',
+        self.plan.notes['training_off'] = {'route': 'hudg', 'matg': 'clone of the Vista shared matg' if self.clone_globals else 'converted from the input',
                                            'hudg': hud[0].name}
 
     def _globals_clone(self, key, tag, vt, why):
@@ -1404,6 +1480,9 @@ class _Builder(object):
                 return self._register(self._new(key, tag, 'drop', 'MCC-only: ' + why), key)
         # --- shader family: MCC only has DXBC code ------------------------------------------------------------------------
         if g in SHADER_DONOR_GROUPS:
+            dec = self._ce_decision(key, tag)          # Halo-CE port templates of a custom shared.map (gated, see h2conv.ce_port)
+            if dec is not None:
+                return self._ce_entry(key, tag, dec)
             vt = self._vista_twin(g, n)
             if vt is not None:
                 return self._register(self._link_entry(vt, key, tag, 'shader family: Vista shared.map copy'), key)
@@ -1564,7 +1643,7 @@ class _Builder(object):
         except Exception as ex:                                        # noqa: BLE001
             self.warn('solo-start', 'Player Starting Profile unreadable: %s' % ex)
             return
-        picks = []
+        picks, weapons = [], []
         by_weapon = self._itmc_by_weapon()
         for wn in names:
             hit = by_weapon.get(wn)
@@ -1576,7 +1655,9 @@ class _Builder(object):
             e = self.ensure_vista(hit[0], hit[1], self.plan.scenario)
             self.expand([e])
             picks.append(hit[2])
+            weapons.append(wn)
         if picks:
+            self.plan.notes['solo_starting_weapons'] = weapons
             self.plan.notes['solo_starting_itmc'] = picks
             self.plan.stats['solo_starting_itmc'] += len(picks)
 
@@ -1896,7 +1977,7 @@ class _Builder(object):
             tag = self.tag_of(key)
             nk = _nk(tag.group, tag.name)
             existing = self.by_name.get(nk)
-            if existing is not None and tag.group != 'ugh!' and existing.src_map is None:
+            if existing is not None and tag.group != 'ugh!' and existing.src_map is None and self._ce_decision(key, tag) is None:
                 # a Vista-side addition got there first: attribute it to this MCC tag
                 existing.src_map, existing.src_index = key
                 existing.src_size = tag.size
@@ -2027,6 +2108,7 @@ class _Builder(object):
             self.ensure_key(k)
         roots = self.roots()
         self.expand(roots)
+        self._plan_preview_bitmap(roots[0])
         if self.map_type != 1:
             self._solo_starting_itmc()
         # --- orphans ------------------------------------------------------------------------------------------------------------------
@@ -2066,6 +2148,31 @@ class _Builder(object):
         plan.status = self.status
         plan.tainted = self.tainted
         return plan
+
+    def _plan_preview_bitmap(self, scn_entry):
+        """The preview bitmap named by the resolved mp-info JSON (opts['mp_info_resolved']['bitmap'], see handlers/mp_level_names.py): a bitm tag of the
+        input map is kept as it is; one that only mainmenu.map has (the default `ui\\screens\\game_shell\\pregame_lobby\\unknown_map`, a 440 x 414 image the lobby
+        can draw) becomes a LOCAL donor tag whose pixel pointer is rebased to mainmenu.map (PlanEntry.mainmenu_raw), so the map carries 116 bytes, not an image."""
+        info = self.opts.get('mp_info_resolved')
+        name = info.get('bitmap') if isinstance(info, dict) else None
+        if not name or not self.is_mp:
+            return
+        nk = _nk('bitm', name)
+        e = self.by_name.get(nk)
+        if e is not None:
+            if e.parent is None and e is not scn_entry:
+                e.parent = scn_entry
+                self.children[id(scn_entry)].append(e)
+            self.expand([e])
+            return
+        hits = [h for h in self.donors.find('bitm', name) if h[0].lower() == 'mainmenu.map']
+        if not hits:
+            raise PlannerError('mp-info preview bitmap %r is neither a bitmap of the input map nor of mainmenu.map' % name)
+        e = self.ensure_vista(hits[0][0], hits[0][1], scn_entry)
+        e.mainmenu_raw = True
+        e.reason = 'preview bitmap of the multiplayer info block (mainmenu.map tag, pixel data stays in mainmenu.map)'
+        self.plan.stats['preview_bitmap'] += 1
+        self.expand([e])
 
     def _drop_orphan(self, e, why):
         e.action = 'drop'

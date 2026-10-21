@@ -55,6 +55,13 @@ VISTA_ELEM = dict(playbacks=0x38, scales=0x14, import_names=4, pitch_range_param
                   permutations=0x10, custom_playbacks=0x34, runtime_perm_flags=1, chunks=0xC, promotions=0x1C,
                   extra_info=VISTA_EXTRA_SIZE)
 I16_MAX = 32767
+# Pitch Range +6 (runtime permutation flag bit index) is an UNSIGNED 16-bit field in the engine, 0xFFFF = none: halo2.exe sub_481040 returns
+# (unsigned __int16)this[3] (0xFFFF -> -1), sub_43DB82 / sub_43DBE6 use `*(unsigned __int16 *)(a2 + 6) >> 3` as the byte index into the Runtime
+# Permutation Flags array, and the load-time merge sub_43CAE5 writes the second (encoded, class 19 Deterministic) counter into it as a WORD, up to
+# 50,176 = the size in bits of the 6,272-byte 'deterministic game sound globals' buffer (sub_4A5498).  So the limits are 65,534 for the normal
+# sequence and 50,176 for the encoded one - not int16.  (level5 / level6 of Mombasa Mayhem: 35,001 encoded bits, 4,478 pitch ranges.)
+FLAG_INDEX_MAX = 0xFFFE
+ENCODED_FLAG_BITS_MAX = 50176
 
 # WMA music (the 'codec' encoding 2 blobs, only menu_music in/loop in the MCC maps).  Stock Vista labels the two music sounds compression 1
 # (XADPCM) although the data is the WMA blob, and writes Maximum Play Time = bytes / 24806.25 B/s (= 44100 * 9/16, the real WMA data
@@ -208,7 +215,9 @@ class McGestalt(object):
         return bytes(self.mm[off + i * es: off + (i + 1) * es])
 
     def pitch_range(self, i):
-        imp, par, enc, rtf, first, n = struct.unpack('<6h', self.elem_bytes('pitch_ranges', i))
+        imp, par, enc, rtf, first, n = struct.unpack('<3hHhh', self.elem_bytes('pitch_ranges', i))
+        if rtf == 0xFFFF:                                                  # +6 is an unsigned bit index in the engine; 0xFFFF = none
+            rtf = -1
         return dict(import_name=imp, params=par, encoded_data=enc, runtime_flag=rtf, first_perm=first, perm_count=n)
 
     def permutation(self, i):
@@ -944,9 +953,14 @@ def check_budgets(ctx, B, mode, warn):
             probs.append('%s: %d local + %d primary = %d > %d' % (nm, n, base.get(nm, 0), total, mx))
     for pr in probs:
         warn('snd_budget', 'sound gestalt budget exceeded: ' + pr)
-    if max([p[3] for p in B.pitch_ranges] + [0]) > I16_MAX or B.notes.get('encoded_flag_bits', 0) > I16_MAX:
-        warn('snd_budget', 'runtime permutation flag bit index exceeds int16')
-        probs.append('runtime flag bit index > int16')
+    normal_bits = B.rt_bytes * 8 + 8 * max(base.get('runtime_perm_flags', 0), 0)
+    if max([p[3] for p in B.pitch_ranges] + [0]) > FLAG_INDEX_MAX or normal_bits > FLAG_INDEX_MAX + 1:
+        warn('snd_budget', 'runtime permutation flag bit index exceeds the engine\'s unsigned 16-bit field (%d bits + primary)' % normal_bits)
+        probs.append('runtime flag bit index > uint16')
+    if B.notes.get('encoded_flag_bits', 0) > ENCODED_FLAG_BITS_MAX:
+        warn('snd_budget', 'encoded runtime permutation flag bits %d exceed the engine\'s 50,176-bit deterministic sound buffer' %
+             B.notes.get('encoded_flag_bits', 0))
+        probs.append('encoded flag bits > 50176')
     return probs
 
 
@@ -1007,7 +1021,7 @@ def bundle_to_ugh_node(ctx, B, ugh_datum):
         ctx.warn('snd_string_overflow', '%d sound import names could not get a string id (string table full)' % lost)
     mk('Import Names', [struct.pack('<I', sid) for sid in sids])
     mk('Pitch Range Parameters', B.pr_params)
-    mk('Pitch Ranges', [struct.pack('<6h', *p) for p in B.pitch_ranges])
+    mk('Pitch Ranges', [struct.pack('<3hHhh', p[0], p[1], p[2], p[3] & 0xFFFF, p[4], p[5]) for p in B.pitch_ranges])      # +6 unsigned, -1 -> 0xFFFF
     mk('Permutations', [struct.pack('<HHbbHIHH', imp & 0xFFFF, skip, gain, info, lnt, ssz, fc, cc)
                         for (imp, skip, gain, info, lnt, ssz, fc, cc) in B.perms])
     root.blocks[vf['Custom Playbacks'].offset] = B.custom

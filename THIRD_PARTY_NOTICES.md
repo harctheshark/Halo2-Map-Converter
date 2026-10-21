@@ -7,7 +7,8 @@ released under the **GNU General Public License, version 3 or (at your option) a
 `LICENSE`.  The repository also bundles the Halo 2 tag layout files of the project Assembly (section 1), which are licensed under the GPL, version 3
 only (GPL-3.0), without an "or later" option.  The download as a whole is therefore distributed under the **GNU General Public License, version 3
 (GPL-3.0)**; the converter's own files, taken alone, may be used under GPL-3.0-or-later.  Halo, Halo 2 and Halo: The Master Chief Collection are
-trademarks of Microsoft Corporation; no game content is included in this repository.
+trademarks of Microsoft Corporation; no maps, textures, sounds or tags of the games are included in this repository (the one data set derived from the
+games' shader source is described in section 1, "Halo CE port shader data").
 
 ## 1. Included in this repository
 
@@ -79,11 +80,31 @@ SOFTWARE.
 
 `h2conv/data/shader_param_maps.json`, `h2conv/rev/data/*.json` and `h2conv/data/*.json` are tables created by this project by analysing the
 games' own files and the stock maps (shader parameter positions, default values, alignment and enum rules).  They contain tag names, field
-names and numbers; they contain no textures, sounds, models or shader code.
+names and numbers; they contain no textures, sounds, models or shader code.  The one exception is the Halo CE port data described next.
+
+### Halo CE port shader data - `h2conv/data/ce_port/` (new in 0.3.0)
+
+Thirty shader templates, 25 shader passes and one vertex shader of the Halo CE port maps in Steam workshop item 3583572796 exist in MCC only as
+compiled Direct3D 11 code, and Halo 2 Vista needs Direct3D 9 code.  `ce_port_v1.bin` (551 KB) holds 420 compiled Direct3D 9 shader programs
+(pixel shader models 2.0 and 3.0, and one vertex shader 2.0) and `ce_port_v1.json` is the table that says which template, pass or vertex shader of
+the mod each program belongs to (tag names, SHA-256 digests of the tags the data may be used for, and the MD5 of each program).  The programs come from
+two places:
+
+* the HLSL source of the passes that Microsoft's / 343 Industries' Halo 2 Editing Kit (H2EK) installs with its tags (`.psh` and `.vertex_shader` files).
+  That source reproduces, byte for byte, the Direct3D 11 code that the mod's maps carry.  Its Direct3D 11 branch was rewritten for the Direct3D 9
+  texture-sampling calls only (every arithmetic statement is kept) and compiled with the Windows `D3DCompiler_47.dll`;
+* one pass of the mod that has no source on the maintainer's machine (`scopeblur`), translated from its Direct3D 11 code statement by statement.
+
+Every program was checked numerically against the Direct3D 11 code in the mod's map before it was entered into the table.  The source files and the
+programs are the work of their authors (Microsoft / 343 Industries (Halo Studios), and the author of the workshop mod); the table is derived from them and
+contains no HLSL source text.  This project's own tools that made the table are included: `h2conv/ce_port_build.py`, `h2conv/dx11to9.py` and
+`h2conv/dxbc9.py` (GPL-3.0-or-later).  The owners of the original shader source and programs keep all their rights in them; the GPL applies to this project's
+own work in the table and the tools only.  If you hold rights in those programs and want the data removed, please open an issue.  Without the data the
+converter works as before for every other map and the 12 Halo CE ports are reported as failed, as in 0.2.0.
 
 ## 1b. Added by the Windows zip
 
-The Windows zip (`Halo2-Map-Converter-0.1.0-windows-x64.zip`) holds the files of this repository and, so that no Python has to be installed,
+The Windows zip (`Halo2-Map-Converter-0.3.0-windows-x64.zip`) holds the files of this repository and, so that no Python has to be installed,
 a copy of the runtime the programs use.  It is built from `packaging/h2conv.spec` with PyInstaller (see `packaging/README.md`) from the Python
 and the packages named below; the licence texts are copied from them into the `LICENSES` folder of the zip, which also has a `README.txt` and
 the versions used.  The two programs (`Halo 2 Map Converter.exe`, `h2conv.exe`) are PyInstaller's bootloader with this project's compiled
@@ -124,4 +145,5 @@ to both.
 
 Parts of this project were written after studying how the games and their tools behave (file formats, shader compiler settings, engine
 tables).  Small constants that the tools define (shader compiler macro text, an extern table) are reproduced so that compiled shaders
-match the output of the MCC editing kit.  No decompiled code or game assets are included.
+match the output of the MCC editing kit.  No decompiled game code and no game assets are included; the compiled shader programs of the Halo CE port data
+(section 1, "Halo CE port shader data") are described there.

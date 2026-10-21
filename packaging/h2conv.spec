@@ -45,7 +45,7 @@ for need in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', os.path.join('h2conv
 for dev in ('tests', 'work'):
     if os.path.exists(os.path.join(ROOT, dev)):
         stop('%s exists in %s: that is a development copy. Build from the published repository (or its release archive).' % (dev, ROOT))
-DATA_SUFFIXES = ('.xml', '.json', '.txt')                      # the kinds of data file below h2conv\
+DATA_SUFFIXES = ('.xml', '.json', '.txt', '.bin')                    # the kinds of data file below h2conv\
 
 sys.path.insert(0, ROOT)
 from h2conv import __version__                                           # noqa: E402

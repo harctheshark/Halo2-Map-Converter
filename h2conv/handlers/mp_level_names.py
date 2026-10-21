@@ -244,6 +244,10 @@ def fill_mp_names(ctx, converted):
     dn = (getattr(ctx, 'opts', None) or {}).get('display_name')
     if dn:
         names = [dn] * N_LANG
+    dd = (getattr(ctx, 'opts', None) or {}).get('description')        # --description wins like --display-name
+    if dd:
+        descs = [dd] * N_LANG
+        mi = (mi[0] if mi else '', dd)
     if not any(names) and not any(descs):
         return
     for node in converted.values():
@@ -269,3 +273,258 @@ def fill_mp_names(ctx, converted):
                     ctx.warn('mp_level_names_filled', "scnr Level Data/Multiplayer name/description: wrote %d fields from %s" % (
                         n, 'the MCC MapInfo JSON / --display-name' if (mi or dn) else "the map's own 'name' / 'description' strings "
                         "(they were empty: the Vista custom-map list would show a blank name)"))
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# --mp-info FILE / --mp-info-dir DIR (opt-in, 2026-10-21 user: chronopolis, then EVERY map): write the scnr Level Data[0].Multiplayer element.
+# The element is ADDED when the map has none and UPDATED when it has one (apply_mp_info below).
+# Layout (Assembly Halo2 Multiplayer Levels, 0xC64): +0 Map ID int32, +4 Bitmap tagref, +0xC 9 x utf16[32] names,
+# +0x24C 9 x utf16[128] descriptions, +0xB4C ascii[256] path, +0xC4C sort order int32, +0xC50 flags u8, +0xC54 16 x int8 max teams.
+# Defaults follow the community map H2.5 BoneYard: map id -1, max teams 8,2,8,8,8,8,8,8,8,2,0...  sub_427EDD reads map_id only
+# against 100 / 1200.  Every community map references a bitmap, so 'bitmap' names an existing bitmap of the map (never NONE).
+# JSON: {"map_id": -1, "bitmap": "<bitm tag name>", "names": [9 str] or "str", "descriptions": [9 str] or "str",
+#        "sort_order": 0, "flags": 0, "max_teams": [16 ints]}      (language order = the engine's: English, Japanese, German, French,
+#        Spanish, Italian, Korean, Chinese, Portuguese)
+# 'bitmap' = the PREVIEW: a bitm tag of the output map, or a tag of the stock mainmenu.map (e.g. ui\screens\game_shell\pregame_lobby\unknown_map),
+# which the planner then adds as a donor tag whose pixel pointer is rebased to mainmenu.map (see PREVIEW_* below).
+MP_INFO_TEAMS = [8, 2, 8, 8, 8, 8, 8, 8, 8, 2, 0, 0, 0, 0, 0, 0]
+
+# The lobby's preview image (halo2.exe sub_44F690 -> sub_4C2441 -> sub_4C2069): the bitmap named by Multiplayer[0]+8 must be a bitm tag whose FIRST
+# bitmap element is exactly 440 x 414 (sub_4C2069: `word[+4] == 440 && word[+6] == 414`, else the preview is silently dropped), format 11 (A8R8G8B8),
+# no mipmaps, flags without 0xC000 / compressed / palettized / swizzled (sub_67536F), pixel stream = ONE zlib stream (78 DA ...) of 440*414*4 bytes at
+# the raw pointer element+0x1C (top 2 bits = file: 0 this map, 1 mainmenu.map, 2 shared.map, 3 single_player_shared.map; low 30 bits = offset), its
+# compressed size at element+0x34.  A 2048 x 2048 / 11-mip bitmap (chronopolis' chrono_plasma_sign) is therefore never shown.
+# Every stock map has its own map_shots\map_mp_<name> bitmap; several (zanzibar, needle, ...) point at mainmenu.map's `ui\code_global_bitmaps\multiplayerNN`
+# pixels.  mainmenu.map's own generic placeholder (the grid map with a question mark) is this one:
+PREVIEW_BITMAP = 'ui\\screens\\game_shell\\pregame_lobby\\unknown_map'
+PREVIEW_W, PREVIEW_H = 440, 414
+
+
+def load_info(path):
+    """Read + validate one mp-info JSON (the shape documented above); returns the dict."""
+    import json
+    with open(path, encoding='utf-8-sig') as fh:
+        info = json.load(fh)
+    if not isinstance(info, dict):
+        raise ValueError('%s: the mp-info JSON must be an object' % path)
+    for k in ('names', 'descriptions'):
+        v = info.get(k) or ''
+        if not isinstance(v, str) and len(v) != N_LANG:
+            raise ValueError('%s: %s needs 1 string or %d entries' % (path, k, N_LANG))
+    if info.get('max_teams') is not None and len(info['max_teams']) != 16:
+        raise ValueError('%s: max_teams needs 16 values' % path)
+    return info
+
+
+def resolve_mp_info(opts, stem):
+    """Fill opts['mp_info_resolved'] (the info dict) and opts['mp_info_path']: an explicit --mp-info FILE, else <--mp-info-dir>\\<output stem>.json
+    (case-insensitive file name), else None.  Called by convert before planning because the planner needs the preview bitmap name."""
+    import os
+    opts['mp_info_resolved'] = None
+    opts['mp_info_path'] = None
+    path = opts.get('mp_info')
+    d = opts.get('mp_info_dir')
+    if not path and d and os.path.isdir(d):
+        want = (stem + '.json').lower()
+        for f in sorted(os.listdir(d)):
+            if f.lower() == want:
+                path = os.path.join(d, f)
+                break
+    if not path:
+        return None
+    opts['mp_info_resolved'] = load_info(path)
+    opts['mp_info_path'] = path
+    return opts['mp_info_resolved']
+
+
+@post_pass(prio=61)
+def add_mp_info(ctx, converted):
+    opts = getattr(ctx, 'opts', None) or {}
+    if getattr(ctx, 'map_type', None) != 1:
+        return
+    info, path = opts.get('mp_info_resolved'), opts.get('mp_info_path')
+    if info is None and opts.get('mp_info'):                        # a ctx that did not go through convert (tests)
+        path = opts['mp_info']
+        info = load_info(path)
+    if info is None:
+        return
+    _apply_mp_info(ctx, converted, info, path)
+
+
+def _set_teams_where_zero(data, teams):
+    """Fill the zero bytes of the max-teams array (+0xC54, 16 x u8) from `teams`; non-zero (author-set) values are never touched.  Returns the count."""
+    n = 0
+    for i in range(16):
+        if not data[OFF_MAX_TEAMS + i] and teams[i]:
+            data[OFF_MAX_TEAMS + i] = teams[i] & 0xFF
+            n += 1
+    return n
+
+
+def _apply_mp_info(ctx, converted, info, path):
+    """Write the 0xC64-byte Multiplayer element of scnr Level Data[0] from `info` (the --mp-info JSON shape): ADD it when the map has none, else UPDATE
+    it (English names in every language slot, the descriptions, the preview bitmap; max teams only where the scenario has zero; map id / sort order /
+    flags / path kept).  `path` = where the info came from."""
+    import struct
+    from .. import tagtree as T
+    names = info.get('names') or ''
+    descs = info.get('descriptions') or ''
+    names = [names] * N_LANG if isinstance(names, str) else list(names)
+    descs = [descs] * N_LANG if isinstance(descs, str) else list(descs)
+    if len(names) != N_LANG or len(descs) != N_LANG:
+        raise ValueError('--mp-info: names / descriptions need 1 or %d entries' % N_LANG)
+    bm = NULL32 = 0xFFFFFFFF
+    if info.get('bitmap'):
+        bm = ctx.remap_name('bitm', info['bitmap'])
+        if bm in (None, NULL32):
+            raise ValueError('--mp-info: bitmap %r is not in the output map' % info['bitmap'])
+    teams = list(info.get('max_teams') or MP_INFO_TEAMS)
+    if len(teams) != 16:
+        raise ValueError('--mp-info: max_teams needs 16 values')
+    data = bytearray(MP_ELEMENT_SIZE)
+    struct.pack_into('<i', data, 0, int(info.get('map_id', -1)))
+    data[4:8] = b'bitm'[::-1]
+    struct.pack_into('<I', data, 8, bm)
+    for L in range(N_LANG):
+        no, do = NAME_OFF + NAME_SIZE * L, DESC_OFF + DESC_SIZE * L
+        data[no:no + NAME_SIZE] = _w(clean_text(names[L], NAME_SIZE // 2 - 1, name=True), NAME_SIZE)
+        data[do:do + DESC_SIZE] = _w(clean_text(descs[L], DESC_SIZE // 2 - 1), DESC_SIZE)
+    struct.pack_into('<i', data, 0xC4C, int(info.get('sort_order', 0)))
+    data[0xC50] = int(info.get('flags', 0)) & 0xFF
+    data[0xC54:0xC64] = bytes(t & 0xFF for t in teams)
+    for node in converted.values():
+        if node is None or node.group != 'scnr':
+            continue
+        lds = node.blocks.get(OFF_LEVEL_DATA) or []
+        if not lds:
+            ctx.warn('mp_info_skipped', 'scnr has no Level Data element: --mp-info not applied')
+            return
+        ld = lds[0]
+        old = ld.blocks.get(LEVEL_DATA_MP_BLOCK)
+        if old:
+            mp = old[0]
+            if len(mp.data) != MP_ELEMENT_SIZE:
+                ctx.warn('mp_info_layout', 'scnr Level Data/Multiplayer element is %#x bytes, expected %#x: --mp-info not applied' % (len(mp.data), MP_ELEMENT_SIZE))
+                return
+            was = bytes(mp.data)
+            for L in range(N_LANG):
+                no, do = NAME_OFF + NAME_SIZE * L, DESC_OFF + DESC_SIZE * L
+                if names[L]:
+                    mp.data[no:no + NAME_SIZE] = _w(clean_text(names[L], NAME_SIZE // 2 - 1, name=True), NAME_SIZE)
+                if descs[L]:
+                    mp.data[do:do + DESC_SIZE] = _w(clean_text(descs[L], DESC_SIZE // 2 - 1), DESC_SIZE)
+            if bm != NULL32:
+                mp.data[4:8] = b'bitm'[::-1]
+                struct.pack_into('<I', mp.data, 8, bm)
+            nt = _set_teams_where_zero(mp.data, teams)
+            _stat(ctx, 'mp_info_updated', 1)
+            ctx.warn('mp_info_updated', 'updated scnr Level Data[0].Multiplayer element from %s (names %r in %d languages, preview %s, %d max-team slots filled '
+                     'where zero, map id %d kept)%s' % (path, names[0], N_LANG, info.get('bitmap'), nt, struct.unpack_from('<i', mp.data, 0)[0],
+                                                       '' if bytes(mp.data) != was else ' - nothing changed'))
+            return
+        f = next((x for x in ld.fields if x.offset == LEVEL_DATA_MP_BLOCK and x.type in T.BLOCK_TYPES), None)
+        if f is None or T.element_size(f) != MP_ELEMENT_SIZE:
+            ctx.warn('mp_info_layout', 'unexpected Level Data/Multiplayer layout: --mp-info not applied')
+            return
+        el = T.Node(node.group, T.child_path(ld.path, f), f.children, MP_ELEMENT_SIZE, data)
+        ld.blocks[LEVEL_DATA_MP_BLOCK] = [el]
+        _stat(ctx, 'mp_info_added', 1)
+        ctx.warn('mp_info_added', 'added scnr Level Data[0].Multiplayer element from %s (bitmap %s, max teams %s)'
+                 % (path, info.get('bitmap'), teams[:10]))
+        return
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# MapInfo JSON -> max teams per game type (2026-10-21).  The lobby's team menu reads the max-teams-per-game-type array of the
+# map's list entry (halo2.exe sub_459369 copies entry+0x968..0x977 = scnr Level Data[0].Multiplayer[0]+0xC54..0xC63; sub_5B087B builds the allowed
+# team mask from it, sub_643B35 / sub_616490 test the team count).  MCC workshop maps made with the H2EK often leave that array ZERO (or have no
+# Multiplayer element at all): MCC takes the limits from the mod's MapInfo JSON ('MaximumTeamsByGameCategory'), so a converted map would let
+# nobody change teams even with a full list entry.  Fill them from that JSON, only where the scenario has none.
+MAPINFO_TEAM_SLOTS = {'GameCategory_CTF': 1, 'GameCategory_Slayer': 2, 'GameCategory_Oddball': 3, 'GameCategory_KOTH': 4, 'GameCategory_Race': 5,
+                      'GameCategory_Headhunter': 6, 'GameCategory_Juggernaut': 7, 'GameCategory_Territories': 8, 'GameCategory_Assault': 9}
+OFF_MAX_TEAMS = 0xC54
+
+
+def mcc_mapinfo_json(source_path):
+    """The mod's MapInfo JSON of the map (same lookup as mcc_mapinfo_texts) as a dict, or None."""
+    import json
+    import os
+    if not source_path:
+        return None
+    stem = os.path.splitext(os.path.basename(source_path))[0]
+    d = os.path.dirname(os.path.abspath(source_path))
+    for _ in range(4):
+        if os.path.isfile(os.path.join(d, 'ModInfo.json')):
+            break
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+    else:
+        return None
+    mp_dir = os.path.join(d, 'multiplayer')
+    if not os.path.isdir(mp_dir):
+        return None
+    cands = [os.path.join(mp_dir, stem + '.json')] + [os.path.join(mp_dir, f) for f in sorted(os.listdir(mp_dir)) if f.lower().endswith('.json')]
+    for p in cands:
+        try:
+            with open(p, encoding='utf-8-sig') as fh:
+                info = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        scen = str(info.get('ScenarioFile') or '').replace('\\', '/').rstrip('/')
+        if os.path.splitext(os.path.basename(p))[0].lower() != stem.lower() and scen.split('/')[-1].lower() != stem.lower():
+            continue
+        return info
+    return None
+
+
+def mapinfo_max_teams(info):
+    """16-entry max-teams array (Vista game-type slots, see MAPINFO_TEAM_SLOTS) from a MapInfo JSON dict, or None when it has no limits."""
+    m = (info or {}).get('MaximumTeamsByGameCategory')
+    if not isinstance(m, dict) or not m:
+        return None
+    teams = [0] * 16
+    for k, slot in MAPINFO_TEAM_SLOTS.items():
+        try:
+            teams[slot] = max(0, min(16, int(m.get(k, 0))))
+        except (TypeError, ValueError):
+            pass
+    return teams if any(teams[1:10]) else None
+
+
+@post_pass(prio=62)
+def fill_mapinfo_teams(ctx, converted):
+    import os
+    opts = getattr(ctx, 'opts', None) or {}
+    if getattr(ctx, 'map_type', None) != 1 or opts.get('no_mapinfo_teams') or os.environ.get('H2CONV_NO_MAPINFO_TEAMS') or opts.get('mp_info') \
+            or opts.get('mp_info_resolved'):
+        return
+    try:
+        info = mcc_mapinfo_json(getattr(getattr(ctx, 'src', None), 'source_path', None))
+    except Exception:                                   # noqa: BLE001 - a broken MapInfo JSON: leave the scenario alone
+        info = None
+    teams = mapinfo_max_teams(info)
+    if teams is None:
+        return
+    for node in converted.values():
+        if node is None or node.group != 'scnr':
+            continue
+        lds = node.blocks.get(OFF_LEVEL_DATA) or []
+        if not lds:
+            return
+        mps = lds[0].blocks.get(LEVEL_DATA_MP_BLOCK) or []
+        if mps:
+            mp = mps[0]
+            if len(mp.data) == MP_ELEMENT_SIZE and not any(mp.data[OFF_MAX_TEAMS + 1:OFF_MAX_TEAMS + 10]):
+                mp.data[OFF_MAX_TEAMS:OFF_MAX_TEAMS + 16] = bytes(t & 0xFF for t in teams)
+                _stat(ctx, 'mapinfo_teams_filled', 1)
+                ctx.warn('mapinfo_teams_filled', 'scnr Level Data/Multiplayer had no max teams per game type (the lobby cannot change teams without them): '
+                         'filled from the MCC MapInfo JSON %s' % teams[:10])
+            return
+        # no Multiplayer element at all: build one from the MapInfo JSON (Title / Description 'Neutral', bitmap NONE like Cartographer's fallback entry)
+        title = ((info.get('Title') or {}).get('Neutral') or opts.get('display_name') or '').strip()
+        desc = ((info.get('Description') or {}).get('Neutral') or opts.get('description') or '').strip()
+        _apply_mp_info(ctx, converted, {'map_id': -1, 'names': opts.get('display_name') or title, 'descriptions': opts.get('description') or desc,
+                                        'max_teams': teams}, 'the MCC MapInfo JSON')
+        return
