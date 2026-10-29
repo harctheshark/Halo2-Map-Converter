@@ -1,4 +1,4 @@
-Halo 2 Map Converter - the Windows programs (version 0.3.0, a pre-release)
+Halo 2 Map Converter - the Windows programs (version 0.4.0, a pre-release)
 ==========================================================================
 
 Convert Halo 2 maps between Halo 2 Vista / Project Cartographer and Halo 2: The Master Chief Collection (MCC), in both directions.
@@ -33,6 +33,8 @@ Good to know
   (in a Command Prompt:  certutil -hashfile <zip file> SHA256).  The full source code is in the release, and the licence is GPL-3.0.
 * MCC multiplayer maps from workshop mods that ship their own shared.map are converted; campaign maps that need a custom shared.map, and maps whose shared.map is not found, are listed and skipped.
 * The 12 Halo CE port maps of workshop mod 3583572796 convert as well (new in 0.3.0).
+* New in 0.4.0: rendering fixes for converted maps (foliage on NVIDIA cards, glass and plasma fading), repaired missing-texture slots in Vista to MCC maps, sound size
+  reduction as an option, and more; RELEASE_NOTES.md lists everything.  A custom list-preview image is not supported.
 * Converted multiplayer maps keep their own globals.  For the full entry in Cartographer's map list and for changing teams in the lobby, Cartographer's
   halo2.exe needs a six-byte patch (or convert with --matg link --training-via-script, which gives up the map's own globals).  README.md explains both
   ("The map list entry, teams and the halo2.exe patch").  After patching or after converting a map again, delete Maps\Data Files\.h2mdat once.

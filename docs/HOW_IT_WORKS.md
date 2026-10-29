@@ -296,6 +296,34 @@ versions (`h2conv\data\ce_port\`, used by `h2conv\ce_port.py`; nothing is compil
 
 `h2conv\ce_port_build.py` is the developer tool that made the table (it needs the workshop mod and the editing kit); the converter never calls it.
 
+### 10.4 MCC to Vista: rendering fixes and per-map overrides (0.4.0)
+
+Three fixes change the shader tags of a converted map by default (each has an off switch, see README).  A linked `shared.map` tag cannot be edited, so the
+planner does not link the tags involved: it plans local donor copies under their own names, the donor closure then reaches the local copy through
+local template, local pass, local vertex shader, and a hook edits the copy.  Shared tags that no converted shader reaches stay linked.
+
+* **Foliage placeholder (`foliage_fix`).**  The slot of `alpha_white` (template `tex_bump_alpha_test_single_pass`, bitmap 4) and of `gray_50_percent` (template `tex_bump_alpha_test`, bitmap 1)
+  is written as the stock NONE element (datum all ones, bitmap index 0, log dimension 0), which is what Cartographer does to these slots at map load.
+* **RTX foliage (`rtx_foliage_fix`, `h2conv\rtxfix.py`).**  The per-vertex implementation of the pass `lightmap_tex_detail_alpha_test[_clamped]` declares texture stage 4 as a cube sampler; the
+  templates bind a 2D bitmap.  Every pixel shader blob that declares a cube `s4` gets a 2D declaration (one dword, same length).  Anything unexpected leaves the pass as it is, with a warning.
+* **Glass and plasma fade (`reflection_vs_fix`, `h2conv\vsfix.py`).**  In every class of the vertex shader `transparent_generic_reflection` the fade test sums two of its three axes; the
+  `add` becomes a `dp3` (same four dwords).  A blob that is not exactly the stock program is refused and left alone.
+* **Per-map shader overrides (`h2conv\shader_overrides.py`, `data\shader_overrides.json`).**  A table of (input map scenario path, shader path) to operations applied to the finished arrays of that one shader
+  (today: scale two pixel constants by 0.5 for two shaders of `chronopolis`).  A map without an entry is never touched.
+* **Remastered sound pairing (`h2conv\remastered_pairs.py`).**  A reference to `sound_remastered\X` is redirected, in this order, by the override file, by MCC's own link (a classic `snd!` has a remastered
+  sound reference index, a classic `lsnd` a leading remastered looping sound; the pair counts when exactly one classic tag points at the remastered one and the first two sound folders agree), and by the old
+  `sound_remastered\X` to `sound\X` path mapping.  If none names a tag that exists the reference stays null.
+* **Sound reduction (`--sound-reduce`).**  Per matching `snd!`: decode (Opus, Xbox ADPCM or PCM), optional stereo to mono (`(L + R + 1) >> 1`), anti-aliased polyphase resampling, the normal Xbox ADPCM
+  encoder and chunking; the rate enum, sample size, chunk counts and promotion timing are rewritten; durations stay.  Off unless a rule exists.
+
+### 10.5 Vista to MCC: repaired missing-texture slots, empty starting equipment, aliased object tags (0.4.0)
+
+* **`rasterizer\invalid` slots.**  `h2conv\rev\data\bitmap_repairs.json` names, per shader, the slots that must hold the bitmap every intact copy carries; the planner adds the repair bitmaps like
+  any reference (MCC's stock tags), the shader handler swaps the slot before the stem mapping, recomputes the log dimension and the predicted resources, and the shader check expects the repair.
+* **Starting Equipment.**  A multiplayer scenario with an empty block gets one stock-shaped element (all game types, the default primary weapon item collection).
+* **Object tags that hold another object type** (`h2conv\objtype.py`).  An object tag's first field says which object group its data is; when that differs from its index entry's group and the
+  data decodes with that group's layout, it is decoded and converted with that layout and padded to its slot group's size (MCC walks the fields of every weapon at load).
+
 ## 11. Tables the engine binary-searches
 
 Some tables inside tags must be **sorted**, because the engine finds entries by binary search.  Renumbering string ids or merging

@@ -1,0 +1,23 @@
+{
+  "_doc": [
+    "Per-map overrides of single converted shaders (h2conv/shader_overrides.py, applied by handlers/shaders.py after the arrays are final).",
+    "map: the input map's scenario tag path (lower case); only that map is touched, every other map converts byte-identically.",
+    "shader: the shader tag path (lower case).  ops: scale_pc = multiply the first 4 bytes of the listed Pixel Constants by factor (floor, per byte).",
+    "chronopolis couch (2026-10-28): the two tinted shaders of couch_chrono render washed out in Vista (flat gold frame, grey cushions) - the pass",
+    "lightmap_tex_detail_blend (dynamic object implementations) computes sat(2*base*mix)*diffuse_color + diffuse_color_offset and then 2*lighting with",
+    "saturation, so the bright albedo saturates; halving PC[0] (diffuse_color) and PC[1] (diffuse_color_offset) gave the orange-red frame and dark",
+    "cushions of MCC in game.  This is a per-map override, not a general rule."
+  ],
+  "overrides": [
+    {
+      "map": "scenarios\\multi\\chronopolis\\chronopolis",
+      "shader": "scenarios\\shaders\\human\\urban\\fabrics\\brown_leather",
+      "ops": [{"scale_pc": [0, 1], "factor": 0.5}]
+    },
+    {
+      "map": "scenarios\\multi\\chronopolis\\chronopolis",
+      "shader": "scenarios\\objects\\multi\\chronopolis\\crouch_chrono\\shaders\\chrono_cushion",
+      "ops": [{"scale_pc": [0, 1], "factor": 0.5}]
+    }
+  ]
+}

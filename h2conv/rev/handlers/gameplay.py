@@ -367,6 +367,45 @@ def _write_sim_table(ctx, mcc_node, vf, rf, final):
     C.set_block(mcc_node, vf, new)
 
 
+# the stock multiplayer Starting Equipment element (lockout / zanzibar / beavercreek MCC): no flags, Game Type 1 = 12 (applies to every game
+# type), Item Collection 1 = the map-default primary weapon; the rest NULL
+STARTING_ITMC = ('multiplayer\\single_weapons\\smg', 'multiplayer\\single_weapons\\battle_rifle', 'multiplayer\\single_weapons\\magnum')
+SE_GAME_TYPE_ALL = 12
+
+
+@node_handler('scnr', '', prio=125)
+def scnr_mp_starting_equipment(ctx, vista_node, mcc_node):
+    """A multiplayer scenario with an EMPTY Starting Equipment block spawns every player unarmed in MCC, whatever weapons the game variant
+    picks: the variant's primary / secondary are applied to the matching Starting Equipment entry, and there is none (H2MT S3WAGE PLANT,
+    found by a test 2026-10-27; every stock MP map has exactly one entry).  Additive only: one stock-shaped element (Game Type 1 = all,
+    Item Collection 1 = the map-default primary 'multiplayer\\single_weapons\\smg' - the MapDefaultPrimaryWeapon the package's map info
+    names - else another single-weapon collection the output carries).  A block that has any element is left alone."""
+    plan = getattr(ctx, 'plan', None)
+    if getattr(plan, 'map_type', 1) != 1:
+        return
+    sf = next(iter(C.block_fields(mcc_node, 'Starting Equipment')), None)
+    if sf is None or mcc_node.blocks.get(sf.offset):
+        return
+    datum = NULL
+    for name in STARTING_ITMC:
+        datum = C.remap_name(ctx, 'itmc', name)
+        if datum != NULL:
+            break
+    if datum == NULL:
+        C.warn(ctx, 'rev_gp_starting_equipment_none', 'empty Starting Equipment and no single-weapon item collection in the output: players spawn unarmed')
+        return
+    el = _null_ref_element(mcc_node, sf)
+    gt = next((c for c in el.fields if c.name == 'Game Type 1'), None)
+    refs = [c for c in el.fields if c.type == 'tagref' and c.name.startswith('Item Collection')]
+    if gt is None or not refs:
+        return
+    struct.pack_into('<h', el.data, gt.offset, SE_GAME_TYPE_ALL)
+    struct.pack_into('<4sI', el.data, refs[0].offset, b'cmti', datum)
+    C.set_block(mcc_node, sf, [el])
+    C.stat(ctx, 'rev_gp_mp_starting_equipment_added')
+    C.warn(ctx, 'rev_gp_starting_equipment_added', 'empty Starting Equipment: added the stock all-game-types entry (players spawned unarmed)')
+
+
 @node_handler('scnr', '', prio=120)
 def scnr_simulation_table(ctx, vista_node, mcc_node):
     """Stock MCC tables are sorted ascending as signed int32 (43/43 maps, duplicates kept).  The remap changed every datum: drop

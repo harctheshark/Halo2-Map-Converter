@@ -57,6 +57,7 @@ from . import node_handler
 from ... import bitmaps as B            # direction independent helpers (bitmap_log_dimension)
 from ... import shader_params as SPM
 from .. import shader_structure as SS     # register structure of the compiled stems
+from .. import bitmap_repairs as BR       # rasterizer\invalid slots with a known bitmap (data/bitmap_repairs.json)
 from ... import tagtree as T
 
 NULL = 0xFFFFFFFF
@@ -978,6 +979,34 @@ def _shad_name(ctx):
     return getattr(ent, 'name', None) if ent is not None else None
 
 
+def repair_invalid_slots(ctx, vista_node, src, name):
+    """Vista slots that hold rasterizer\\invalid where bitmap_repairs.json knows the bitmap every intact copy of the shader carries: src['bitmaps']
+    (Vista slot order, MCC datums) takes that bitmap (planned by the planner's bitmap_repair_roots), Bitmap Index 0; the Log Bitmap Dimension is
+    recomputed by fix_log_dims (the output bitmap is another tag).  -> number of slots repaired"""
+    vpps = _blk(vista_node, 'Postprocess Definition')
+    if not vpps:
+        return 0
+    names = []
+    for k in _blk(vpps[0], 'Bitmaps'):
+        t = ctx.vista_tag(k.u32(0)) if k.u32(0) not in (NULL, 0) else None
+        names.append(t.name if t is not None else None)
+    fixes = BR.repairs_for(name, names)
+    n = 0
+    for i, path in sorted(fixes.items()):
+        if i >= len(src['bitmaps']):
+            continue
+        d = ctx.remap_name('bitm', path)
+        if d in (NULL, 0, None):
+            ctx.warn('rev_shad_bitmap_repair_missing', 'slot %d: repair bitmap %s is not in the output map (rasterizer\\invalid stays)' % (i, path), name)
+            continue
+        src['bitmaps'][i] = (d, 0, src['bitmaps'][i][2])
+        n += 1
+    if n:
+        ctx.stats['rev_shad_invalid_slots_repaired'] += n
+        ctx.warn('rev_shad_invalid_repaired', '%d rasterizer\\invalid slot(s) -> %s' % (n, ', '.join('%d %s' % (i, p.split('\\')[-1]) for i, p in sorted(fixes.items()))), name)
+    return n
+
+
 def reverse_shad(ctx, vista_node, mcc_node, name=None):
     """The node handler body.  Returns the Report (None when nothing could be done; the generic output stays)."""
     name = name or _shad_name(ctx) or '?'
@@ -998,6 +1027,7 @@ def reverse_shad(ctx, vista_node, mcc_node, name=None):
         return None
     pp = mpps[0]
     src = shader_arrays(pp)                    # the generic pass copied the Vista arrays: tag ids are MCC datums already
+    repaired = repair_invalid_slots(ctx, vista_node, src, name)
     memo = _memo(ctx)
     pc = memo.setdefault('rev_shad_pair_cache', {})
     cache = pc.setdefault((vsd.fp, msd.fp, mname.lower()), {})
@@ -1034,8 +1064,10 @@ def reverse_shad(ctx, vista_node, mcc_node, name=None):
     stale = None
     if rep.tier == 'D':
         # identical stems: the arrays stay; only a Log Bitmap Dimension may need a new value (the output bitmap is MCC's own, of another size)
-        if vpps and fix_log_dims(ctx, vpps[0], out):
+        if (vpps and fix_log_dims(ctx, vpps[0], out)) or repaired:
             _write_bitmaps(pp, out)
+        if repaired:
+            sync_predicted_resources(ctx, mcc_node, out)
         stale = stale_skeleton(src, vsd, msd, vl, ml)
         if stale is not None:
             if stale[0] and (getattr(ctx, 'opts', None) or {}).get('rev_shad_stale_keep'):      # A/B switch: keep the skeleton exactly as the Vista shader has it

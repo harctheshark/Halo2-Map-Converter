@@ -1564,9 +1564,31 @@ class _WalkMixin(object):
         return own
 
     # ---- tiling of the tag extent ---------------------------------------------------------------------------------
+    def _object_type_extent(self, mv, tag, bs):
+        """Main struct extent of an object tag whose Object Type (+0) names a LARGER object group and whose bytes up to that group's
+        size are the padding h2conv.objtype.pad_alias_root writes (zeros, that group's tag references NONE): every engine reads the
+        tag as that group, so the padding is part of the struct, not an unreferenced gap (example: a 196-byte scenery tag
+        whose Object Type is 4 = garb, padded to 468 bytes).
+        bs otherwise (every stock tag: its Object Type is its own group)."""
+        from .objtype import OBJECT_TYPE_GROUPS
+        if tag.group not in OBJECT_TYPE_GROUPS:
+            return bs
+        fo = mv.fo(tag.addr)
+        ot = struct.unpack_from('<h', mv.buf[fo:fo + 2].tobytes(), 0)[0]
+        g = OBJECT_TYPE_GROUPS[ot] if 0 <= ot < len(OBJECT_TYPE_GROUPS) else None
+        ol = self.layouts.get(g) if g is not None and g != tag.group else None
+        obs = (ol.base_size or ol.computed_size) if ol is not None else 0
+        if obs <= bs or obs > tag.size:
+            return bs
+        pad = mv.buf[fo + bs:fo + obs].copy()
+        for f in ol.fields:
+            if f.type.lower() == 'tagref' and f.offset >= bs and f.offset + f.size <= obs and (pad[f.offset - bs:f.offset - bs + f.size] == 0xFF).all():
+                pad[f.offset - bs:f.offset - bs + f.size] = 0
+        return obs if not pad.any() else bs
+
     def _tiling(self, R, mv, st):
         tag, lay = st.tag, st.layout
-        bs = lay.base_size or lay.computed_size
+        bs = self._object_type_extent(mv, tag, lay.base_size or lay.computed_size)
         S = np.concatenate([np.array([st.base], dtype=np.int64)] + st.s)
         E = np.concatenate([np.array([st.base + bs], dtype=np.int64)] + st.e)
         A = np.concatenate([np.array([1], dtype=np.int64)] + st.a)

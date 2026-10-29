@@ -128,6 +128,8 @@ def _pool_job(arg):
     try:
         if kind == 'opus':
             out = sc.opus_perm_to_vista_xadpcm(args[0], args[1], args[2])[0]
+        elif kind == 'reduce':                  # opt-in per-sound reduction: args = (source chunks, output channels, spec)
+            out = sc.reduce_perm_to_vista_xadpcm(args[0], args[2])
         else:
             out = sc.pcm_le_to_vista_xadpcm(args[0], args[1], args[2], args[3])
         SoundCache(cdir, enabled).put(key, out)
@@ -137,7 +139,8 @@ def _pool_job(arg):
 
 
 def run_pool(workers, jobs, cache_dir, enabled=True):
-    """jobs = [(key, kind, args)] -> yields (key, payload, error_text_or_None) as they finish (kind 'opus': (chunks, ch, dst_rate); 'pcm': (raw, ch, src_rate, dst_rate))."""
+    """jobs = [(key, kind, args)] -> yields (key, payload, error_text_or_None) as they finish (kind 'opus': (chunks, ch, dst_rate); 'pcm': (raw, ch, src_rate, dst_rate);
+    'reduce': (chunks, output channels, spec) see sound_codec.reduce_perm_to_vista_xadpcm)."""
     import multiprocessing
     import sys
     mpc = multiprocessing.get_context('spawn')

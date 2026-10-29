@@ -299,6 +299,9 @@ MP_INFO_TEAMS = [8, 2, 8, 8, 8, 8, 8, 8, 8, 2, 0, 0, 0, 0, 0, 0]
 PREVIEW_BITMAP = 'ui\\screens\\game_shell\\pregame_lobby\\unknown_map'
 PREVIEW_W, PREVIEW_H = 440, 414
 
+# A custom list-preview image is NOT supported in this release.  The mp-info keys "preview_bitmap_file" and "preview_crop" are read and ignored (the map keeps
+# the default preview bitmap below) and add_mp_info reports the warning mp_preview_unsupported.
+
 
 def load_info(path):
     """Read + validate one mp-info JSON (the shape documented above); returns the dict."""
@@ -313,6 +316,16 @@ def load_info(path):
             raise ValueError('%s: %s needs 1 string or %d entries' % (path, k, N_LANG))
     if info.get('max_teams') is not None and len(info['max_teams']) != 16:
         raise ValueError('%s: max_teams needs 16 values' % path)
+    if info.get('sound_reduce'):                       # opt-in per-sound audio reduction, consumed by sound_bundle
+        from ..sound_bundle import collect_reduce_rules
+        try:
+            collect_reduce_rules({'sound_reduce': info['sound_reduce']})
+        except ValueError as ex:
+            raise ValueError('%s: sound_reduce: %s' % (path, ex))
+    if info.get('preview_bitmap_file') or info.get('preview_crop'):   # a custom list-preview image is not supported: the keys are ignored, add_mp_info warns
+        info['_preview_ignored'] = True
+    info.pop('preview_bitmap_file', None)
+    info.pop('preview_crop', None)
     return info
 
 
@@ -334,6 +347,7 @@ def resolve_mp_info(opts, stem):
         return None
     opts['mp_info_resolved'] = load_info(path)
     opts['mp_info_path'] = path
+    opts['mp_info_stem'] = stem
     return opts['mp_info_resolved']
 
 
@@ -349,6 +363,9 @@ def add_mp_info(ctx, converted):
     if info is None:
         return
     _apply_mp_info(ctx, converted, info, path)
+    if info.get('_preview_ignored'):
+        ctx.warn('mp_preview_unsupported', '%s: preview_bitmap_file / preview_crop are ignored - a custom list-preview image is not supported; '
+                 'the map keeps the default preview bitmap' % path)
 
 
 def _set_teams_where_zero(data, teams):

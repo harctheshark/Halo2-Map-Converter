@@ -104,7 +104,7 @@ converter works as before for every other map and the 12 Halo CE ports are repor
 
 ## 1b. Added by the Windows zip
 
-The Windows zip (`Halo2-Map-Converter-0.3.0-windows-x64.zip`) holds the files of this repository and, so that no Python has to be installed,
+The Windows zip (`Halo2-Map-Converter-0.4.0-windows-x64.zip`) holds the files of this repository and, so that no Python has to be installed,
 a copy of the runtime the programs use.  It is built from `packaging/h2conv.spec` with PyInstaller (see `packaging/README.md`) from the Python
 and the packages named below; the licence texts are copied from them into the `LICENSES` folder of the zip, which also has a `README.txt` and
 the versions used.  The two programs (`Halo 2 Map Converter.exe`, `h2conv.exe`) are PyInstaller's bootloader with this project's compiled

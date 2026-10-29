@@ -529,9 +529,9 @@ def import_donor(ctx, d, entry=None):
             if ex is not None:
                 ex.setdefault('clone_matg_nodes', []).append(root)       # handlers/locale.py keeps the clone's language-entry tail dwords
         hook = _POST_HOOKS.get(root.group)
-        if hook is None and root.group == 'shad':
+        if hook is None and root.group in ('shad', 'vrtx', 'spas'):
             _load_shader_hooks()
-            hook = _POST_HOOKS.get('shad')
+            hook = _POST_HOOKS.get(root.group)
         if hook is not None:
             hook(ctx, root, d.cache, entry)
         ctx.stats['donor_imports'] += 1

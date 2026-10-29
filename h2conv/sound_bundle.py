@@ -78,6 +78,89 @@ CLASS_FALLBACK = {0x0F: 0x04, 0x10: 0x04}
 MCC_ONLY_CLASSES = {0x0F, 0x10, 0x11, 0x27, 0x28, 0x29}
 
 
+# ------------------------------------------------------------------------------------------------
+# opt-in per-sound reduction (lower sample rate and/or stereo -> mono)
+# ------------------------------------------------------------------------------------------------
+REDUCE_RATES = (22050, 32000, 44100)          # the three Vista sample-rate enum values
+
+
+def parse_reduce_spec(x):
+    """One reduction rule -> dict(match=<tag path glob>, rate=<Hz or None>, mono=<bool>).
+    Accepts the CLI/JSON string `"sound\\gta2\\radiorandom=rate:22050,mono"` (options: rate:HZ | rate=HZ, mono | channels:1) or
+    the JSON object `{"match": "sound\\gta2\\radio*", "rate": 22050, "mono": true}` (aliases: glob / tag for match, channels 1 = mono).
+    Raises ValueError for anything else (an unknown key or option, a rate other than 22050 / 32000 / 44100, no effect at all)."""
+    if isinstance(x, str):
+        pat, sep, opt = x.rpartition('=')
+        if not sep or not pat.strip():
+            raise ValueError('sound-reduce %r: expected "<tag path glob>=rate:22050,mono"' % (x,))
+        d = {'match': pat.strip()}
+        for part in opt.split(','):
+            part = part.strip()
+            if not part:
+                continue
+            k, _, v = part.replace('=', ':').partition(':')
+            k = k.strip().lower()
+            if k == 'mono' and not v:
+                d['mono'] = True
+            elif k in ('rate', 'channels') and v:
+                d[k] = v.strip()
+            else:
+                raise ValueError('sound-reduce %r: unknown option %r (use rate:22050, mono)' % (x, part))
+    elif isinstance(x, dict):
+        d = dict(x)
+    else:
+        raise ValueError('sound-reduce rule must be a string or an object, got %r' % (x,))
+    pat = d.pop('match', None) or d.pop('glob', None) or d.pop('tag', None)
+    d.pop('glob', None)
+    d.pop('tag', None)
+    if not isinstance(pat, str) or not pat.strip():
+        raise ValueError('sound-reduce rule %r has no "match" tag path glob' % (x,))
+    rate = d.pop('rate', None)
+    mono = d.pop('mono', False)
+    ch = d.pop('channels', None)
+    if d:
+        raise ValueError('sound-reduce rule %r: unknown key(s) %s' % (x, ', '.join(sorted(d))))
+    if rate is not None:
+        try:
+            rate = int(rate)
+        except (TypeError, ValueError):
+            raise ValueError('sound-reduce rule %r: rate must be 22050, 32000 or 44100' % (x,))
+        if rate not in REDUCE_RATES:
+            raise ValueError('sound-reduce rule %r: rate %d is not a Vista sample rate (22050, 32000, 44100)' % (x, rate))
+    if ch is not None:
+        if int(ch) not in (1, 2):
+            raise ValueError('sound-reduce rule %r: channels must be 1 or 2' % (x,))
+        mono = mono or int(ch) == 1
+    mono = bool(mono) if not isinstance(mono, str) else mono.strip().lower() in ('1', 'true', 'yes')
+    if rate is None and not mono:
+        raise ValueError('sound-reduce rule %r does nothing: give rate:... and/or mono' % (x,))
+    return {'match': pat.strip(), 'rate': rate, 'mono': mono}
+
+
+def collect_reduce_rules(opts):
+    """The active rules, in priority order: opts['sound_reduce'] (--sound-reduce, repeatable), then the 'sound_reduce' list of the resolved
+    per-map mp-info JSON (opts['mp_info_resolved']).  Empty (= feature off) when neither exists."""
+    out = []
+    for src in (opts.get('sound_reduce'), (opts.get('mp_info_resolved') or {}).get('sound_reduce')):
+        if not src:
+            continue
+        if isinstance(src, (str, dict)):
+            src = [src]
+        for x in src:
+            out.append(parse_reduce_spec(x))
+    return out
+
+
+def match_reduce(rules, name):
+    """First rule whose glob matches the snd! tag path (case-insensitive, / and \\ equal, no wildcard = exact), else None."""
+    import fnmatch
+    n = (name or '').lower().replace('/', '\\')
+    for r in rules:
+        if fnmatch.fnmatchcase(n, r['match'].lower().replace('/', '\\')):
+            return r
+    return None
+
+
 def encoded_flag_bits(n):
     """Runtime-flag bits one 'encoded' (lip-sync dialogue, Encoded Permutation Data Index != -1) pitch range of n permutations
     reserves: n + 5 + max(1, ceil(log2 n)).  Own sequence, starts at 0, independent of the byte-aligned normal sequence (whose
@@ -346,10 +429,10 @@ class SndRec(object):
         self.max_play_ms = 0
         self.vista = {}               # rate / encoding / compression written
         self.error = None
-
+        self.reduce = None            # opt-in --sound-reduce plan (dict, see Builder._reduce_plan) or None
 
 class PermIn(object):
-    __slots__ = ('src_idx', 'perm', 'use', 'chunks', 'meta', 'job', 'payload', 'f31', 'samples', 'kind', 'out_rate')
+    __slots__ = ('src_idx', 'perm', 'use', 'chunks', 'meta', 'job', 'payload', 'f31', 'samples', 'kind', 'out_rate', 'ch_out', 'before')
 
     def __init__(self):
         self.job = None
@@ -357,6 +440,8 @@ class PermIn(object):
         self.f31 = False
         self.samples = 0
         self.out_rate = 0
+        self.ch_out = None            # output channel count when it differs from the source's (reduction to mono)
+        self.before = 0               # bytes this permutation would have had without the reduction
 
 
 class ExtraInfo(object):
@@ -482,6 +567,7 @@ class Builder(object):
         self.warnings = []
         self.progress = self.opts.get('progress')
         self.quiet = bool(self.opts.get('quiet'))
+        self.reduce_rules = collect_reduce_rules(self.opts)     # [] = off (the default): nothing below changes
 
     # ---- sources --------------------------------------------------------------------------------
     def source(self, key):
@@ -532,6 +618,7 @@ class Builder(object):
         if s['pitch_range'] < 0 or s['pitch_range_count'] <= 0:
             return
         out_rate = self.out_rate_for(s, comp, ch)
+        rec.reduce = self._reduce_plan(rec, comp, ch, out_rate) if self.reduce_rules else None
         for k in range(s['pitch_range_count']):
             pr = g.pitch_range(s['pitch_range'] + k)
             perms = []
@@ -571,10 +658,59 @@ class Builder(object):
             return int(self.opts.get('sound_dialog_rate', 22050))
         return 44100
 
+    def _reduce_plan(self, rec, comp, ch, norm_rate):
+        """The opt-in reduction of ONE sound (None = leave it exactly as the normal pipeline makes it).  `norm_rate` = the rate the normal
+        pipeline would write (44.1 kHz for transcoded sounds, the source rate for Xbox ADPCM passthrough).  A rule never raises the rate or
+        the channel count: rate = min(rule rate, norm_rate); mono only applies to stereo sources."""
+        rule = match_reduce(self.reduce_rules, rec.name)
+        if rule is None:
+            return None
+        s = rec.snd
+        if comp not in (1, 5, 0, 3) or ch not in (1, 2):
+            self.warn('snd_reduce_skipped', '%s: --sound-reduce rule %r not applied (compression %d, %d channel(s): only mono/stereo ADPCM, Opus and PCM sounds can be reduced)'
+                      % (rec.name, rule['match'], comp, ch))
+            return None
+        src_rate = 48000 if comp == 5 else SAMPLE_RATE_HZ.get(s['rate'], 44100)
+        if comp == 1:
+            norm_rate = src_rate
+        dst = min(rule['rate'] or norm_rate, norm_rate)
+        mono = bool(rule['mono']) and ch == 2
+        if dst == norm_rate and not mono:
+            self.warn('snd_reduce_noop', '%s: --sound-reduce rule %r changes nothing (already %d Hz, %d channel(s))' % (rec.name, rule['match'], norm_rate, ch))
+            return None
+        return dict(kind={5: 'opus', 1: 'xadpcm', 0: 'pcm_be', 3: 'pcm_le'}[comp], comp=comp, src_ch=ch, out_ch=1 if mono else ch, mono=mono,
+                    src_rate=src_rate, norm_rate=norm_rate, dst_rate=dst, rule=rule['match'], before=0, after=0)
+
+    def _prepare_reduced(self, rec, pi, comp, ch):
+        """Queue the decode -> (downmix) -> polyphase resample -> Xbox ADPCM job of one permutation of a reduced sound."""
+        r = rec.reduce
+        chunks = pi.chunks
+        # bytes this permutation would have had: the exact payload for ADPCM, else the decoded length at the normal rate (Opus: minus the pre-skip)
+        if comp == 1:
+            pi.before = sum(len(c) for c in chunks)
+        else:
+            n = sum(m[2] for m in pi.meta) // (2 * ch)
+            if comp == 5:
+                n = max(n - sc.OPUS_PRESKIP_48K, 0)
+            n = n * r['norm_rate'] // r['src_rate']
+            pi.before = -(-n // 64) * 36 * ch
+        if r['kind'] in ('pcm_le', 'pcm_be'):
+            chunks = [b''.join(chunks)]
+        spec = (r['kind'], ch, r['src_rate'], r['dst_rate'], r['mono'])
+        key = scache.content_key(chunks, r['out_ch'], 'reduce', repr(spec).encode())
+        self.jobs.setdefault(key, ('reduce', (chunks, r['out_ch'], spec)))
+        pi.job = key
+        pi.kind = 'reduce'
+        pi.out_rate = r['dst_rate']
+        pi.ch_out = r['out_ch']
+        pi.chunks = None
+
     def _prepare_audio(self, rec, pi, comp, ch, out_rate=44100):
         s = rec.snd
         pi.out_rate = out_rate
-        if comp == 1:                                          # Xbox ADPCM: byte-identical to Vista (120/120 perms)
+        if rec.reduce is not None:                             # opt-in --sound-reduce / mp-info "sound_reduce"
+            self._prepare_reduced(rec, pi, comp, ch)
+        elif comp == 1:                                         # Xbox ADPCM: byte-identical to Vista (120/120 perms)
             payload = b''.join(pi.chunks)
             if len(payload) % (36 * ch):
                 self.warn('snd_adpcm_len', '%s: XADPCM payload %d not a multiple of %d' % (rec.name, len(payload), 36 * ch))
@@ -657,6 +793,8 @@ class Builder(object):
             try:
                 if kind == 'opus':
                     out = sc.opus_perm_to_vista_xadpcm(args[0], args[1], args[2])[0]
+                elif kind == 'reduce':
+                    out = sc.reduce_perm_to_vista_xadpcm(args[0], args[2])
                 else:
                     out = sc.pcm_le_to_vista_xadpcm(args[0], args[1], args[2], args[3])
                 self.cache.put(key, out)
@@ -690,7 +828,7 @@ class Builder(object):
                 if not pi.samples:
                     ms = None
                     break
-                hz = pi.out_rate if pi.kind in ('opus', 'pcm') else SAMPLE_RATE_HZ.get(s['rate'], 44100)
+                hz = pi.out_rate if pi.kind in ('opus', 'pcm', 'reduce') else SAMPLE_RATE_HZ.get(s['rate'], 44100)
                 ms.append(pi.samples * 1000.0 / hz)
             if not ms:
                 continue
@@ -827,7 +965,11 @@ class Builder(object):
                     ch_out = CHANNELS.get(s['encoding'], 1)
                     if pi.kind == 'pcm' and ch_out == 4:
                         ch_out = 2
-                    if pi.kind in ('opus', 'pcm'):
+                    if pi.kind == 'reduce':
+                        ch_out = pi.ch_out
+                        r.reduce['before'] += pi.before
+                        r.reduce['after'] += len(payload)
+                    if pi.kind in ('opus', 'pcm', 'reduce'):
                         pi.samples = len(payload) // (36 * ch_out) * 64
                         pi.f31 = False
                     # chunks
@@ -853,7 +995,7 @@ class Builder(object):
                     nperm += 1
                     has_audio = True
                     if pi.samples:
-                        rate = pi.out_rate if pi.kind in ('opus', 'pcm') else SAMPLE_RATE_HZ.get(s['rate'], 44100)
+                        rate = pi.out_rate if pi.kind in ('opus', 'pcm', 'reduce') else SAMPLE_RATE_HZ.get(s['rate'], 44100)
                         max_ms = max(max_ms, pi.samples * 1000 // rate)
                     pi.payload = None
                 if pr['runtime_flag'] == -1:
@@ -875,6 +1017,17 @@ class Builder(object):
                 rate_e = s['rate'] if s['rate'] in (0, 1, 2) else 1
                 comp_v = comp
             enc_v = 1 if s['encoding'] == 3 else s['encoding']
+            if r.reduce is not None:                           # --sound-reduce: rate enum / mono encoding of the reduced sound, ADPCM
+                rate_e, comp_v = VISTA_RATE_ENUM[r.reduce['dst_rate']], 1
+                if r.reduce['mono']:
+                    enc_v = 0
+                rr = r.reduce
+                self.warn('snd_reduced', '%s: reduced by --sound-reduce rule "%s": %d -> %d bytes (%.1f%% of normal, %.2f MB saved), %d -> %d Hz, %d -> %d channel(s)'
+                          % (r.name, rr['rule'], rr['before'], rr['after'], 100.0 * rr['after'] / max(rr['before'], 1),
+                             (rr['before'] - rr['after']) / 1e6, rr['norm_rate'], rr['dst_rate'], rr['src_ch'], rr['out_ch']))
+                B.notes['reduced_sounds'] = B.notes.get('reduced_sounds', 0) + 1
+                B.notes['reduced_bytes_before'] = B.notes.get('reduced_bytes_before', 0) + rr['before']
+                B.notes['reduced_bytes_after'] = B.notes.get('reduced_bytes_after', 0) + rr['after']
             # maximum play time: the MCC value is kept.  The Vista tool's rule is NOT simply "longest permutation" (139 of 840 shared.map sounds
             # differ from their own longest permutation, e.g. ball_drop 120 ms vs 483 ms) but the MCC tool applies the same rule: copying it is within
             # 0.3 % (median) / 4.2 % (p99) of Vista on 660 Opus sounds, recomputing from the longest permutation is 34 % off at p99.

@@ -119,10 +119,20 @@ def element_size(field):
 # ------------------------------------------------------------------------------------------------
 # decode
 # ------------------------------------------------------------------------------------------------
-def decode_struct(read, group, path, fields, size, addr, raw=None, _seen=None):
+def decode_struct(read, group, path, fields, size, addr, raw=None, _seen=None, dropped=None, emptied=None, salvage=None):
     """Decode one struct at addr (or from raw bytes) and, recursively, its blocks and datarefs.
     Identical (address, count, element size) blocks and (address, size) datarefs referenced twice inside one
-    tag decode to the SAME list / bytes object, so encode_tag emits them once (cache-builder behaviour)."""
+    tag decode to the SAME list / bytes object, so encode_tag emits them once (cache-builder behaviour).
+    dropped: a list -> a block element that cannot be read (a sub-block / dataref outside the file: junk left in editor-side scenario
+    data by mod tools) is left out and its path + error appended; None -> the error propagates.  The root never is.
+    emptied: a list -> a block / dataref whose OWN data cannot be read is decoded empty IN PLACE (the element stays, so the indices of
+    its siblings do not move) and its path + error appended; None -> the error propagates.  Used for shaders whose root
+    'Postprocess Properties' holds the bytes of a neighbouring bitmap reference (a count of 0x746D0000 and a pointer of 0x12BD6269
+    in one old community map).
+    salvage: an object -> a block / dataref whose own data cannot be read is handed to salvage.block(read, node, f, cnt, ptr, es, ex,
+    _seen) -> [Node, ...] / salvage.data(read, node, f, sz, ptr, ex) -> bytes (node = the struct holding the field, its data complete),
+    which decides what the element holds (it may raise); it takes precedence over emptied and is passed down to every child decode
+    (the caller supplies the salvage object)."""
     if _seen is None:
         _seen = {}
     data = raw if raw is not None else read(addr, size)
@@ -133,34 +143,63 @@ def decode_struct(read, group, path, fields, size, addr, raw=None, _seen=None):
             cnt, ptr = struct.unpack_from('<iI', node.data, f.offset)
             es = element_size(f)
             kids = []
-            if cnt > 0 and ptr:
+            # a count with a NULL (0xFFFFFFFF) pointer: protection junk the engine never reads (it would crash on address -1); empty
+            if cnt > 0 and ptr and ptr != 0xFFFFFFFF:
                 key = ('b', ptr, cnt, es)
                 if key in _seen:
                     node.blocks[f.offset] = _seen[key]
                     continue
-                _seen[key] = kids
-                blob = read(ptr, cnt * es)
                 cp = child_path(path, f)
+                try:
+                    blob = read(ptr, cnt * es)
+                except Exception as ex:                                      # noqa: BLE001
+                    if salvage is not None:
+                        kids = salvage.block(read, node, f, cnt, ptr, es, ex, _seen)
+                        if not getattr(salvage, 'per_parent', False):
+                            _seen[key] = kids        # else a result named after THIS parent (a synthesised collision permutation)
+                        node.blocks[f.offset] = kids
+                        continue
+                    if emptied is None:
+                        raise
+                    emptied.append('%s: %s' % (cp, ex))
+                    node.blocks[f.offset] = kids
+                    continue
+                _seen[key] = kids
                 for i in range(cnt):
-                    kids.append(decode_struct(read, group, cp, f.children, es, ptr + i * es,
-                                              raw=blob[i * es:(i + 1) * es], _seen=_seen))
+                    try:
+                        kids.append(decode_struct(read, group, cp, f.children, es, ptr + i * es,
+                                                  raw=blob[i * es:(i + 1) * es], _seen=_seen, dropped=dropped, emptied=emptied,
+                                                  salvage=salvage))
+                    except Exception as ex:                                  # noqa: BLE001
+                        if dropped is None:
+                            raise
+                        dropped.append('%s[%d]: %s' % (cp, i, ex))
             node.blocks[f.offset] = kids
         elif f.type in DATA_TYPES:
             sz, ptr = struct.unpack_from('<iI', node.data, f.offset)
-            if sz > 0 and ptr:
+            if sz > 0 and ptr and ptr != 0xFFFFFFFF:
                 key = ('d', ptr, sz)
                 if key not in _seen:
-                    _seen[key] = bytes(read(ptr, sz))
+                    try:
+                        _seen[key] = bytes(read(ptr, sz))
+                    except Exception as ex:                                  # noqa: BLE001
+                        if salvage is not None:
+                            _seen[key] = bytes(salvage.data(read, node, f, sz, ptr, ex))
+                        elif emptied is None:
+                            raise
+                        else:
+                            emptied.append('%s/%s: %s' % (path, f.name, ex))
+                            _seen[key] = b''
                 node.datas[f.offset] = _seen[key]
             else:
                 node.datas[f.offset] = b''
     return node
 
 
-def decode_tag(read, layout, addr, group=None):
+def decode_tag(read, layout, addr, group=None, dropped=None, emptied=None, salvage=None):
     g = group or layout.group
     size = layout.base_size or layout.computed_size
-    return decode_struct(read, g, '', layout.fields, size, addr)
+    return decode_struct(read, g, '', layout.fields, size, addr, dropped=dropped, emptied=emptied, salvage=salvage)
 
 
 # ------------------------------------------------------------------------------------------------

@@ -38,10 +38,12 @@ from .. import tagtree as T
 from .. import paths as _paths
 from ..mcc_cache import MccCache
 from ..planner import RefScanner                                     # read-only reuse of the forward tagref scanner
+from ..objtype import layout_group                                    # an object tag whose data is another object type (aerial)
 from ..vista_cache import VistaCache, FIRST_SHARED_TAG_INSTANCE_INDEX
 from . import shader_port as SPORT                                  # faithful port of the Vista shader code MCC lacks
 from . import custom_stems as CST                                   # stems carried under a STOCK name with custom content
 from . import shader_tags as ST                                     # SEMANTIC_WATER_CHAINS: the water chains MCC re-authored as other shaders
+from . import bitmap_repairs as BR                                  # rasterizer\invalid slots of community shaders with a known bitmap
 
 NULL = 0xFFFFFFFF
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -1219,7 +1221,7 @@ class _Builder(object):
     def scan_vista(self, e):
         cache = self.plan.vista_cache(e.src_map)
         t = cache.tags[e.src_index]
-        return cache, self.env.scan_vista.scan(cache.read_addr, t.group, t.addr)
+        return cache, self.env.scan_vista.scan(cache.read_addr, layout_group(t.group, cache.read_addr, t.addr, self.env.lay_vista), t.addr)
 
     def mcc_targets(self, donor):
         """[(group, name, None, None, label)] of the tagrefs of an MCC donor tag, and the number of dangling ones."""
@@ -1374,6 +1376,8 @@ class _Builder(object):
         self.gestalt_edges()
         self.run_queue()
         self.handle_orphans()
+        self.run_queue()
+        self.bitmap_repair_roots()
         self.run_queue()
         self.plan.notes['shadowed'] = self.shadowed()
         self.plan.notes['shader_port'] = self.shader_port_notes()
@@ -1583,6 +1587,19 @@ class _Builder(object):
             n += 1
         self.plan.notes['placeholder_roots'] = n
 
+    def bitmap_repair_roots(self):
+        """The repair bitmaps (bitmap_repairs.json) of every converted shader that references rasterizer\\invalid: planned like any reference (MCC's
+        stock tag); handlers/shaders.py puts them into the slots."""
+        added = []
+        for e in list(self.plan.all_entries):
+            if e.group != 'shad' or e.action != 'convert' or not any(c.group == 'bitm' and (c.name or '').lower() == BR.INVALID_BITMAP for c in e.children):
+                continue
+            for name in BR.bitmaps_for(e.name):
+                if RevPlan._key_for('bitm', name) not in self.by_name:
+                    added.append(name)
+                self.require('bitm', name, origin='bitmap-repair')
+        self.plan.notes['bitmap_repair_roots'] = added
+
     def handle_orphans(self):
         keep = self.opts['orphans'] == 'keep'
         orphans = []
@@ -1598,7 +1615,7 @@ class _Builder(object):
         for t in self.vista.tags:
             if t.is_empty or not t.addr or t.group not in RESOURCE_GROUPS:
                 continue
-            for g, d, off in self.env.scan_vista.scan(self.vista.read_addr, t.group, t.addr):
+            for g, d, off in self.env.scan_vista.scan(self.vista.read_addr, layout_group(t.group, self.vista.read_addr, t.addr, self.env.lay_vista), t.addr):
                 r = self.plan.resolve_vista('src', d)
                 if r is not None and r[0] == 'src':
                     res_reach.add(r[1].index)

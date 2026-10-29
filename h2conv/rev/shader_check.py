@@ -30,6 +30,7 @@ from ..mcc_cache import MccCache
 from . import shader_port as SP
 from . import shader_tags as ST
 from . import shader_structure as SS
+from . import bitmap_repairs as BR
 
 NULL = 0xFFFFFFFF
 NULLISH = ('', 'rasterizer\\default_2d')
@@ -244,6 +245,9 @@ def check_output(path, vista, plan, ctx=None, max_examples=25):
             va, oa = RS.shader_arrays(vpps[0]), RS.shader_arrays(opps[0])
             vnames = [((vcache.tags[d & 0xFFFF].name or '') if d not in (NULL, 0) and (d & 0xFFFF) < len(vcache.tags) else '') for d, _i, _l in va['bitmaps']]
             onames = [((c.tag_by_datum(d).name or '') if d not in (NULL, 0) and c.tag_by_datum(d) is not None else '') for d, _i, _l in oa['bitmaps']]
+            for i, p in BR.repairs_for(e.name, vnames).items():     # a known rasterizer\invalid slot: the output carries the repair bitmap (bitmap_repairs.json)
+                vnames[i] = p
+                va['bitmaps'][i] = (va['bitmaps'][i][0], 0, va['bitmaps'][i][2])
             corr = {'bm': {i: i for i in range(min(len(vnames), len(onames)))}, 'pc': {i: i for i in range(min(len(va['pc']), len(oa['pc'])))},
                     'vc': {i: i for i in range(min(len(va['vc']), len(oa['vc'])))}} if msd.fp == vsd.fp else SPM.stem_corr(msd.tab, vsd.tab)
             bad_bm = []

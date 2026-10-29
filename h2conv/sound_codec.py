@@ -329,6 +329,46 @@ def pcm_le_to_vista_xadpcm(raw, channels, src_rate, dst_rate=44100):
     return xadpcm_encode(pcm, channels)
 
 
+def downmix_to_mono(pcm):
+    """int16 (n, 2) -> int16 (n, 1): the average of left and right, (L + R + 1) >> 1 in 32 bit (never clips, no dither)."""
+    a = np.asarray(pcm).astype(np.int32)
+    return ((a[:, 0] + a[:, 1] + 1) >> 1).astype(np.int16).reshape(-1, 1)
+
+
+def reduce_pcm(pcm, src_rate, dst_rate, mono):
+    """Opt-in size reduction of decoded audio ('per-sound reduction'): optional stereo -> mono
+    downmix (L/R average) followed by an anti-aliased polyphase resample (`resample`: scipy resample_poly, Kaiser 8.6, cut-off at
+    the lower of the two Nyquist rates - samples are never simply dropped).  int16 (n, ch) -> int16 (m, ch_out)."""
+    pcm = np.asarray(pcm)
+    if mono and pcm.shape[1] == 2:
+        pcm = downmix_to_mono(pcm)
+    elif mono and pcm.shape[1] != 1:
+        raise ValueError('downmix needs 1 or 2 channels, got %d' % pcm.shape[1])
+    return resample(pcm, src_rate, dst_rate)
+
+
+def reduce_perm_to_vista_xadpcm(data, spec):
+    """One permutation -> Vista Xbox ADPCM bytes at a reduced rate and/or channel count.
+    `spec` = (src_kind, src_channels, src_rate, dst_rate, mono):
+      src_kind 'opus'    data = list of MCC Opus chunks (decoded at 48 kHz, 312-sample pre-skip dropped)
+               'xadpcm'  data = list of Xbox ADPCM chunks (decoded, then re-encoded)
+               'pcm_le' / 'pcm_be'  data = [raw 16 bit PCM bytes]
+    Returns the ADPCM payload (36 * out_channels bytes per 64 samples)."""
+    kind, ch, src_rate, dst_rate, mono = spec
+    if kind == 'opus':
+        pcm = opus_decode_stream(data, ch, 48000, preskip=OPUS_PRESKIP_48K)
+    elif kind == 'xadpcm':
+        pcm = xadpcm_decode(b''.join(data), ch)
+    elif kind in ('pcm_le', 'pcm_be'):
+        raw = b''.join(data)
+        pcm = np.frombuffer(raw, dtype='<i2' if kind == 'pcm_le' else '>i2')
+        pcm = pcm[: (len(pcm) // ch) * ch].reshape(-1, ch).astype('<i2')
+    else:
+        raise ValueError('unknown source kind %r' % (kind,))
+    pcm = reduce_pcm(pcm, src_rate, dst_rate, mono)
+    return xadpcm_encode(pcm, pcm.shape[1])
+
+
 def vista_chunk_records(nbytes, base_offset, last_flag=False, location=0):
     """Chunk table rows for ONE permutation payload placed at base_offset (512-aligned).
     Returns (rows, end_offset) with rows = [(file_offset_with_location_bits, size_and_flags_u32, runtime=-1), ...]

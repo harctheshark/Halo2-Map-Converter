@@ -35,6 +35,7 @@ import traceback
 
 from .. import paths as _paths
 from .. import tagtree as T
+from ..objtype import layout_group, pad_alias_root
 from ..mcc_cache import MccCache
 from ..vista_cache import VistaCache
 from . import handlers as H
@@ -292,13 +293,14 @@ def verify_output(path, lay_mcc=None, max_problems=40):
             if not t.is_null:
                 cnt['tags_without_data'] += 1
             continue
-        lay = lay_mcc.get(t.group)
+        lg = layout_group(t.group, lambda a, n, c=c: c.read_at_addr(a, n), t.addr, lay_mcc)   # h2conv.objtype (a weapon entry holding a machine)
+        lay = lay_mcc.get(lg)
         if lay is None:
             problems.append(('no_layout', t.group, t.name, ''))
             continue
         cnt['tags'] += 1
         try:
-            root = T.decode_tag(lambda a, n, c=c: c.read_at_addr(a, n), lay, t.addr, t.group)
+            root = T.decode_tag(lambda a, n, c=c: c.read_at_addr(a, n), lay, t.addr, lg)
         except Exception as ex:                                       # noqa: BLE001
             problems.append(('decode', t.group, t.name, repr(ex)[:160]))
             continue
@@ -757,7 +759,11 @@ def build_file(ctx, plan, strs, converted, vista, out_path, opts, log):
         data = b''
         if root is not None:
             try:
-                data = T.encode_tag(root, ctx.lay_mcc[e.group], mask + cursor, ctx.align, resolve=ctx.resolve)
+                # the layout of the group the data was converted AS (root.group): an aliased object tag (h2conv.objtype) is
+                # a machine under a weapon entry, zero-padded to a weapon's size; for every other tag root.group == e.group
+                pad_alias_root(root, e.group, ctx.lay_mcc)
+                data = T.encode_tag(root, ctx.lay_mcc[root.group if root.group in ctx.lay_mcc else e.group], mask + cursor, ctx.align,
+                                    resolve=ctx.resolve)
             except Exception as ex:                                    # noqa: BLE001
                 enc_fail += 1
                 ctx.warn('encode_failed', '%s %s: %r' % (e.group, e.name, ex), tag=e.name)

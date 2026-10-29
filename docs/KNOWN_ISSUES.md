@@ -4,7 +4,7 @@ This file is the honest ledger of the Halo 2 Map Converter: what went wrong whil
 fixed, what is still wrong, and how to work around it.  It is written for people who want to use converted maps and for
 people who want to help.
 
-Version 0.3.0 (pre-release).  Sections 1 and 3 are current for 0.3.0; section 2.1 lists what changed in 0.2.0 and in 0.3.0 at its end.
+Version 0.4.0 (pre-release).  Sections 1 and 3 are current for 0.4.0; section 2.1 lists what changed in 0.2.0, 0.3.0 and 0.4.0 at its end.
 
 ## 1. How much has actually been tested
 
@@ -147,6 +147,9 @@ code), and **not yet confirmed in game**.
 * **No preview picture in the map list.**  The list draws the preview only if it is exactly 440 x 414 pixels (anything else is dropped without a
   message); a map's own 2048 x 2048 preview was never shown.  `--mp-info` can name a 440 x 414 bitmap of the map or of `mainmenu.map`; the README's example
   names the placeholder `mainmenu.map` holds (`unknown_map`, a grid with a question mark).  *Status:* checked on the file, not yet seen in game.
+  **0.4.0:** the preview picture is not shown for any custom map.  Analysing `halo2.exe` and Cartographer's `xlive.dll` (static, no game run) showed that the custom map list reads the preview from the map,
+  but Cartographer's replacement of the list repository never builds the texture the list draws, so every custom map shows the `unknown_map` grid whatever the map file holds.  A **custom list-preview image is
+  not supported** by the converter (the info-file keys `preview_bitmap_file` and `preview_crop` are ignored with a warning).
 * **A campaign level hung the graphics card in Vista** (the driver's timeout reset, then a crash a moment later).  It was traced in game to the
   hologram overlay drawn on the extra `truth` variant that one mod (Mombasa Mayhem) adds to the Regret hologram model; the overlay on the sections of that
   variant hangs, on Regret's own sections it does not.  The cause inside the engine was not found.  A placement of a model with a hologram shader that
@@ -161,6 +164,36 @@ code), and **not yet confirmed in game**.
   data.  The limits are now the engine's own.  *Status:* checked (the maps come out with their sounds); not yet played, and whether the engine copes with
   4,450 sounds in one campaign is untested.
 * **`--description TEXT`** sets the map description in every language (language pack and info block).
+
+**Added or fixed in 0.4.0 (MCC to Vista).**  Same rule: unless a line says "played", the status is *checked* and **not yet confirmed in game**.
+
+* **Alpha-tested foliage (palm trees, bushes) missing on NVIDIA cards.**  Two causes, both fixed by default.  (1) Two shader templates
+  (`tex_bump_alpha_test_single_pass` and `tex_bump_alpha_test`) feed a 4x4 placeholder bitmap (`alpha_white`, `gray_50_percent`) to a texture stage of a Vista pass that MCC's
+  Direct3D 11 version of the pass does not have; Cartographer clears those two slots at map load, and the converter now writes them as NONE so the map does not depend on that
+  (`--no-foliage-fix`).  (2) The per-vertex implementation of the pass `lightmap_tex_detail_alpha_test` (and `_clamped`) declares texture stage 4 as a cube sampler while the
+  templates bind a 2D bitmap there; RTX and GTX 16 cards return transparent black for that mismatch and the alpha test discards the whole object.  The converted map carries
+  local copies of that pass and of the templates that use it with one dword changed (`dcl_cube s4` to `dcl_2d s4`; `--no-rtx-foliage-fix`).  Measured on an RTX 4090 with the real
+  shaders: alpha-test coverage 0.000 before and 0.500 after.  *Status:* the project's notes record the RTX fix as *played* on an RTX card; the placeholder part is *checked* (it does what
+  Cartographer does at load).  Cost: a few local tags per map (the pass and the templates become local copies).
+* **Glass and plasma surfaces lost their transparency when the camera crossed a cluster portal.**  Every class of Vista's stock vertex shader `transparent_generic_reflection` computes
+  its fade factor from three axes but adds only two of them.  The converted map carries local copies of that vertex shader and of the passes and templates that use it, with the
+  one instruction changed (`add` to `dp3`; `--no-reflection-vs-fix`).  The edit is the same as in a corrected editing-kit tag and was checked on the compiled code with the converter's
+  Direct3D 9 interpreter: only the fade output changes, every other output is bit-identical.  *Status:* checked, not yet seen in game.
+* **Remastered sounds with a classic twin.**  A reference to a `sound_remastered\*` sound used to become null unless a sound of the same path under `sound\` existed.  The converter now
+  also follows MCC's own link between a classic sound and its remastered one (when exactly one classic sound points at it and both sit in the same sound folders) and an override file
+  (`h2conv\data\remastered_sound_overrides.json`).  About 18 more references per H2EK-built map are now filled, and a classic sound that Vista's `shared.map` lacks is converted into the
+  map.  About 500 remastered sounds have no classic equivalent and stay dropped.  `--no-remastered-pairs` restores the old behaviour.  *Status:* checked, not heard in game.
+* **Rubble decals drew a lettered grid.**  Vista's `shared.map` holds a decorator set (`scenarios\decorators\debris\debris`) that points at the engine placeholder shader `shaders\invalid`
+  where MCC has the real decal shader; the converter linked it because it equals MCC's copy.  A shared tag that references `shaders\invalid` while the MCC tag does not is now converted from MCC
+  instead.  *Status:* checked.
+* **Couch colour in `chronopolis`.**  The couch's two tinted shaders rendered washed out in Vista (flat gold frame, grey cushions) because the bright albedo saturates in Vista's lighting for movable
+  objects.  A small table (`h2conv\data\shader_overrides.json`) halves the two colour constants of those two shaders for that one map; every other map converts as before.  This is a workaround for one
+  map, not a general rule (a general rule was not found: bright tinted shaders on movable objects may clip the same way in other maps).  *Status:* **played** (orange-red frame, dark brown cushions as in MCC).
+* **Shader data with more than 256 remappings** was decoded wrongly (the start index used 8 bits instead of 9); five stems of the H2EK maps were affected.  All 390 stems of four H2EK maps decode correctly now.
+  *Status:* checked.
+* **Tags with a count and a NULL (all ones) pointer**, left by some old editing tools, are read as empty instead of stopping the conversion.  *Status:* checked.
+* **`--sound-reduce`** (opt-in): a very large custom soundtrack can be shrunk per sound (mono and/or a lower sample rate, anti-aliased resampling).  Example: one workshop map's custom radio went from
+  424 MiB to 235 MiB with only its biggest sound at 22.05 kHz mono (under the 250 MiB the custom map list accepts).  *Status:* checked (duration, pitch and neighbours verified), not heard in game.
 
 ### 2.2 Vista to MCC
 
@@ -221,6 +254,18 @@ water (section 3.1).
 * `grounded(OLD)` also contained three sounds labelled as uncompressed PCM that are really Ogg Vorbis files (the Vista tool had priced
   the file bytes as PCM).  They are now decoded (`ffmpeg` needed, optional) and encoded as ADPCM.
 * `cideral` and `nuclear` had a few shaders compiled against a different revision of a stock template (see above).
+
+**Added or fixed in 0.4.0 (Vista to MCC).**  *Status:* checked, not yet played unless a line says so.
+
+* **Red and green "missing texture" checkers in MCC.**  Some community shaders were compiled with the placeholder `rasterizer\invalid` in a bitmap slot because the author's tags folder lacked a stock detail map; the original Vista map shows
+  it too.  `h2conv\rev\data\bitmap_repairs.json` lists the shaders (and which bitmap every intact copy of the same shader carries in that slot); the converter puts that stock bitmap back, recomputes the
+  log dimension and the predicted resources, and the shader check expects it.  The table covers the shaders found so far in a handful of community maps (for example `forerunner_rusted_blue` and `_grey`, `panels_generic`, `floors\rock`, `lift_effect`);
+  shaders for which no intact copy exists anywhere cannot be repaired and stay as they are.
+* **Players spawned unarmed on a multiplayer map with an empty Starting Equipment block** (the game variant's weapons are applied to the matching entry, and there was none).  The converter adds the stock entry
+  (all game types, the default primary weapon) when the block is empty; a block with any entry is left alone.
+* **A tag whose data is another kind of object than its slot says** (for example a weapon entry that holds a machine, as some old maps do for scripted bridges) is decoded and written with the layout of the
+  object type it really holds, zero-padded to the size of its slot's group; MCC reads every weapon's fields at load and crashed on the short data.  The built-in checks know the padding.
+* **Batch:** `--title-from language|header` (the MapInfo title comes from the header's language pack, the default, or from the header's map name) and `--package-description TEXT`.
 
 ### 2.3 Both directions
 

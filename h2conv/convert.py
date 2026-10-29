@@ -3,7 +3,7 @@
 
     py -3 -m h2conv.convert <in.map> <out.map | out_dir> [--name NAME] [--display-name TEXT] [--matg link|local|auto]
                             [--self-contained] [--report out.json] [--vista-maps DIR] [--mcc-maps DIR]
-                            [--sound-workers N] [--no-sound-cache] [--sound-language N] [--no-pull-mcc-only]
+                            [--sound-workers N] [--no-sound-cache] [--sound-language N] [--sound-reduce 'GLOB=rate:22050,mono' ...] [--no-pull-mcc-only]
                             [--havok-rcp stock|zero] [--no-taint-ignore] [--no-limits-check] [--no-deep-validate] [--quiet]
     (developer switches: --no-handlers --no-tag-handlers --standin-plan --limit N --groups a,b --debug --force-output-dir)
 
@@ -520,8 +520,9 @@ def convert_map(src_path, out_path, vista_maps=None, self_contained=False, repor
     plan, strs, planner_name = make_plan(src, mcc_shared, vista, opts, log)
     report['planner'] = planner_name
     report['options'] = {k: v for k, v in sorted(opts.items()) if k in (
-        'name', 'display_name', 'description', 'mp_info', 'mp_info_dir', 'mp_info_path', 'matg', 'self_contained', 'pull_mcc_only', 'sound_workers', 'no_sound_cache', 'sound_language',
-        'havok_rcp', 'only_groups', 'no_handlers', 'limit', 'taint_ignore', 'keep_training', 'training_via_hudg', 'training_via_script', 'no_mapinfo_teams', 'no_checkpoints', 'keep_hologram_variants') and (v not in (None, False) or k == 'taint_ignore' and v == ())}
+        'name', 'display_name', 'description', 'mp_info', 'mp_info_dir', 'mp_info_path', 'matg', 'self_contained', 'pull_mcc_only', 'sound_workers', 'no_sound_cache', 'sound_language', 'sound_reduce',
+        'havok_rcp', 'only_groups', 'no_handlers', 'limit', 'taint_ignore', 'keep_training', 'training_via_hudg', 'training_via_script', 'no_mapinfo_teams', 'no_checkpoints', 'keep_hologram_variants',
+        'foliage_fix', 'reflection_vs_fix', 'rtx_foliage_fix') and (v not in (None, False) or k == 'taint_ignore' and v == () or k in ('foliage_fix', 'reflection_vs_fix') and v is False)}
     ctx = X.Ctx(src, mcc_shared, vista, plan, strs, opts=opts, map_type=map_type)
     ctx.extra['out_path'] = out_path
     ctx.extra['converted'] = {}
@@ -686,6 +687,10 @@ def convert_map(src_path, out_path, vista_maps=None, self_contained=False, repor
                                  'examples': ['%s%s' % (m, (' [%s]' % t) if t else '') for m, t in lst[:8]]}
                           for code, lst in ctx.warnings.items()}
     report['plan_stats'] = dict(getattr(plan, 'stats', {}) or {})
+    report['vsfix'] = dict({'foliage_fix': opts.get('foliage_fix', True) is not False, 'reflection_vs_fix': opts.get('reflection_vs_fix', True) is not False},
+                           **{k[6:]: v for k, v in sorted(list(report['plan_stats'].items()) + list(ctx.stats.items())) if k.startswith('vsfix:')})
+    if opts.get('rtx_foliage_fix', True) is not False:
+        report['rtxfix'] = {k[7:]: v for k, v in sorted(list(report['plan_stats'].items()) + list(ctx.stats.items())) if k.startswith('rtxfix:')}
     if hasattr(plan, 'report') and hasattr(plan, 'audit'):
         try:
             report['plan'] = plan.report(60)
@@ -954,6 +959,12 @@ def main(argv=None):
                          "regret_holo).  By default such placements get the model's default variant, because Vista's hologram overlay "
                          "drawn on that variant hangs the GPU (env H2CONV_KEEP_HOLOGRAM_VARIANTS=1 does the same)")
     ap.add_argument('--self-contained', action='store_true', help='do not link to the Vista shared.map (copies every dependency; experimental, much larger file)')
+    ap.add_argument('--no-remastered-pairs', action='store_true',
+                    help="a reference to a sound_remastered\\* sound is redirected to the classic sound found through MCC's own link (the "
+                         "classic snd!'s Remastered Sound Reference Index) or h2conv\\data\\remastered_sound_overrides.json, besides the old "
+                         "sound_remastered\\X -> sound\\X path mapping; this switch keeps only the path mapping (env H2CONV_NO_REMASTERED_PAIRS=1)")
+    ap.add_argument('--remastered-overrides', default=None, metavar='FILE',
+                    help='use this remastered -> classic sound override file instead of h2conv\\data\\remastered_sound_overrides.json')
     ap.add_argument('--no-pull-mcc-only', action='store_true',
                     help='drop MCC-only objects (mongoose, falcon, ...) that a stock MCC map references instead of converting them: '
                          'reproduces the content of the stock Vista map of the same name')
@@ -961,6 +972,19 @@ def main(argv=None):
                     help="copy every tag that references a modified tag, including the dependents of rasterizer\\linear_corner_fade "
                          "(256x256 in the H2EK kit tags, 16x16 in every shipped map; by default it does not taint, so ~300 tags are "
                          "linked to Vista's shared tags instead of copied)")
+    ap.add_argument('--no-foliage-fix', action='store_true',
+                    help="keep the alpha_white / gray_50_percent placeholder bitmaps in the alpha-test shaders (templates tex_bump_alpha_test_single_pass, "
+                         "tex_bump_alpha_test).  By default those slots are written as NONE - the workaround Project Cartographer applies at load - so palm "
+                         "trees and other foliage are not lost on NVIDIA GPUs (MCC's DX11 version of the pass has no such texture)")
+    ap.add_argument('--no-rtx-foliage-fix', action='store_true',
+                    help="turn OFF (default ON; confirmed in game on RTX 2026-10-21) the repair of the alpha-tested foliage that is missing on NVIDIA RTX / GTX 16 cards.  Vista's pass lightmap_tex_detail_alpha_test (and _clamped) "
+                         "declares texture stage 4 as a CUBE sampler in its per-vertex implementation (palms, bushes, scenery) while the templates bind the 2D alpha_white bitmap there; those GPUs "
+                         "return transparent black for the mismatch and the alpha test discards the object.  The converted map carries local copies of that pass and of the templates that use it "
+                         "with the sampler declared 2D (one dword per pixel shader blob, bit-identical results otherwise; h2conv.rtxfix)")
+    ap.add_argument('--no-reflection-vs-fix', action='store_true',
+                    help="keep Vista's stock vertex shader transparent_generic_reflection (it adds only two of its three fade-test axes: the transparency of glass / "
+                         "plasma surfaces dies when the camera crosses cluster portals).  By default the converted map carries local copies of that vertex shader and of "
+                         "the passes / templates that use it, with the one-instruction fix (dp3 instead of add) applied")
     _paths.add_common_options(ap, mcc=True, vista=True, assembly=True)
     ap.add_argument('--shared-map', default=None, metavar='FILE',
                     help='the CUSTOM shared.map (Steam-workshop mod) this multiplayer map was built against; default: found automatically (the file with the '
@@ -972,6 +996,11 @@ def main(argv=None):
     ap.add_argument('--sound-workers', type=int, default=1, choices=(1, 2, 3, 4), help='processes for the Opus -> ADPCM transcode of a cold sound cache')
     ap.add_argument('--no-sound-cache', action='store_true', help='do not use the sound cache (the sound_cache folder inside the work folder)')
     ap.add_argument('--sound-language', type=int, default=0, help='language index of the sound data (0 = English)')
+    ap.add_argument('--sound-reduce', action='append', default=None, metavar='GLOB=OPTS',
+                    help='OPT-IN size reduction of the matching snd! tags only (repeatable; off by default): "sound\\gta2\\radiorandom=rate:22050,mono" = '
+                         'downmix stereo to mono (L/R average) and resample to 22.05 kHz (anti-aliased polyphase), then Xbox ADPCM.  GLOB matches the tag path '
+                         '(case-insensitive, * ? allowed); options: rate:22050|32000|44100 (never raises the rate), mono.  Also settable per map as a '
+                         '"sound_reduce" list in the --mp-info / --mp-info-dir JSON.  Everything not matching stays exactly as authored')
     ap.add_argument('--havok-rcp', choices=('stock', 'zero'), default='stock', help='Havok Runtime Code Pointer values (both are accepted by the engine)')
     ap.add_argument('--no-limits-check', action='store_true', help='skip h2conv.limits_check and h2conv.invariants after the build')
     ap.add_argument('--no-deep-validate', action='store_true', help='skip validate.validate_map (vista_writer.validate_file still runs)')
@@ -999,10 +1028,28 @@ def main(argv=None):
             'matg': a.matg, 'name': a.name, 'name_explicit': bool(a.name), 'display_name': a.display_name, 'description': a.description, 'mp_info': a.mp_info, 'sound_workers': a.sound_workers,
             'no_sound_cache': a.no_sound_cache, 'sound_language': a.sound_language, 'havok_rcp': a.havok_rcp,
             'keep_training': a.keep_training, 'training_via_hudg': a.training_via_hudg, 'training_via_script': a.training_via_script, 'mp_info_dir': a.mp_info_dir, 'no_mapinfo_teams': a.no_mapinfo_teams, 'no_checkpoints': a.no_checkpoints, 'keep_hologram_variants': a.keep_hologram_variants}
+    if a.sound_reduce:
+        from .sound_bundle import parse_reduce_spec
+        try:
+            for x in a.sound_reduce:
+                parse_reduce_spec(x)
+        except ValueError as ex:
+            ap.error(str(ex))
+        opts['sound_reduce'] = list(a.sound_reduce)
+    if a.no_remastered_pairs:
+        opts['no_remastered_pairs'] = True
+    if a.remastered_overrides:
+        opts['remastered_overrides'] = os.path.abspath(a.remastered_overrides)
     if a.no_pull_mcc_only:
         opts['pull_mcc_only'] = False
     if a.no_taint_ignore:
         opts['taint_ignore'] = ()
+    if a.no_foliage_fix:
+        opts['foliage_fix'] = False
+    if a.no_reflection_vs_fix:
+        opts['reflection_vs_fix'] = False
+    if a.no_rtx_foliage_fix:
+        opts['rtx_foliage_fix'] = False
     if a.mcc_maps:
         opts['mcc_dat_dir'] = a.mcc_maps
     if a.shared_map:

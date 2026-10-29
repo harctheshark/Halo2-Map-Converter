@@ -448,7 +448,10 @@ ANIM_FIELD_ORDER = (3, 4, 1, 2, 0)
 
 
 def _rng(v):
-    return v & 0xFF, (v >> 8) // 2
+    # start = low 9 bits, count = high 7 bits (2026-10-26: the 8-bit start read before lost bit 8; with 9 bits the bm / pc / vc remapping ranges of every
+    # stem Implementation tile the Remappings block in order - 390 of 390 stems of headlong / chronopolis / triplicate / my_first_box_level, the 5 with more
+    # than 256 remappings (cann\shaders\opaque_strata ...) included; with 8 bits those 5 broke.  Identical to the old decode whenever start < 256.)
+    return v & 0x1FF, v >> 9
 
 
 def _pack_rng(start, count):
@@ -549,16 +552,18 @@ def predict_animation(entries, aprefs, vs, ms):
 class RemapTab(object):
     """pass table of a compiled stem Postprocess Definition: passes = [(pass tag name lower, [implementation | None])] where an implementation is
     {'bm'|'pc'|'vc': [(register code, shader array index)]}.  pp = the stem's 'Postprocess Definition' [0] Node, name_of(datum) -> tag name."""
-    __slots__ = ('passes', '_keys')
+    __slots__ = ('passes', '_keys', 'gidx')
 
     def __init__(self, pp, name_of):
         impls = _blk(pp, 'Implementations')
         rem = _blk(pp, 'Remappings')
         self.passes = []
+        self.gidx = []                       # per pass: the stem Implementations index of each implementation (= the shader's animation-range index)
         self._keys = None
         for e in _blk(pp, 'Passes'):
             nm = (name_of(e.u32(4)) or '').lower()
             s, c = _rng(e.u16(8))
+            self.gidx.append(list(range(s, s + c)))
             lst = []
             for k in range(s, s + c):
                 if k >= len(impls):

@@ -245,6 +245,8 @@ class Options(object):
         self.refresh_metadata = False   # vista2mcc: regenerate the MapInfo JSON of maps that are already in the package
         self.package_title = EX.DEFAULT_TITLE
         self.package_description = EX.DEFAULT_DESCRIPTION
+        self.title_from = 'language'    # vista2mcc MapInfo Title: 'language' = the header language pack name, 'header' = the header's map name
+                                        # (a map can keep its base level's name in the language pack)
         self.recursive = True           # scan sub-folders too
         self.deep = True                # read the tag table of MCC maps that need a closer look at their shared.map
         self.remember = True            # save the folders to settings.json after a real run
@@ -790,6 +792,8 @@ def _convert_item(item, plan, opts):
         titles = None
         if item.direction == 'vista2mcc':
             titles = MI.read_titles(item.src, item.rec)
+            if opts.title_from == 'header' and (item.rec.name or '').strip():
+                titles = dict(titles, title=MI.clean_text(item.rec.name, MI.MAX_TITLE), source='header name')
         # ---- run the converter ----------------------------------------------------------------------------------------------
         if opts.isolate:
             rep, ok, why = _subprocess_convert(item, staged, opts)
@@ -1134,6 +1138,9 @@ def main(argv=None):
     r.add_argument('--keep-order', action='store_true', help='do not sort the map lists of the package')
     r.add_argument('--refresh-metadata', action='store_true', help='regenerate the MapInfo JSON of maps already in the package')
     r.add_argument('--package-title', default=None)
+    r.add_argument('--package-description', default=None, help='vista2mcc: ModInfo description of a NEW package')
+    r.add_argument('--title-from', choices=('language', 'header'), default='language',
+                   help="vista2mcc: map titles from the header language pack (default) or the header's map name")
     r.add_argument('--report', default=None, help='write the JSON result here')
     r.add_argument('--settings', default=None, help='settings.json to use (default %%APPDATA%%\\H2MapConverter\\settings.json)')
     r.add_argument('--no-remember', action='store_true')
@@ -1203,6 +1210,7 @@ def main(argv=None):
             kinds=('multiplayer', 'solo') if a.kind == 'all' else (a.kind,), limit=a.limit, force=a.force, overwrite=a.overwrite,
             suffix=a.suffix, avoid_stock_names=a.avoid_stock_names, matg=a.matg, mp_info_dir=os.path.abspath(a.mp_info_dir) if a.mp_info_dir else None, isolate=a.isolate, jobs=a.jobs, timeout=a.timeout, hash_duplicates=not a.no_dedupe, hash_sources=not a.no_hash,
             sort_maps=not a.keep_order, refresh_metadata=a.refresh_metadata, package_title=a.package_title or st['package_title'],
+            package_description=a.package_description or EX.DEFAULT_DESCRIPTION, title_from=a.title_from,
             remember=not a.no_remember, recursive=not a.no_recursive, settings_path=a.settings, report=a.report, quiet=a.quiet, list_plan=a.list,
             cancel_file=a.cancel_file, announce=a.announce)
         res = run_batch(os.path.abspath(a.root), opts)

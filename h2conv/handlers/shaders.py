@@ -46,6 +46,8 @@ from .. import bitmaps as B
 from .. import donor as D
 from .. import shader_params as SPM
 from .. import tagtree as T
+from .. import vsfix as VSF
+from .. import rtxfix as RTX
 
 NULL = 0xFFFFFFFF
 
@@ -659,10 +661,88 @@ def fix_log_dims(ctx, shad_root, donor_cache=None):
     return n
 
 
+def foliage_fix(ctx, shad_root):
+    """vsfix 'foliage_fix' (default on, opt out: opts['foliage_fix'] = False / --no-foliage-fix): the alpha-test shader templates
+    tex_bump_alpha_test_single_pass (Bitmaps[4] = shaders\\default_bitmaps\\bitmaps\\alpha_white) and tex_bump_alpha_test (Bitmaps[1] =
+    ...gray_50_percent) feed a 4x4 DXT1 PLACEHOLDER bitmap to a texture stage of Vista's pass lightmap_tex_detail_alpha_test, which MCC's DX11
+    version of the pass does not have and which breaks the foliage on NVIDIA.  Project Cartographer nulls these two slots at map load (by name,
+    first match); the converter writes them as NONE (datum 0xFFFFFFFF, Bitmap Index 0, Log Bitmap Dimension 0.0 - the stock NONE element) so the
+    map does not depend on that runtime fix.  The engine binds rasterizer\\default_2d (alpha 1) for a NONE slot (halo2.exe sub_65F600).
+    Returns 1 when a slot was cleared.  See h2conv.vsfix."""
+    if (ctx.opts or {}).get('foliage_fix', True) is False:
+        return 0
+    pps = _blk(shad_root, 'Postprocess Definition')
+    if len(pps) != 1:
+        return 0
+    lab = D.out_label(ctx, shad_root.u32(OFF_TEMPLATE + 4))
+    ent = VSF.NVIDIA_TABLE.get(lab[1]) if lab is not None and lab[0] == 'stem' else None
+    if ent is None:
+        return 0
+    slot, bname = ent
+    bms = _blk(pps[0], 'Bitmaps')
+    if len(bms) <= slot:
+        return 0
+    el = bms[slot]
+    d = el.u32(0)
+    if d in (NULL, 0):
+        return 0
+    bl = D.out_label(ctx, d)
+    if bl is None or bl[0] != 'bitm' or bl[1] != bname:
+        return 0
+    el.set_u32(0, NULL)
+    el.set_u32(4, 0)
+    el.set_f32(8, 0.0)
+    ctx.stats['vsfix:foliage_slots_cleared'] += 1
+    ctx.stats['vsfix:foliage_slots_cleared:' + lab[1].rsplit('\\', 1)[-1]] += 1
+    return 1
+
+
 @D.post_hook('shad')
 def _donor_shad_hook(ctx, root, cache, entry):
     """Donor-imported shad: Vista data is consistent already; only the bitmap sizes may differ in the output."""
+    if foliage_fix(ctx, root):
+        sync_predicted_resources(ctx, root)
     fix_log_dims(ctx, root, cache)
+
+
+@D.post_hook('vrtx')
+def _donor_vrtx_hook(ctx, root, cache, entry):
+    """vsfix 'reflection_vs_fix' (default on, opt out: opts['reflection_vs_fix'] = False / --no-reflection-vs-fix): the stock Vista vertex shader
+    rasterizer\\vertex_shaders_dx9\\transparent_generic_reflection adds only two of its three fade-test axes; every class blob gets a
+    one-instruction fix (h2conv.vsfix.patch_blob).  Blobs that are not the stock program are left untouched (stats vsfix:reflection_vs_other)."""
+    if (ctx.opts or {}).get('reflection_vs_fix', True) is False:
+        return
+    name = (getattr(entry, 'name', None) or '').lower()
+    if name != VSF.REFLECTION_VRTX:
+        return
+    patched, fixed, other, _det = VSF.patch_vrtx_root(root)
+    ctx.stats['vsfix:reflection_vs_tags'] += 1
+    ctx.stats['vsfix:reflection_vs_classes_patched'] += patched
+    ctx.stats['vsfix:reflection_vs_classes_already_fixed'] += fixed
+    if other:
+        ctx.stats['vsfix:reflection_vs_other'] += other
+        ctx.warn('vsfix_reflection_vs_other', '%s: %d class blob(s) are not the stock program - left unfixed' % (name, other), name)
+
+
+@D.post_hook('spas')
+def _donor_spas_hook(ctx, root, cache, entry):
+    """rtxfix (OPT-IN, opts['rtx_foliage_fix'] / --rtx-foliage-fix): the alpha-test foliage pass lightmap_tex_detail_alpha_test[_clamped] declares texture stage 4 as a CUBE sampler in its
+    per-vertex implementation while the template binds the 2D alpha_white bitmap there - RTX / GTX 16 GPUs return transparent black for that and the alpha test discards the whole object.
+    Every pixel shader blob that declares a cube s4 gets the 2D declaration (one dword, h2conv.rtxfix.patch_ps_blob).  Anything unexpected leaves the pass as it is (warning)."""
+    if (ctx.opts or {}).get('rtx_foliage_fix', True) is False:     # DEFAULT ON since 2026-10-21 (confirmed in game on RTX)
+        return
+    name = getattr(entry, 'name', None) or ''
+    if not RTX.affected_pass(name):
+        return
+    try:
+        st = RTX.patch_spas_root(root)
+    except ValueError as ex:
+        ctx.stats['rtxfix:pass_refused'] += 1
+        ctx.warn('rtxfix_pass_refused', '%s: %s - left unfixed' % (name, ex), name)
+        return
+    ctx.stats['rtxfix:passes_patched'] += 1
+    ctx.stats['rtxfix:pixel_shader_blobs_patched'] += st['patched']
+    ctx.stats['rtxfix:pixel_shader_blobs_unchanged'] += st['unchanged']
 
 
 # ================================================================================================
@@ -1201,6 +1281,40 @@ def sync_predicted_resources(ctx, vis_root):
     return True
 
 
+def apply_shader_override(ctx, vis_node, name):
+    """Per-map shader overrides (h2conv/shader_overrides.py, data/shader_overrides.json): ops on the finished arrays of one named shader of one named
+    input map (chronopolis couch: diffuse_color / diffuse_color_offset x 0.5).  Returns the number of Pixel Constants changed (0 = no entry)."""
+    if not name or getattr(ctx, 'cur_src', 'src') != 'src':
+        return 0
+    from .. import shader_overrides as SO
+    try:
+        scen = ctx.src.scenario.name
+    except Exception:                                              # noqa: BLE001
+        return 0
+    ops = SO.lookup(scen, name)
+    if not ops:
+        return 0
+    pps = _blk(vis_node, 'Postprocess Definition')
+    if len(pps) != 1:
+        return 0
+    pcs = _blk(pps[0], 'Pixel Constants')
+    n = 0
+    for op in ops:
+        f = float(op.get('factor', 1.0))
+        for i in op.get('scale_pc', ()):
+            if i < len(pcs):
+                old = bytes(pcs[i].data)
+                new = SO.scale_bytes(old, f)
+                if new != old:
+                    pcs[i].data[:] = new
+                    n += 1
+                    ctx.warn('shad_override', 'PC[%d] %s -> %s (x%g, shader_overrides.json for %s)' % (i, old[:4].hex(), new[:4].hex(), f, scen), name)
+    if n:
+        ctx.stats['shad_override:applied'] += 1
+        ctx.stats['shad_override:pixel_constants'] += n
+    return n
+
+
 @node_handler('shad', '', prio=150)
 def shad_root(ctx, mcc_node, vis_node):
     # 1. Shader LOD Bias
@@ -1220,8 +1334,10 @@ def shad_root(ctx, mcc_node, vis_node):
                 bias, nb, fac, DEPTH_BIAS_FLOOR), name)
     tier = reconcile(ctx, mcc_node, vis_node, name)
     ctx.stats['shad_tier:%s' % tier] += 1
+    apply_shader_override(ctx, vis_node, name)
+    cleared = foliage_fix(ctx, vis_node)               # vsfix: before the log dimensions / predicted resources are settled
     fix_log_dims(ctx, vis_node)
-    if tier not in ('D', 'none', 'notemplate', 'unresolved', 'nostem', 'sub', 'ce'):
+    if cleared or tier not in ('D', 'none', 'notemplate', 'unresolved', 'nostem', 'sub', 'ce'):
         sync_predicted_resources(ctx, vis_node)
 
 

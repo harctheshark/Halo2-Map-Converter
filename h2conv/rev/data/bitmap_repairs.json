@@ -1,0 +1,63 @@
+{
+  "_doc": [
+    "Shaders whose Vista compile holds rasterizer\\invalid (the tool's red/green 'missing bitmap' checker) in a postprocess Bitmaps slot because the",
+    "author's tags folder lacked a stock detail map.  slots: Vista postprocess slot -> the bitmap every intact copy of the shader carries there.",
+    "match: slots that must hold these bitmaps for the repair to apply (the shader is the same revision as the evidence).",
+    "Evidence (2026-10-27, H2MT S3WAGE PLANT): Bungie's stock Vista copies of forerunner_rusted_blue / _grey; 9 / 13 community maps with intact copies;",
+    "S3WAGE_PLANT_OLD_H2MT + Sewage_Plant_H2MT (panels_generic*); S3WAGE_PLANT_OLD_H2MT + Sanctuary_B_H2MT (floors\\rock).  Every repair bitmap is a stock MCC tag."
+  ],
+  "shaders": {
+    "scenarios\\shaders\\forerunner\\industrial\\metals\\forerunner_rusted_blue": {
+      "match": {"0": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\forerunner_rusted_blue_bump",
+                "1": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\forerunner_rusted_blue"},
+      "slots": {"2": "scenarios\\bitmaps\\detail_maps\\nature\\rock\\sandstone",
+                "3": "scenarios\\bitmaps\\detail_maps\\metal\\metal_crackle"}
+    },
+    "scenarios\\shaders\\forerunner\\industrial\\metals\\forerunner_rusted_grey": {
+      "match": {"0": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\forerunner_rusted_blue_bump",
+                "1": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\forerunner_rusted_grey"},
+      "slots": {"2": "scenarios\\bitmaps\\detail_maps\\metal\\metal_rusted",
+                "3": "scenarios\\bitmaps\\detail_maps\\metal\\metal_crackle"}
+    },
+    "scenarios\\shaders\\forerunner\\industrial\\metals\\panels_generic": {
+      "match": {"0": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\panel_thin_strips_bump",
+                "2": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\panel_thin_strips_rusted"},
+      "slots": {"3": "scenarios\\bitmaps\\detail_maps\\metal\\metal_crackle"}
+    },
+    "scenarios\\shaders\\forerunner\\industrial\\metals\\panels_generic_outdoor": {
+      "match": {"0": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\panel_thin_strips_bump",
+                "2": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\panel_thin_strips_rusted"},
+      "slots": {"3": "scenarios\\bitmaps\\detail_maps\\metal\\metal_crackle"}
+    },
+    "scenarios\\shaders\\forerunner\\industrial\\metals\\panels_generic_burnt": {
+      "match": {"0": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\panel_thin_strips_bump",
+                "2": "scenarios\\bitmaps\\forerunner\\industrial\\metals\\panel_thin_strips_rusted"},
+      "slots": {"3": "scenarios\\bitmaps\\detail_maps\\metal\\metal_crackle"}
+    },
+    "scenarios\\shaders\\forerunner\\industrial\\floors\\rock": {
+      "match": {"2": "scenarios\\bitmaps\\forerunner\\industrial\\floors\\rock"},
+      "slots": {"0": "scenarios\\bitmaps\\detail_maps\\nature\\rock\\rock_cave1_bump"}
+    },
+    "_evidence_2": "lift_effect / invisible / turf_metal: Bungie's stock Vista copies (07a/07b/gemini; 17 stock maps; turf + street_sweeper). tripmine: Collateral_H2_5 / Collateral_v2 / Nightscape H2MT.",
+    "scenarios\\shaders\\solo\\highcharity\\lift_effect": {
+      "match": {"2": "scenarios\\bitmaps\\solo\\highcharity\\high_lift_effect"},
+      "slots": {"0": "objects\\powerups\\active_camouflage\\bitmaps\\powerup_noise_1",
+                "1": "objects\\powerups\\active_camouflage\\bitmaps\\powerup_noise_2"}
+    },
+    "scenarios\\shaders\\forerunner\\industrial\\glass\\invisible": {
+      "match": {"0": "shaders\\default_bitmaps\\bitmaps\\default_additive_cube_map",
+                "1": "shaders\\default_bitmaps\\bitmaps\\default_multiplicative",
+                "2": "shaders\\default_bitmaps\\bitmaps\\default_detail"},
+      "slots": {"3": "incompetent\\bitmaps\\gray_clouds_gray_alpha"}
+    },
+    "scenarios\\shaders\\multi\\turf\\turf_metal": {
+      "match": {"3": "scenarios\\bitmaps\\detail_maps\\metal\\metal_crackle"},
+      "slots": {"2": "scenarios\\bitmaps\\solo\\earthcity\\base_metal"}
+    },
+    "objects\\weapons\\equipment\\trip_mine\\shaders\\tripmine": {
+      "match": {"0": "objects\\weapons\\equipment\\trip_mine\\bitmaps\\tripmine_bump",
+                "2": "objects\\weapons\\equipment\\trip_mine\\bitmaps\\tripmine"},
+      "slots": {"3": "scenarios\\bitmaps\\detail_maps\\metal\\metal_curvedscratch"}
+    }
+  }
+}

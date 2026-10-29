@@ -38,6 +38,7 @@ from .. import paths as _paths
 from .. import plugins as P
 from .. import tagtree as T
 from . import handlers as H
+from ..objtype import layout_group
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PKG = os.path.dirname(HERE)
@@ -636,8 +637,11 @@ def empty_tag_node(ctx, group):
 
 
 def convert_vista_tag(ctx, vtag, cache=None, handlers=True):
-    """Generic conversion of one Vista tag: decode with the Vista layouts, convert_node into the MCC layout."""
+    """Generic conversion of one Vista tag: decode with the Vista layouts, convert_node into the MCC layout.  An object tag whose
+    data is another object type (h2conv.objtype) is decoded and converted with THAT group's layouts."""
     group = vtag.group
+    if vtag.addr:
+        group = layout_group(vtag.group, (cache or ctx.cur_cache).read_addr, vtag.addr, ctx.lay_vista)
     mlay = ctx.lay_mcc.get(group)
     if mlay is None:
         raise KeyError('no MCC layout for group %r' % group)
@@ -666,7 +670,11 @@ def convert_tag(ctx, entry):
     ctx.cur_entry = entry
     strict = ctx.opts.get('strict')
     try:
-        fn = H.tag_handler_for(entry.group)
+        _c = ctx.cache_for(entry.src_map)
+        _vt = _c.tags[entry.src_index]
+        aliased = _vt.addr and layout_group(entry.group, _c.read_addr, _vt.addr, ctx.lay_vista) != entry.group
+        # a weapon entry whose data is a machine (h2conv.objtype): the per-group handler would treat it as a weapon - generic path only
+        fn = None if aliased else H.tag_handler_for(entry.group)
         if fn is not None and not ctx.opts.get('no_tag_handlers'):
             try:
                 root = fn(ctx, entry)
@@ -1044,7 +1052,8 @@ class RevCtx(object):
                     break
             else:
                 raise KeyError('Vista placeholder #%d %s %s not found in any shared map' % (tag.index, tag.group, tag.name))
-        return T.decode_tag(c.read_addr, self.lay_vista[tag.group], tag.addr, tag.group)
+        g = layout_group(tag.group, c.read_addr, tag.addr, self.lay_vista)               # h2conv.objtype: the data's own object type
+        return T.decode_tag(c.read_addr, self.lay_vista[g], tag.addr, g)
 
     def decode_mcc(self, cache, tag):
         """Decode an MCC tag of an MCC reference map (stock shared maps / donors) with the MCC layouts."""

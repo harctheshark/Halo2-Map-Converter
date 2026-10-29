@@ -39,6 +39,9 @@ import time
 from . import paths as _paths
 from . import plugins as P
 from . import tagtree as T
+from . import remastered_pairs as RP
+from . import vsfix as _VSF
+from . import rtxfix as _RTX
 from .vista_cache import VistaCache, VistaTag, FIRST_SHARED_TAG_INSTANCE_INDEX
 
 NULL = 0xFFFFFFFF
@@ -134,6 +137,9 @@ class PlannerError(Exception):
     pass
 
 
+_RV_GROUPS = ('vrtx', 'spas', 'stem')          # groups of the vsfix reflection chain (h2conv.vsfix)
+
+
 def local_datum(index):
     """Datum of the k-th local tag (see module doc)."""
     return ((0x8000 | ((SALT_BASE + index) % 0x7FFF)) << 16) | (index & 0xFFFF)
@@ -141,6 +147,16 @@ def local_datum(index):
 
 def _nk(group, name):
     return (group, (name or '').lower())
+
+
+def _refs_datum(root, datum):
+    """True when any tag reference of the decoded tag (tagref with or without its group) holds `datum`."""
+    for n in root.iter_nodes():
+        for f in n.fields:
+            if f.type.lower() == 'tagref':
+                if struct.unpack_from('<I', n.data, f.offset + (4 if f.size == 8 else 0))[0] == datum:
+                    return True
+    return False
 
 
 _LAY = {}
@@ -370,7 +386,7 @@ class PlanEntry(object):
     a tag that only exists on the Vista side, e.g. a donor-closure addition).  out_index/out_datum: local index/datum for
     convert/donor; the Vista shared.map index/datum for link; None/0xFFFFFFFF for drop."""
     __slots__ = ('src_map', 'src_index', 'group', 'name', 'action', 'out_index', 'out_datum', 'donor', 'redirect',
-                 'reason', 'twin', 'src_size', 'parent', 'redirect_key', 'shared_refs', 'no_closure', 'ce_port', 'mainmenu_raw')
+                 'reason', 'twin', 'src_size', 'parent', 'redirect_key', 'shared_refs', 'no_closure', 'ce_port', 'mainmenu_raw', 'pair_how', 'pair_target')
 
     def __init__(self, src_map, src_index, group, name, action, reason='', donor=None, redirect=None):
         self.src_map = src_map
@@ -390,6 +406,8 @@ class PlanEntry(object):
         self.no_closure = False       # donor whose references are NOT followed (targets absent from the output become null)
         self.shared_refs = False      # donor clone of a Vista SHARED tag (training-off globals): every reference stays on the shared slot
         self.ce_port = None           # ce_port.decision() dict: a Halo-CE port template (stem / spas) converted from the mod with D3D9 code from the registry
+        self.pair_how = None          # sound_remastered drop: how its classic sound was found ('path' | 'mcc_link' | 'override')
+        self.pair_target = None       # ... and that classic sound's name (lower case)
         self.mainmenu_raw = False     # donor from mainmenu.map whose pixel pointers stay on mainmenu.map (rebased) instead of being copied (the preview bitmap)
 
     def __repr__(self):
@@ -1113,6 +1131,10 @@ class _Builder(object):
         self.stock = None                  # the stock MCC shared.map (custom-shared only)
         self.cmp_shared = self.cmp_src = None
         self._ce_memo = {}                 # key -> ce_port decision | None  (Halo-CE port templates, see _ce_decision)
+        self._rv_memo = {}                 # Vista shared tag index -> bool  (vsfix: part of the transparent_generic_reflection chain, see _rv_affected)
+        self._rtx_memo = {}                # Vista shared tag index -> bool  (rtxfix: lightmap_tex_detail_alpha_test[_clamped] and the templates that use them, see _rtx_affected)
+        self._inv_memo = {}                # Vista shared tag index -> bool  (the twin references shaders\invalid, see _twin_has_invalid_shader)
+        self._reach_with = {}              # id(donor entry) -> [CE-port entries to expand with it]  (ensure_vista: a private-named CE pass the Vista name must NOT resolve to)
         self._detect_custom_shared()
 
     # ---- custom shared.map (workshop mods), step 2 ------------------------------------------------------------------------------------
@@ -1216,7 +1238,127 @@ class _Builder(object):
         return e
 
     def _vista_twin(self, group, name):
-        return self.vsh_name.get(_nk(group, name)) if self.linking else None
+        if not self.linking:
+            return None
+        vt = self.vsh_name.get(_nk(group, name))
+        if vt is not None and vt.group in _RV_GROUPS and self._rv_affected(vt):
+            return None            # vsfix: NOT linked - a local donor copy (same name) carries the fixed vertex shader, see _rv_affected
+        if vt is not None and vt.group in ('spas', 'stem') and self._rtx_affected(vt):
+            return None            # rtxfix (opt-in): NOT linked - a local donor copy (same name) carries the repaired pixel shaders, see _rtx_affected
+        return vt
+
+    # ---- rtxfix: the alpha-test foliage pass whose stage 4 is a cube sampler in implementation 1 (h2conv.rtxfix) ------------------------
+    def _rtx_affected(self, vt):
+        """True when the Vista SHARED tag `vt` (group spas / stem) is lightmap_tex_detail_alpha_test[_clamped] or a template one of whose passes is, and the opt-in fix is on
+        (opts['rtx_foliage_fix']).  A linked shared tag cannot change, so these are planned as LOCAL donor copies under their own names (handlers/shaders.py `_donor_spas_hook`
+        edits the pass): a converted shader reaches them through local template -> local pass, a same-name local tag being what the name lookup finds."""
+        if self.opts.get('rtx_foliage_fix', True) is False:          # DEFAULT ON since 2026-10-21 (confirmed in game on RTX)
+            return False
+        r = self._rtx_memo.get(vt.index)
+        if r is not None:
+            return r
+        self._rtx_memo[vt.index] = False                       # recursion guard
+        r = False
+        try:
+            if vt.group == 'spas':
+                r = _RTX.affected_pass(vt.name)
+            elif vt.addr:
+                lay = layouts('vista')[vt.group]
+                root = T.decode_tag(self.vsh.read_addr, lay, vt.addr, vt.group)
+                pps = root.block('Postprocess Definition')
+                for ps in (pps[0].block('Passes') if pps else ()):
+                    d = ps.u32(ps.field('Pass').offset + 4)
+                    t2 = self.vsh.tags[d & 0xFFFF] if d not in (0, NULL) and (d & 0xFFFF) < len(self.vsh.tags) else None
+                    if t2 is not None and t2.datum == d and t2.group == 'spas' and _RTX.affected_pass(t2.name):
+                        r = True
+                        break
+        except Exception as ex:                                # noqa: BLE001
+            self.warn('rtxfix', '%s %s: %s' % (vt.group, vt.name, ex))
+            r = False
+        self._rtx_memo[vt.index] = r
+        if r:
+            self.plan.stats['rtxfix:shared_tag_localised:%s' % vt.group] += 1
+        return r
+
+    # ---- vsfix: the transparent_generic_reflection vertex shader chain (h2conv.vsfix) -----------------------------------------------
+    def _rv_affected(self, vt):
+        """True when the Vista SHARED tag `vt` (group vrtx / spas / stem) is the transparent_generic_reflection vertex shader, a pass one of whose
+        implementations uses it, or a template one of whose passes is such a pass - and the fix is on (opts['reflection_vs_fix'], default True).
+        A linked shared tag cannot be changed, so these tags are planned as LOCAL donor copies under their own (same) names: a converted
+        shader then reaches the fixed vertex shader through local template -> local pass -> local vertex shader (the donor closure follows the
+        references by name, and a same-name local tag is what the name lookup finds).  Shared-linked tags of Vista's own shaders keep the stock
+        program (they are not part of the converted map's shaders).  Decoded from the Vista shared.map once per tag."""
+        if self.opts.get('reflection_vs_fix', True) is False:
+            return False
+        r = self._rv_memo.get(vt.index)
+        if r is not None:
+            return r
+        self._rv_memo[vt.index] = False                        # recursion guard
+        r = False
+        try:
+            if vt.group == 'vrtx':
+                r = (vt.name or '').lower() == _VSF.REFLECTION_VRTX
+            elif vt.addr:
+                lay = layouts('vista')[vt.group]
+                root = T.decode_tag(self.vsh.read_addr, lay, vt.addr, vt.group)
+                pps = root.block('Postprocess Definition')
+                if pps and vt.group == 'spas':
+                    for im in pps[0].block('Implementations'):
+                        d = im.u32(im.field('Vertex Shader').offset + 4)
+                        t2 = self.vsh.tags[d & 0xFFFF] if d not in (0, NULL) and (d & 0xFFFF) < len(self.vsh.tags) else None
+                        if t2 is not None and t2.datum == d and t2.group == 'vrtx' and (t2.name or '').lower() == _VSF.REFLECTION_VRTX:
+                            r = True
+                            break
+                elif pps:
+                    for ps in pps[0].block('Passes'):
+                        d = ps.u32(ps.field('Pass').offset + 4)
+                        t2 = self.vsh.tags[d & 0xFFFF] if d not in (0, NULL) and (d & 0xFFFF) < len(self.vsh.tags) else None
+                        if t2 is not None and t2.datum == d and t2.group == 'spas' and self._rv_affected(t2):
+                            r = True
+                            break
+        except Exception as ex:                                # noqa: BLE001
+            self.warn('vsfix', '%s %s: %s' % (vt.group, vt.name, ex))
+            r = False
+        self._rv_memo[vt.index] = r
+        if r:
+            self.plan.stats['vsfix:shared_tag_localised:%s' % vt.group] += 1
+        return r
+
+    # ---- Vista shared tags that ship with the engine's placeholder shader ---------------------------------------------------------
+    def _twin_has_invalid_shader(self, vt, key, tag):
+        """True when the Vista SHARED tag `vt` references `shaders\\invalid` (the engine's placeholder: its lettered grid texture is drawn
+        instead of the surface) and the MCC tag of the same name does not.  Stock Vista shipped some tags that way and MCC restored them:
+        decorator set scenarios\\decorators\\debris\\debris has shaders\\invalid in Shaders[2] where MCC has base_stucco_rubbletech_decal;
+        stock Vista maps never place that class, plaza (MCC) does (lettered grid on the rubble decals, 2026-10-21).  Linking such a tag because
+        it equals the MCC shared copy would draw the placeholder, so it is converted from MCC instead."""
+        if not vt.addr:
+            return False
+        inv = self.vsh_name.get(_nk('shad', 'shaders\\invalid'))
+        if inv is None:
+            return False
+        r = self._inv_memo.get(vt.index)
+        if r is None:
+            r = False
+            try:
+                lay = layouts('vista').get(vt.group)
+                if lay is not None:
+                    root = T.decode_tag(self.vsh.read_addr, lay, vt.addr, vt.group)
+                    r = _refs_datum(root, inv.datum)
+            except Exception as ex:                                # noqa: BLE001
+                self.warn('invalid-twin', '%s %s: %s' % (vt.group, vt.name, ex))
+            self._inv_memo[vt.index] = r
+        if not r:
+            return False
+        try:                                                       # the MCC tag itself uses the placeholder too: linking changes nothing
+            cache = self.cache_of(key)
+            mi = next((t for t in cache.tags if t.group == 'shad' and (t.name or '').lower() == 'shaders\\invalid'), None)
+            if mi is not None:
+                root = T.decode_tag(lambda a, n: cache.read_at_addr(a, n), self.lay_m[tag.group], tag.addr, tag.group)
+                if _refs_datum(root, mi.datum):
+                    return False
+        except Exception as ex:                                    # noqa: BLE001
+            self.warn('invalid-twin', '%s %s: %s' % (tag.group, tag.name, ex))
+        return True
 
     def _donor_for(self, group, name):
         hits = self.donors.find(group, name)
@@ -1408,6 +1550,59 @@ class _Builder(object):
         self.plan.stats['globals_cloned'] += 1
         return e
 
+    # ---- remastered -> classic sound pairing (h2conv.remastered_pairs) ---------------------------------------------------------
+    def _classic_lookup(self, g, classic):
+        """(MCC tag key, Vista shared tag) of the classic sound `classic` (lower case); (None, None) when neither side has it."""
+        tk = self.src_name.get((g, classic)) or self.msh_name.get((g, classic))
+        if tk is not None:
+            return tk, None
+        vt = self.vsh_name.get((g, classic)) if self.linking else None
+        return (None, vt) if vt is not None else (None, None)
+
+    def _remastered_links(self):
+        if getattr(self, '_rem_links', None) is None:
+            links = {}
+            try:
+                if self.msh is not None:
+                    links = RP.merge_links(RP.mcc_links(self.msh), RP.mcc_links(self.src, fallback=self.msh))
+                else:
+                    links = RP.mcc_links(self.src)
+            except Exception as ex:                       # noqa: BLE001
+                self.warn('remastered_links', 'MCC remastered links unreadable: %s' % ex)
+            self._rem_links = links
+            self._rem_overrides = RP.load_overrides(self.opts.get('remastered_overrides'))
+        return self._rem_links
+
+    def _remastered_classic(self, g, lo):
+        """The classic sound (lower case name, how) that replaces the remastered tag `lo`, (None, None) = none.  Order: override file, MCC link
+        (exactly one classic tag points at it), path mapping.  The first one that names a tag that exists wins; `no_remastered_pairs` keeps
+        only the path mapping."""
+        path = RP.path_twin(lo)
+        if self.opts.get('no_remastered_pairs') or os.environ.get('H2CONV_NO_REMASTERED_PAIRS'):
+            if path is not None and any(self._classic_lookup(g, path)):
+                return path, 'path'
+            return None, None
+        links = self._remastered_links()
+        if lo in self._rem_overrides:
+            ov = self._rem_overrides[lo]
+            if ov is None:
+                return None, None                         # the override file keeps this one dropped
+            if any(self._classic_lookup(g, ov)):
+                return ov, 'override'
+            self.warn('remastered_override', 'override %s -> %s: the classic tag exists neither in the maps nor in Vista shared.map' % (lo, ov))
+        linked = RP.unique_link(links, g, lo)
+        if linked is not None and not RP.same_family(lo, linked):
+            self.warn('remastered_pair_suspect', 'MCC links %s -> %s (different sound families): not applied, add it to remastered_sound_overrides.json to force it' % (lo, linked))
+            linked = None
+        pathok = path if path is not None and any(self._classic_lookup(g, path)) else None
+        if linked is not None and any(self._classic_lookup(g, linked)):
+            if pathok is not None and pathok != linked:
+                self.warn('remastered_pair_conflict', 'MCC links %s -> %s but the path mapping gives %s (the MCC link is used)' % (lo, linked, pathok))
+            return linked, ('path' if linked == pathok else 'mcc_link')
+        if pathok is not None:
+            return pathok, 'path'
+        return None, None
+
     def decide(self, key):
         """Create (and register) the PlanEntry for an MCC tag."""
         tag = self.tag_of(key)
@@ -1452,16 +1647,19 @@ class _Builder(object):
         # --- MCC-only remastered sounds ------------------------------------------------------------------------------
         if g in ('snd!', 'lsnd') and lo.startswith(REMASTERED_PREFIX):
             e = self._register(self._new(key, tag, 'drop', 'MCC-only sound_remastered tag'), key)
-            twin = LEGACY_PREFIX + lo[len(REMASTERED_PREFIX):]
-            tk = self.src_name.get((g, twin)) or self.msh_name.get((g, twin))
-            if tk is not None:
-                e.redirect_key = tk
-            else:
-                vt = self.vsh_name.get((g, twin)) if self.linking else None
-                if vt is not None:
-                    e.redirect = self._ensure_vista_link(vt)
+            classic, how = self._remastered_classic(g, lo)
+            if classic is not None:
+                tk, vt = self._classic_lookup(g, classic)
+                e.pair_how, e.pair_target = how, classic
+                if how != 'path':
+                    e.reason += ' [classic pair via %s: %s]' % (how, classic)
+                    self.plan.stats['remastered_pairs:' + how] += 1
+                if tk is not None:
+                    e.redirect_key = tk
                 else:
-                    e.reason += ' (no legacy twin: references become null)'
+                    e.redirect = self._ensure_vista_link(vt)
+            else:
+                e.reason += ' (no legacy twin: references become null)'
             return e
         # --- MCC 'empty' tags (size 0, address aliasing another tag) -------------------------------------------------------
         if tag.empty:
@@ -1512,6 +1710,9 @@ class _Builder(object):
         vt = self._vista_twin(g, n)
         if vt is not None:
             act, why = self._link_verdict(key, tag)
+            if act == 'link' and self._twin_has_invalid_shader(vt, key, tag):
+                act, why = 'convert', 'the Vista shared.map copy references shaders\\invalid where the MCC tag has a real shader'
+                self.plan.stats['invalid_twin_localised:%s' % g] += 1
             if act == 'link':
                 if g == 'hudg' and self.train_hudg is not None and nk == self.train_hudg[0]:
                     # local (converted) globals whose hudg is unmodified: a linked hudg would keep Vista's training prompts
@@ -2002,10 +2203,20 @@ class _Builder(object):
             e = self._ensure_vista_link(shared_vt)
         else:
             mk = self.src_name.get(nk) or self.msh_name.get(nk)
+            ce_shadow = None
             if mk is not None:
-                return self.ensure_key(mk, parent)
+                e2 = self.ensure_key(mk, parent)
+                if not (e2.ce_port and (e2.name or '').lower() != (vt.name or '').lower()):
+                    return e2
+                # rtxfix (custom shared.map): the mod's tag of this name is a Halo-CE port under a PRIVATE name (<name>__ce, ce_port _ce_entry): a donor's reference to the
+                # Vista name must reach the Vista tag - here a LOCAL donor copy, the shared one being localised (rtx) so that the hook can repair it - not the CE port, which
+                # another name-lookup (donor.out_datum) could never find under the Vista name anyway.  The CE port is still planned (and expanded) as before.
+                ce_shadow = e2
             e = PlanEntry(None, None, vt.group, vt.name, 'donor', 'closure of a Vista donor tag (%s)' % vfile, donor=(vfile, vidx))
             self._register(e)
+            if ce_shadow is not None:
+                self._reach_with.setdefault(id(e), []).append(ce_shadow)
+                self.plan.stats['rtxfix:ce_private_shadow:%s' % vt.group] += 1
         if e.parent is None:
             e.parent = parent
             self.children[id(parent)].append(e)
@@ -2030,6 +2241,7 @@ class _Builder(object):
                 continue
             self.reached.add(id(e))
             nxt = []
+            nxt.extend(self._reach_with.pop(id(e), ()))
             if e.action == 'convert' and e.src_map is not None:
                 key = (e.src_map, e.src_index)
                 for tk, off in self.mcc_refs(key):

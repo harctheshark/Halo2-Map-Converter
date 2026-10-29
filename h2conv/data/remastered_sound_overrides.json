@@ -1,0 +1,3 @@
+{
+  "_comment": "Remastered -> classic sound overrides. Key = the sound_remastered path, value = the classic (sound\\...) path Vista plays instead; null or an empty string keeps that remastered sound dropped (references become null). Applies to snd! and lsnd, wins over the MCC link and the path mapping. Paths are not case sensitive."
+}

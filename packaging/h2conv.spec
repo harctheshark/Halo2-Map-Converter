@@ -82,7 +82,7 @@ binaries = [(os.path.join(ROOT, 'h2conv', 'third_party', 'opus.dll'), os.path.jo
 # Python packages that must never end up in the bundle even if a hook or a user-site package would pull them in.  (numpy.f2py is NOT excluded: numpy 2
 # lists it in numpy.__all__, and scipy does `from numpy import *`.)
 excludes = ['pytest', 'matplotlib', 'pandas', 'IPython', 'PIL', 'PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'wx', 'sphinx', 'jupyter', 'notebook',
-            'distutils', 'setuptools', 'pkg_resources', '_distutils_hack']
+            'distutils', 'setuptools', 'pkg_resources', '_distutils_hack', 'Cython', 'pyximport']
 
 
 def version_info(original, description):

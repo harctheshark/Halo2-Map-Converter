@@ -16,7 +16,7 @@ directions: with a **window program** (pick a folder, let it find the maps, conv
 In the Windows zip the same commands are `h2conv.exe convert`, `h2conv.exe rev`, `h2conv.exe batch` and so on
 (see [The Windows programs](#the-windows-programs)); the examples in this file are written for Python.
 
-**Version 0.3.0, a pre-release.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
+**Version 0.4.0, a pre-release.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
 program) and `h2conv.exe` (the command line), which needs no Python, and this **source** (a Python package, run with `py -3 -m h2conv`).
 Both do the same conversions (see "Status" below for how that was checked).
 It has been run over hundreds of community maps and several fixes were confirmed by playing, but most converted maps have not
@@ -28,6 +28,14 @@ into the scenario's **multiplayer info block**, and `--mp-info`, `--mp-info-dir`
 language, a preview image); how to get the **full custom-map-list entry and team changing in the lobby** for a map with its own globals;
 several fixes for campaign maps started from Cartographer's multiplayer lobby (see [RELEASE_NOTES.md](RELEASE_NOTES.md)).  0.2.0 added the workshop maps with their own `shared.map`, the
 tutorial prompts off by default and the MCC menu title in the map list.
+
+**New in 0.4.0:** converted maps (MCC to Vista) now carry three rendering fixes by default, each with an off switch: foliage that vanished on NVIDIA
+cards (`--no-foliage-fix`, `--no-rtx-foliage-fix`) and the fading of glass and plasma surfaces (`--no-reflection-vs-fix`); sound references to MCC's remastered
+sounds are redirected to the classic sound when MCC links the two (`--no-remastered-pairs`, `--remastered-overrides`); `--sound-reduce` can shrink chosen sounds (opt-in); a
+short table of per-map shader overrides (today: the couch of `chronopolis`).  Vista to MCC repairs the red and green missing-texture slots (`rasterizer\invalid`) of
+known community shaders, gives a multiplayer map without starting equipment the stock entry, and reads tags whose data is another kind of object than their slot says;
+the batch command has `--title-from` and `--package-description`.  **A custom list-preview image is not supported** (the `preview_bitmap_file` key of the info file is
+ignored with a warning).  See [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 ### Limits you should know before you start
 
@@ -118,7 +126,7 @@ the table of compiled shader programs for the Halo CE ports, see THIRD_PARTY_NOT
 | you need | for |
 |---|---|
 | Windows 10 or 11, 64-bit | everything (the tool uses Windows system DLLs and a below-normal process priority) |
-| Python 3.10 or newer, 64-bit (from python.org; keep the installer's "py launcher" option so the `py` command exists, and its default "tcl/tk and IDLE" option, which provides `tkinter` for the window program), with `numpy` and `scipy`: `py -3 -m pip install -r requirements.txt` | the **source** download only; the Windows zip carries its own.  Only Python 3.10.5 with numpy 2.2.6 and scipy 1.15.3 has been tested |
+| Python 3.10 or newer, 64-bit (from python.org; keep the installer's "py launcher" option so the `py` command exists, and its default "tcl/tk and IDLE" option, which provides `tkinter` for the window program), with `numpy` and `scipy`: `py -3 -m pip install -r requirements.txt` | the **source** download only; the Windows zip carries its own.  Only Python 3.10.5 with numpy 2.2.6 and scipy 1.15.3 has been tested: **use Python 3.10** (`py -3.10 -m h2conv ...`) if several Pythons are installed, because `py -3` may pick a newer one that lacks numpy |
 | the Microsoft Visual C++ 2015-2022 x64 runtime | MCC to Vista: `opus.dll` needs it.  The Python installer already provides `vcruntime140.dll`; if loading `opus.dll` fails, install the runtime from Microsoft.  The Windows zip carries these DLLs itself |
 | **Halo: The Master Chief Collection** (Steam), with Halo 2 installed | both directions: stock MCC maps (donor tags), `textures.dat`, `sounds_*.dat` (the `halo2\h2_maps_win64_dx11` folder) |
 | **Halo 2 for Windows Vista with Project Cartographer** installed | both directions: its `maps` folder must hold the stock Vista maps (`shared.map`, `mainmenu.map`, `single_player_shared.map` and the other stock maps).  They are read, never written |
@@ -168,7 +176,7 @@ or modded MCC maps in a sub-folder or in another folder.
 
 ## The Windows programs
 
-The release's **Windows zip** (`Halo2-Map-Converter-0.3.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
+The release's **Windows zip** (`Halo2-Map-Converter-0.4.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
 `Halo2MapConverter`, with two programs that share their libraries and need no Python and no installer:
 
 * **`Halo 2 Map Converter.exe`** - the window program.  You choose a root folder; it scans that folder and every folder below it, recognises
@@ -277,7 +285,7 @@ py -3 -m h2conv.batch run "<folder with Vista maps>" --direction vista2mcc --mcc
 
 `--direction auto` (the default) converts Vista maps to MCC and MCC maps to Vista in one pass.  Useful switches: `--only a,b*` and
 `--exclude` (file-name patterns), `--kind multiplayer|solo`, `--limit N`, `--force` (Vista to MCC: convert again even if the package
-already holds this exact source), `--overwrite` (MCC to Vista: replace existing output files), `--avoid-stock-names` (MCC to Vista: remakes of stock maps get a numeric suffix), `--mp-info-dir DIR` (MCC to Vista: a folder of multiplayer info files, one per output map), `--isolate` (every map in its own
+already holds this exact source), `--overwrite` (MCC to Vista: replace existing output files), `--avoid-stock-names` (MCC to Vista: remakes of stock maps get a numeric suffix), `--mp-info-dir DIR` (MCC to Vista: a folder of multiplayer info files, one per output map), `--title-from language|header` (Vista to MCC: take the MapInfo title from the header's language pack, the default, or from the header's map name), `--package-description TEXT` (Vista to MCC: the description of a new Excession package), `--isolate` (every map in its own
 process, so a crash cannot stop the batch; add `--jobs N`, at most 4, to run several at once), `--report result.json`.  Run
 `py -3 -m h2conv.batch run --help` for all of them.  Maps already converted are skipped on the next run, so an interrupted batch can
 simply be started again.
@@ -384,6 +392,11 @@ a bitmap of the map or of Vista's `mainmenu.map`.  The list shows it only when i
 image.  If the map already has a multiplayer info block, its names, descriptions and preview are replaced and the team limits are filled only where the
 map has none; the map id, sort order and flags of an existing block are kept.
 
+The file may also hold `"sound_reduce"`, a list of sound reductions for this map (see `--sound-reduce` in the options table).  **A custom list-preview image is not
+supported:** if the file has the keys `preview_bitmap_file` or `preview_crop`, the converter ignores them, prints the warning `mp_preview_unsupported`
+and the map keeps the preview named by `bitmap`.  (Analysing `halo2.exe` and Cartographer's `xlive.dll` showed that the custom map list never builds the preview
+texture for any custom map, whatever the map file holds.)
+
 ## Tutorial prompts (training)
 
 The tutorial ("training") prompts of Halo 2 drew as an **empty square** on converted multiplayer maps.  Since 0.2.0 they are **off by default**:
@@ -481,6 +494,12 @@ py -3 -m h2conv.excession validate <package folder>     check an Excession mod p
 | `--training-via-script` | turn the tutorial prompts off with a startup script instead of an edit of the map's globals; with `--matg link` the map keeps Vista's shared globals and gets the full map-list entry on an unpatched Cartographer (see "The map list entry, teams and the `halo2.exe` patch") |
 | `--no-checkpoints` | campaign maps: turn the scenario's checkpoint saves into no-ops.  Checkpoints are kept by default |
 | `--keep-hologram-variants` | keep non-default variants of models that have a hologram shader.  By default a placement that uses such a variant gets the model's default variant instead, because the Truth variant of one mod's hologram hangs the graphics card in Vista |
+| `--no-foliage-fix` | keep the placeholder bitmaps (`alpha_white`, `gray_50_percent`) in the alpha-test shaders.  By default those two slots are written as NONE, the workaround Cartographer applies at load, so palm trees and other foliage are not lost on NVIDIA cards |
+| `--no-rtx-foliage-fix` | turn off the repair of alpha-tested foliage that is missing on NVIDIA RTX / GTX 16 cards.  By default the map carries local copies of the pass `lightmap_tex_detail_alpha_test` (and `_clamped`) and of the templates that use it, with the one-dword fix that declares texture stage 4 as 2D instead of a cube |
+| `--no-reflection-vs-fix` | keep Vista's stock vertex shader `transparent_generic_reflection`.  By default the map carries local copies of it and of the passes and templates that use it, with the fade test applied on all three axes: glass and plasma surfaces no longer lose their transparency when the camera crosses a cluster portal |
+| `--no-remastered-pairs` | by default a reference to a `sound_remastered\*` sound is redirected to the classic sound that MCC links to it (when exactly one classic sound does, and both are in the same sound family) or that the override file names, besides the old `sound_remastered\X` to `sound\X` path mapping; this switch keeps only the path mapping |
+| `--remastered-overrides FILE` | use this remastered to classic override file (a JSON object, `"sound_remastered\x": "sound\y"`, null keeps a sound dropped) instead of `h2conv\data\remastered_sound_overrides.json` |
+| `--sound-reduce "GLOB=rate:22050,mono"` | opt-in, repeatable: shrink the `snd!` tags whose path matches GLOB (`*` and `?`, not case sensitive) by averaging stereo to mono (`mono`) and/or resampling to `rate:22050`, `32000` or `44100` (a rate is never raised).  Everything else stays as authored.  One `snd_reduced` warning per sound.  The same list can be set per map as `"sound_reduce"` in the info file |
 | `--shared-map FILE` | the custom `shared.map` of the workshop mod the map was built against (default: found automatically, see "Maps from workshop mods") |
 | `--matg hud` (default) | use Vista's globals, except use the map's own globals when the map customised its HUD text (custom pickup prompts keep working).  Where Vista's globals are used, the map gets its own copy of them without the tutorial prompts (`--keep-training` links the shared ones instead) |
 | `--matg link` / `local` / `auto` | always use Vista's globals / always convert the map's globals / convert them only if they differ from stock.  Local globals cost the map-list entry its description, preview and team changing unless `halo2.exe` is patched (Cartographer's list check rejects them); `link` gives up the map's own globals |
@@ -527,7 +546,7 @@ known-issues file), plus the same three folder options.
 
 * [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) - architecture in plain language and the engine facts it relies on
 * [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) - problems met and solved, what is still open, workarounds
-* [RELEASE_NOTES.md](RELEASE_NOTES.md) - what is in 0.3.0 (and 0.2.0, 0.1.0)
+* [RELEASE_NOTES.md](RELEASE_NOTES.md) - what is in 0.4.0 (and 0.3.0, 0.2.0, 0.1.0)
 * [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) - licences of the bundled and required components
 
 ## Credits
