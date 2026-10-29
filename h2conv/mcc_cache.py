@@ -36,8 +36,10 @@ import zlib
 
 try:
     from . import paths as _paths
+    from . import cache_admin as _cache_admin
 except ImportError:      # run as a script
     import paths as _paths
+    import cache_admin as _cache_admin
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.dirname(HERE)
@@ -378,6 +380,7 @@ def ensure_decompressed(path, out_dir=None):
     base = os.path.basename(path)
     dst = os.path.join(out_dir, base)
     if _same_decompressed(hb, dst):
+        _used_copy(out_dir, path, dst, default_dir)
         return dst
     # custom-shared support: a workshop mod's shared.map / mainmenu.map / single_player_shared.map must NEVER take the bare database name in the
     # default cache folder - the planner and MccShared treat <cache>\shared.map as the STOCK shared.map (a mod's file decompressed first filled
@@ -387,9 +390,35 @@ def ensure_decompressed(path, out_dir=None):
         stem, ext = os.path.splitext(base)
         dst = os.path.join(out_dir, '%s.%s%s' % (stem, hashlib.md5(hb).hexdigest()[:8], ext))
         if _same_decompressed(hb, dst):
+            _used_copy(out_dir, path, dst, default_dir)
             return dst
     decompress_map(path, dst)
+    _used_copy(out_dir, path, dst, default_dir)
     return dst
+
+
+def _mark_cache_file_use(path):
+    """A map that is opened straight from the cache folder (already uncompressed there, e.g. the stock shared.map copy) counts as used now."""
+    try:
+        if os.path.normcase(os.path.dirname(os.path.abspath(path))) == os.path.normcase(os.path.abspath(DECOMP_DIR)):
+            _cache_admin.note_used(path)
+            _cache_admin.touch(path)
+    except Exception:                                  # noqa: BLE001
+        pass
+
+
+def _used_copy(out_dir, src, dst, default_dir):
+    """Cache bookkeeping (h2conv.cache_admin), never fatal: the copy counts as used now (its mtime is the least-recently-used order, and the end-of-run
+    trim spares it); in the default cache folder an older copy of the SAME source file (the map was edited and rebuilt: a new header = a new hashed
+    name) is deleted."""
+    try:
+        if default_dir:
+            _cache_admin.register_decompressed(out_dir, src, dst)
+        else:
+            _cache_admin.note_used(dst)
+            _cache_admin.touch(dst)
+    except Exception:                                  # noqa: BLE001
+        pass
 
 
 DATABASE_FILE_NAMES = ('shared.map', 'single_player_shared.map', 'mainmenu.map')
@@ -514,6 +543,7 @@ class MccCache(object):
             self._mm = decompress_to_bytes(self.source_path)
         else:
             self.path = ensure_decompressed(self.source_path, decompress_dir)
+            _mark_cache_file_use(self.path)
             self._fh = open(self.path, 'rb')
             self._mm = mmap.mmap(self._fh.fileno(), 0, access=mmap.ACCESS_READ)
         self.file_size = len(self._mm)

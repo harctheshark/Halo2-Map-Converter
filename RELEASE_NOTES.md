@@ -63,6 +63,12 @@ glass and plasma fading, a washed-out couch colour, remastered sounds), with rep
   written with the layout of what they really hold, padded to the slot's size; MCC reads every weapon's fields at load and crashed on the short data.
 * **Batch:** `--title-from language|header` and `--package-description TEXT`.
 
+### Both directions
+
+* **The cache folder has a size cap.**  The caches (unpacked MCC maps and converted sounds, in `%LOCALAPPDATA%\H2MapConverter\work`) are trimmed to 5 GB at the end of each
+  conversion, least recently used files first; `"cache_limit_gb"` in `settings.json` changes the cap (`0` = no cap).  A cached copy of a map you have edited is replaced.  The window
+  has a **Clear cache** button, and `h2conv cache info`, `cache trim` and `cache clear` do the same from the command line.
+
 ## Fixes
 
 * **Shader data with more than 256 remapping entries was decoded wrongly** (an 8-bit start index where the data has 9 bits).  Five stems of the H2EK maps were affected; all 390 stems

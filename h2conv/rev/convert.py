@@ -906,6 +906,8 @@ def main(argv=None):
         opts['h2ek_maps'] = a.h2ek_maps
     if a.no_h2ek_donors:
         opts['use_h2ek_donors'] = False
+    from .. import cache_admin as _cache
+    _cache.begin_job()
     try:
         rep, _ctx = convert_map(a.input, a.output, a.vista_maps, a.mcc_maps, a.report, opts)
     except (ValueError, PermissionError, FileNotFoundError, FileExistsError, _paths.PathsError) as ex:
@@ -916,6 +918,11 @@ def main(argv=None):
         if a.debug:
             traceback.print_exc()
         return 3
+    finally:                                                         # the end of the job: the maps are closed, then the cache is trimmed to its cap
+        _ctx = None
+        import gc
+        gc.collect()
+        _cache.trim_after_job(None if a.quiet else print)
     return 0 if report_ok(rep) else 1
 
 

@@ -33,6 +33,7 @@ import traceback
 
 from . import __version__
 from . import batch as B
+from . import cache_admin as CA
 from . import excession as EX
 from . import mapinfo as MI
 from . import paths as P
@@ -982,6 +983,38 @@ class Controller(object):
             raise GuiError('The folder %s does not exist.' % folder)
         self.opener(folder)
 
+    # -- the cache (h2conv.cache_admin) ---------------------------------------------------------------
+    def cache_info(self):
+        """Folder, size per category and the size cap of the caches (reads the disk: the window calls it from a thread)."""
+        with self._scope():
+            return CA.info()
+
+    @staticmethod
+    def cache_label(info):
+        """The text of the button: 'Clear cache (1.7 GB)'."""
+        n = info['total_bytes']
+        return 'Clear cache (%s)' % (('%.1f GB' % (n / float(CA.GB))) if n >= CA.GB // 10 else CA.human(n))
+
+    @staticmethod
+    def cache_note(info):
+        lim = info['limit_gb']
+        return 'Cache folder: %s    Size limit: %s' % (info['root'], ('%g GB; the oldest files are removed after a conversion' % lim) if lim > 0 else 'none')
+
+    @staticmethod
+    def cache_confirm_text(info):
+        return ('Delete the cache?\n\n%s\n%d file(s), %s.\n\nIt only holds copies the program makes for speed (decompressed MCC maps, converted sounds). '
+                'Your maps are not touched; the next conversion is slower while it is rebuilt.' % (info['root'], info['files'], CA.human(info['total_bytes'])))
+
+    def clear_cache(self):
+        """Delete the cache; refused while a scan, a conversion or another clearing is running.  -> the cache_admin.clear() result."""
+        if self.state != 'idle':
+            raise GuiError('Wait until the current work has finished before clearing the cache.')
+        return self.clear_cache_now()
+
+    def clear_cache_now(self):
+        with self._scope():
+            return CA.clear()
+
 
 # ======================================================================================================
 # self test (no window)
@@ -1076,6 +1109,35 @@ def selftest(report_path=None, out=None):
         check('controller', False, '%s: %s\n%s' % (type(ex).__name__, ex, traceback.format_exc()))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    # 4b. cache management: the `cache` command is registered and the controller can size / clear a cache (scratch work folder, never the real one)
+    tmp = tempfile.mkdtemp(prefix='h2conv_selftest_cache_')
+    try:
+        from . import __main__ as entry
+        sp = os.path.join(tmp, 'settings.json')
+        work = os.path.join(tmp, 'work')
+        with open(sp, 'w', encoding='utf-8') as fh:
+            json.dump({'work_dir': work, 'cache_limit_gb': 1}, fh)
+        os.makedirs(os.path.join(work, 'sound_cache', 'ab'))
+        with open(os.path.join(work, 'sound_cache', 'ab', 'k.bin'), 'wb') as fh:
+            fh.write(b'x' * 4096)
+        cc = Controller(settings_path=sp, opener=lambda p: None).load()
+        info = cc.cache_info()
+        label = cc.cache_label(info)
+        cc.state = 'running'
+        try:
+            cc.clear_cache()
+            refused = False
+        except GuiError:
+            refused = True
+        cc.state = 'idle'
+        res = cc.clear_cache()
+        check('cache command and controller (size, label, clear, refused while busy)',
+              'cache' in entry.COMMANDS and info['total_bytes'] == 4096 and info['limit_gb'] >= 0 and label.startswith('Clear cache (') and refused
+              and res['removed'] == 1 and cc.cache_info()['total_bytes'] == 0, '%s; cleared %d file' % (label, res['removed']))
+    except Exception as ex:                                                       # noqa: BLE001
+        check('cache command and controller', False, '%s: %s' % (type(ex).__name__, ex))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     # 5. tkinter (no window is created: only the Tcl interpreter and the files Tk needs are looked at)
     try:
         import _tkinter
@@ -1138,6 +1200,7 @@ class App(object):
         self.win.report_callback_exception = self._callback_error
         self.win.protocol('WM_DELETE_WINDOW', self.on_close)
         self.start_root = start_root
+        self.cache_state = None                         # the last cache_admin.info() (None until the background size count has finished)
         self._build()
         self._fill_from_controller()
         self._set_state('loading')                      # until the settings are read and the games are found
@@ -1169,6 +1232,8 @@ class App(object):
         self.var_jobs = tk.StringVar(master=self.win, value='1')
         self.var_status = tk.StringVar(master=self.win, value='Starting ...')
         self.var_headline = tk.StringVar(master=self.win, value='')
+        self.var_cache_btn = tk.StringVar(master=self.win, value='Clear cache')
+        self.var_cache_note = tk.StringVar(master=self.win, value='')
         self.var_out_mcc = tk.StringVar(master=self.win)
         self.var_out_vista = tk.StringVar(master=self.win)
         self.var_game = {k: tk.StringVar(master=self.win) for k in ('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps')}
@@ -1261,6 +1326,9 @@ class App(object):
         self.bar = ttk.Progressbar(f5, orient='horizontal', mode='determinate', maximum=100, length=260)
         self.bar.grid(row=0, column=2, padx=8)
         ttk.Label(f5, textvariable=self.var_status).grid(row=0, column=3, sticky='w')
+        self.btn_cache = ttk.Button(f5, textvariable=self.var_cache_btn, command=self.on_clear_cache)
+        self.btn_cache.grid(row=0, column=4, padx=3)
+        ttk.Label(f5, textvariable=self.var_cache_note, foreground='#555555').grid(row=1, column=0, columnspan=5, sticky='w', padx=3)
 
         # tabs
         self.tabs = ttk.Notebook(main)
@@ -1352,7 +1420,7 @@ class App(object):
         self.c.state = state
         idle = state == 'idle'
         for w in [self.entry_root, self.btn_root, self.btn_scan, self.btn_convert, self.chk_mp, self.chk_camp, self.chk_overwrite, self.chk_force, self.spin_jobs,
-                  self.entry_mcc, self.btn_mcc, self.entry_vista, self.btn_vista] + self.radios + self.game_buttons:
+                  self.entry_mcc, self.btn_mcc, self.entry_vista, self.btn_vista, self.btn_cache] + self.radios + self.game_buttons:
             w.state(['!disabled'] if idle else ['disabled'])
         self.btn_cancel.state(['!disabled'] if state in ('running', 'cancelling') else ['disabled'])
         self.btn_cancel.configure(text='Stop now' if state == 'cancelling' else 'Cancel')
@@ -1543,6 +1611,38 @@ class App(object):
                 run.kill()
                 self.var_status.set('Stopping ...')
 
+    def refresh_cache(self):
+        """Size of the cache folders, worked out on a thread (a few thousand files) and shown on the button when it is known."""
+        def work():
+            try:
+                self.events.put(('cache_info', self.c.cache_info()))
+            except Exception:                                                     # noqa: BLE001 - the button just keeps its last text
+                self.log_error(traceback.format_exc())
+        self._spawn(work)
+
+    def on_clear_cache(self):
+        if self.c.state != 'idle':
+            return
+        info = self.cache_state
+        if info is None:
+            self.var_status.set('The cache size is still being worked out.')
+            return
+        if info['files'] == 0:
+            self.messagebox.showinfo(APP_TITLE, 'The cache is empty (%s).' % info['root'])
+            return
+        if not self.messagebox.askyesno(APP_TITLE, self.c.cache_confirm_text(info)):
+            return
+        self._set_state('clearing')
+        self.var_status.set('Deleting the cache ...')
+
+        def work():
+            try:
+                self.events.put(('cache_cleared', self.c.clear_cache_now()))
+            except Exception as ex:                                               # noqa: BLE001
+                self.log_error(traceback.format_exc())
+                self.events.put(('cache_error', '%s: %s' % (type(ex).__name__, ex)))
+        self._spawn(work)
+
     def on_open_folder(self, folder):
         try:
             self.c.open_output(folder)
@@ -1593,6 +1693,19 @@ class App(object):
             if self.after_convert:
                 self.after_convert = False
                 self._begin_convert()
+        elif name == 'cache_info':
+            self.cache_state = payload
+            self.var_cache_btn.set(self.c.cache_label(payload))
+            self.var_cache_note.set(self.c.cache_note(payload))
+        elif name == 'cache_cleared':
+            self._set_state('idle')
+            self.var_status.set('Cache cleared: %s freed.%s' % (CA.human(payload['freed']), (' %d file(s) are in use and were kept.' % len(payload['failed'])) if payload['failed'] else ''))
+            self.refresh_cache()
+        elif name == 'cache_error':
+            self._set_state('idle')
+            self.var_status.set('')
+            self.messagebox.showerror(APP_TITLE, 'The cache could not be cleared: %s' % payload)
+            self.refresh_cache()
         elif name == 'line':
             self._on_line(payload)
         elif name == 'exit':
@@ -1601,6 +1714,7 @@ class App(object):
     def _fill_from_controller_folders(self):
         self._fill_from_controller()
         self.var_status.set('Ready. Choose a folder and press "Find maps".' if not self.c.root else 'Ready. Press "Find maps".')
+        self.refresh_cache()
 
     def _show_scan(self, res):
         t = self.tree_found
@@ -1633,6 +1747,7 @@ class App(object):
     def _on_exit(self, rc):
         summary = self.c.finish_run(rc)
         self._set_state('idle')
+        self.refresh_cache()                            # the worker trimmed the cache at the end of the batch
         self._show_summary(summary)
         self.tabs.select(self.tab_sum)
         self.var_status.set(summary.headline())

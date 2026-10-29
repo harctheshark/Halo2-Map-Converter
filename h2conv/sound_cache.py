@@ -11,6 +11,7 @@ channel count and the converter constants, so it is cached by a content hash:
 `ALGO` names every constant that changes the output (pre-skip, target rate, resampler, encoder): bump it when
 sound_codec.py changes in a way that alters the bytes.  A corrupt/short entry is ignored (the length must be a
 multiple of 36*channels).  Writes are atomic (temp file + os.replace).  Thread-safe (no shared state but the dir).
+A hit bumps the file's modification time (least-recently-used order for the size cap, see cache_admin.py).
 """
 import ctypes
 try:
@@ -67,6 +68,10 @@ class SoundCache(object):
         if data is not None and data and len(data) % (sc.XADPCM_BLOCK_BYTES * channels) == 0:
             with self._lock:
                 self.hits += 1
+            try:
+                os.utime(p, None)           # a hit = "used now": the size cap (h2conv.cache_admin) trims the oldest-used files first
+            except (OSError, ValueError):
+                pass
             return data
         with self._lock:
             self.misses += 1

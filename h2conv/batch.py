@@ -107,6 +107,7 @@ class Settings(object):
         ('mcc_maps_dir', None),                            # MCC folder with textures.dat / sounds_*.dat (None = H2CONV_MCC_MAPS, then your Steam library)
         ('assembly_dir', None),                            # Assembly layout files (None = H2CONV_ASSEMBLY, then the copy bundled in h2conv\data\assembly)
         ('work_dir', None),                                # caches (None = H2CONV_WORK, then %LOCALAPPDATA%\H2MapConverter\work)
+        ('cache_limit_gb', None),                          # size cap of the caches in GB (None = 5; 0 = never trim by itself; see h2conv cache)
         ('h2ek_maps_dir', None),                           # MCC Halo 2 Editing Kit maps = extra donors for Vista -> MCC (None = not used)
         ('excession_dir', None),                           # Excession install (optional; None = looked up in your Steam libraries)
         ('last_scan_root', ''),
@@ -709,7 +710,7 @@ def _subprocess_convert(item, out_file, opts):
         for kv in (os.environ.get('H2CONV_REV_PLAN_OPTS') or '').split(';'):
             if kv.strip():
                 cmd += ['--plan-opt', kv.strip()]
-    env = dict(os.environ, PYTHONIOENCODING='utf-8')
+    env = dict(os.environ, PYTHONIOENCODING='utf-8', H2CONV_NO_CACHE_TRIM='1')     # children run side by side: only the batch parent trims the cache
     frozen = bool(getattr(sys, 'frozen', False))
     if not frozen:                                       # the package must be importable in the child whatever the working directory of the parent was
         env['PYTHONPATH'] = ROOT + ((os.pathsep + env['PYTHONPATH']) if env.get('PYTHONPATH') else '')
@@ -859,8 +860,14 @@ def say(msg):
 def run_batch(root, opts, log=say, plan=None, progress=None):
     """Plan (unless given) and execute.  Returns the result dict."""
     # the folders of this run are what the converters (in this process and in --isolate children) must use; they are forgotten when the run ends
+    from . import cache_admin as _cache
+    _cache.begin_job()
     with _paths.scoped(mcc_maps=opts.mcc_maps, vista_maps=opts.vista_maps, assembly=opts.assembly_dir, h2ek_maps=opts.h2ek_maps):
-        return _run_batch(root, opts, log, plan, progress)
+        try:
+            return _run_batch(root, opts, log, plan, progress)
+        finally:
+            if not opts.dry_run:                  # once, here in the parent after every child has finished (the children do not trim: H2CONV_NO_CACHE_TRIM)
+                _cache.trim_after_job(None if opts.quiet else log)
 
 
 def _run_batch(root, opts, log, plan, progress):

@@ -14,6 +14,7 @@ Every folder the converter needs is looked up here, in this order (first hit win
     Vista maps folder (stock)    --vista-maps      H2CONV_VISTA_MAPS (H2V_MAPS)  vista_maps_dir
     Assembly layout files        --assembly-dir    H2CONV_ASSEMBLY               assembly_dir      (default: the copy in h2conv\\data\\assembly)
     caches / scratch             -                 H2CONV_WORK                   work_dir          (default: %LOCALAPPDATA%\\H2MapConverter\\work)
+    cache size cap (GB)          -                 H2CONV_CACHE_LIMIT_GB         cache_limit_gb    (default: 5; 0 = no automatic trimming; h2conv cache ...)
     H2EK maps (extra donors)     --h2ek-maps       H2CONV_H2EK_MAPS              h2ek_maps_dir     (never auto-detected)
     Vista output (batch)         --vista-out       -                             vista_output_dir  (default: Documents\\My Games\\Halo 2\\Maps)
     MCC output package (batch)   --mcc-out         -                             mcc_output_dir    (no default)
@@ -726,6 +727,25 @@ def work_dir():
 
 def work_subdir(name):
     return os.path.join(work_dir(), name)
+
+
+CACHE_LIMIT_DEFAULT_GB = 5.0
+ENV_CACHE_LIMIT = 'H2CONV_CACHE_LIMIT_GB'
+
+
+def cache_limit_gb():
+    """Size cap of the cache folders in GB (1 GB = 2^30 bytes): environment variable H2CONV_CACHE_LIMIT_GB, else settings.json "cache_limit_gb", else 5.
+    0 = never trim automatically.  A value that is not a number >= 0 is ignored (the default is used).  See h2conv.cache_admin."""
+    for raw in (os.environ.get(ENV_CACHE_LIMIT), load_settings().get('cache_limit_gb')):
+        if raw is None or isinstance(raw, bool):
+            continue
+        try:
+            v = float(str(raw).strip())
+        except ValueError:
+            continue
+        if v >= 0 and v == v and v != float('inf'):
+            return v
+    return CACHE_LIMIT_DEFAULT_GB
 
 
 def vista_out_dir(explicit=None, required=True):

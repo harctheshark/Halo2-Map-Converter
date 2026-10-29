@@ -1056,6 +1056,8 @@ def main(argv=None):
         opts['shared_map'] = os.path.abspath(a.shared_map)
     if a.groups:
         opts['only_groups'] = set(a.groups.split(','))
+    from . import cache_admin as _cache
+    _cache.begin_job()
     try:
         a.vista_maps = _paths.vista_maps_dir(a.vista_maps)
         rep, _ctx = convert_map(a.input, a.output, a.vista_maps, a.self_contained, a.report, opts)
@@ -1069,6 +1071,11 @@ def main(argv=None):
     except (ValueError, PermissionError, FileNotFoundError, FileExistsError, _paths.PathsError) as ex:
         print('ERROR: %s' % ex)
         return 2
+    finally:                                             # the end of the job: the maps are closed (memory maps released), then the cache is trimmed to its cap
+        _ctx = None
+        import gc
+        gc.collect()
+        _cache.trim_after_job(None if a.quiet else print)
     return 0 if report_ok(rep) else 1
 
 

@@ -43,11 +43,14 @@ Good to know
 * Where things are kept:
     %APPDATA%\H2MapConverter\settings.json            your folder choices (also shared with h2conv.exe)
     %APPDATA%\H2MapConverter\last_batch_report.json   the report of the last run in the window (it names folders on your computer: do not share it)
-    %LOCALAPPDATA%\H2MapConverter\work                caches of unpacked MCC stock maps and transcoded sounds (up to a few GB; may be deleted)
+    %LOCALAPPDATA%\H2MapConverter\work                caches of unpacked MCC stock maps and transcoded sounds (kept under 5 GB; may be deleted)
     %LOCALAPPDATA%\H2MapConverter\gui_error.log       only written if the window program itself fails
   To remove the programs, delete this folder and those folders.
 * Disk space and time: a Vista to MCC map is large (roughly 250 to 610 MB each) and takes 10 to 35 seconds to convert once the caches
   are warm; the first MCC to Vista conversion that decodes sounds takes a few minutes longer.  See README.md ("Disk space and memory").
+* The cache folder (the "work" folder above) is kept under a size cap, 5 GB unless you set "cache_limit_gb" in settings.json (0 turns the cap off): after each
+  conversion the least recently used cache files are deleted.  The "Clear cache" button in the window (or  h2conv.exe cache clear) deletes all of it and
+  loses nothing but time; h2conv.exe cache info shows its size.
 * This is early software.  README.md ("Status") says what has and has not been tested, and docs\KNOWN_ISSUES.md lists the open problems.
 
 

@@ -10,6 +10,7 @@
     limits      engine limits of a Vista map (h2conv.limits_check)
     invariants  semantic checks of a converted Vista map (h2conv.invariants)
     paths       where the converter looks for MCC, Vista, Assembly ... (h2conv.paths)
+    cache       info | trim | clear: the converter's cache folders and their size cap (h2conv.cache_admin)
     gui         the window program: pick a folder, find the maps below it, convert them all (h2conv.gui)
     --version
 
@@ -20,7 +21,7 @@ frozen exe a child is `<exe> convert|rev <arguments>`, from a Python install it 
 import sys
 
 # command -> (module, function).  Plain import statements below (not importlib) so that a freezer such as PyInstaller sees every module.
-COMMANDS = ('convert', 'rev', 'batch', 'mapinfo', 'excession', 'validate', 'limits', 'invariants', 'paths', 'gui')
+COMMANDS = ('convert', 'rev', 'batch', 'mapinfo', 'excession', 'validate', 'limits', 'invariants', 'paths', 'cache', 'gui')
 
 
 def _run(cmd, argv):
@@ -43,6 +44,8 @@ def _run(cmd, argv):
         from h2conv import invariants as m
     elif cmd == 'paths':
         from h2conv import paths as m
+    elif cmd == 'cache':
+        from h2conv import cache_admin as m
     elif cmd == 'gui':
         from h2conv import gui as m
     else:
