@@ -16,7 +16,7 @@ directions: with a **window program** (pick a folder, let it find the maps, conv
 In the Windows zip the same commands are `h2conv.exe convert`, `h2conv.exe rev`, `h2conv.exe batch` and so on
 (see [The Windows programs](#the-windows-programs)); the examples in this file are written for Python.
 
-**Version 0.4.0, a pre-release.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
+**Version 1.0.0.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
 program) and `h2conv.exe` (the command line), which needs no Python, and this **source** (a Python package, run with `py -3 -m h2conv`).
 Both do the same conversions (see "Status" below for how that was checked).
 It has been run over hundreds of community maps and several fixes were confirmed by playing, but most converted maps have not
@@ -29,7 +29,7 @@ language, a preview image); how to get the **full custom-map-list entry and team
 several fixes for campaign maps started from Cartographer's multiplayer lobby (see [RELEASE_NOTES.md](RELEASE_NOTES.md)).  0.2.0 added the workshop maps with their own `shared.map`, the
 tutorial prompts off by default and the MCC menu title in the map list.
 
-**New in 0.4.0:** converted maps (MCC to Vista) now carry three rendering fixes by default, each with an off switch: foliage that vanished on NVIDIA
+**New in 1.0.0 (since 0.3.0):** converted maps (MCC to Vista) now carry three rendering fixes by default, each with an off switch: foliage that vanished on NVIDIA
 cards (`--no-foliage-fix`, `--no-rtx-foliage-fix`) and the fading of glass and plasma surfaces (`--no-reflection-vs-fix`); sound references to MCC's remastered
 sounds are redirected to the classic sound when MCC links the two (`--no-remastered-pairs`, `--remastered-overrides`); `--sound-reduce` can shrink chosen sounds (opt-in); a
 short table of per-map shader overrides (today: the couch of `chronopolis`).  Vista to MCC repairs the red and green missing-texture slots (`rasterizer\invalid`) of
@@ -176,7 +176,7 @@ or modded MCC maps in a sub-folder or in another folder.
 
 ## The Windows programs
 
-The release's **Windows zip** (`Halo2-Map-Converter-0.4.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
+The release's **Windows zip** (`Halo2-Map-Converter-1.0.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
 `Halo2MapConverter`, with two programs that share their libraries and need no Python and no installer:
 
 * **`Halo 2 Map Converter.exe`** - the window program.  You choose a root folder; it scans that folder and every folder below it, recognises
@@ -546,7 +546,7 @@ known-issues file), plus the same three folder options.
 
 * [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) - architecture in plain language and the engine facts it relies on
 * [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) - problems met and solved, what is still open, workarounds
-* [RELEASE_NOTES.md](RELEASE_NOTES.md) - what is in 0.4.0 (and 0.3.0, 0.2.0, 0.1.0)
+* [RELEASE_NOTES.md](RELEASE_NOTES.md) - what is in 1.0.0 (and 0.3.0, 0.2.0, 0.1.0)
 * [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) - licences of the bundled and required components
 
 ## Credits

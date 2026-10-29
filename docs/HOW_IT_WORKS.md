@@ -296,7 +296,7 @@ versions (`h2conv\data\ce_port\`, used by `h2conv\ce_port.py`; nothing is compil
 
 `h2conv\ce_port_build.py` is the developer tool that made the table (it needs the workshop mod and the editing kit); the converter never calls it.
 
-### 10.4 MCC to Vista: rendering fixes and per-map overrides (0.4.0)
+### 10.4 MCC to Vista: rendering fixes and per-map overrides (1.0.0)
 
 Three fixes change the shader tags of a converted map by default (each has an off switch, see README).  A linked `shared.map` tag cannot be edited, so the
 planner does not link the tags involved: it plans local donor copies under their own names, the donor closure then reaches the local copy through
@@ -316,7 +316,7 @@ local template, local pass, local vertex shader, and a hook edits the copy.  Sha
 * **Sound reduction (`--sound-reduce`).**  Per matching `snd!`: decode (Opus, Xbox ADPCM or PCM), optional stereo to mono (`(L + R + 1) >> 1`), anti-aliased polyphase resampling, the normal Xbox ADPCM
   encoder and chunking; the rate enum, sample size, chunk counts and promotion timing are rewritten; durations stay.  Off unless a rule exists.
 
-### 10.5 Vista to MCC: repaired missing-texture slots, empty starting equipment, aliased object tags (0.4.0)
+### 10.5 Vista to MCC: repaired missing-texture slots, empty starting equipment, aliased object tags (1.0.0)
 
 * **`rasterizer\invalid` slots.**  `h2conv\rev\data\bitmap_repairs.json` names, per shader, the slots that must hold the bitmap every intact copy carries; the planner adds the repair bitmaps like
   any reference (MCC's stock tags), the shader handler swaps the slot before the stem mapping, recomputes the log dimension and the predicted resources, and the shader check expects the repair.

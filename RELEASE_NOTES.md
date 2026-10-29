@@ -1,15 +1,15 @@
-# Halo 2 Map Converter 0.4.0 (pre-release)
+# Halo 2 Map Converter 1.0.0
 
-Fourth pre-release: a Windows zip (the window program `Halo 2 Map Converter.exe` and the command-line program `h2conv.exe`, no Python
+First full release: a Windows zip (the window program `Halo 2 Map Converter.exe` and the command-line program `h2conv.exe`, no Python
 needed) and the source.  Early software: please read "Read this first" and "Still open" below.
 
 Converts Halo 2 maps between **Halo 2 Vista / Project Cartographer** (cache version 8) and **Halo 2: MCC** (cache version 13), in both
-directions, one map at a time or a whole folder tree at once.  0.4.0 is a rendering-fixes release for MCC to Vista (foliage on NVIDIA cards,
+directions, one map at a time or a whole folder tree at once.  Since the last pre-release (0.3.0), 1.0.0 adds rendering fixes for MCC to Vista (foliage on NVIDIA cards,
 glass and plasma fading, a washed-out couch colour, remastered sounds), with repairs for missing textures and unarmed spawns in Vista to MCC.
 
 ## Read this first
 
-* **Converted maps now carry rendering fixes by default.**  A map converted with 0.4.0 has a few extra local shader tags (the foliage pass, the glass
+* **Converted maps now carry rendering fixes by default.**  A map converted with 1.0.0 has a few extra local shader tags (the foliage pass, the glass
   and plasma vertex shader and the templates that use them) instead of linking Vista's shared copies, so it is a little bigger.  Maps converted with
   an earlier version do not change: re-converting them is recommended.  Each fix has an off switch: `--no-foliage-fix`, `--no-rtx-foliage-fix`, `--no-reflection-vs-fix`.
 * **Everything from 0.3.0 still applies.**  To get the full map-list entry and to change teams in the lobby, a map with its own globals needs a six-byte
@@ -117,17 +117,17 @@ The size growth is the local copies of the foliage pass and the glass and plasma
 
 ## Installing and first run
 
-**Windows zip:** download `Halo2-Map-Converter-0.4.0-windows-x64.zip`, unzip it into a folder you can write to and start
+**Windows zip:** download `Halo2-Map-Converter-1.0.0-windows-x64.zip`, unzip it into a folder you can write to and start
 `Halo 2 Map Converter.exe`, or open a command prompt in the unzipped `Halo2MapConverter` folder and run `h2conv.exe paths`.  Keep the files of the
 folder together.  The programs are not code-signed, so Windows SmartScreen or an antivirus program may warn the first time (check the zip
 against `SHA256SUMS.txt`: `certutil -hashfile <zip> SHA256`).
 
-**Source:** download `Halo2-Map-Converter-0.4.0.zip`, unzip it, run `py -3.10 -m pip install -r requirements.txt`, then `py -3.10 -m h2conv paths`
+**Source:** download `Halo2-Map-Converter-1.0.0.zip`, unzip it, run `py -3.10 -m pip install -r requirements.txt`, then `py -3.10 -m h2conv paths`
 and follow the Quick start in `README.md`.
 
 ## Checksums
 
-The SHA-256 of each archive (`Halo2-Map-Converter-0.4.0-windows-x64.zip` and `Halo2-Map-Converter-0.4.0.zip`) is in `SHA256SUMS.txt`,
+The SHA-256 of each archive (`Halo2-Map-Converter-1.0.0-windows-x64.zip` and `Halo2-Map-Converter-1.0.0.zip`) is in `SHA256SUMS.txt`,
 attached to this release.
 
 ## Credits and licence

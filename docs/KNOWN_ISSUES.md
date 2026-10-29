@@ -4,7 +4,7 @@ This file is the honest ledger of the Halo 2 Map Converter: what went wrong whil
 fixed, what is still wrong, and how to work around it.  It is written for people who want to use converted maps and for
 people who want to help.
 
-Version 0.4.0 (pre-release).  Sections 1 and 3 are current for 0.4.0; section 2.1 lists what changed in 0.2.0, 0.3.0 and 0.4.0 at its end.
+Version 1.0.0.  Sections 1 and 3 are current for 1.0.0; section 2.1 lists what changed in 0.2.0, 0.3.0 and 1.0.0 at its end.
 
 ## 1. How much has actually been tested
 
@@ -147,7 +147,7 @@ code), and **not yet confirmed in game**.
 * **No preview picture in the map list.**  The list draws the preview only if it is exactly 440 x 414 pixels (anything else is dropped without a
   message); a map's own 2048 x 2048 preview was never shown.  `--mp-info` can name a 440 x 414 bitmap of the map or of `mainmenu.map`; the README's example
   names the placeholder `mainmenu.map` holds (`unknown_map`, a grid with a question mark).  *Status:* checked on the file, not yet seen in game.
-  **0.4.0:** the preview picture is not shown for any custom map.  Analysing `halo2.exe` and Cartographer's `xlive.dll` (static, no game run) showed that the custom map list reads the preview from the map,
+  **1.0.0:** the preview picture is not shown for any custom map.  Analysing `halo2.exe` and Cartographer's `xlive.dll` (static, no game run) showed that the custom map list reads the preview from the map,
   but Cartographer's replacement of the list repository never builds the texture the list draws, so every custom map shows the `unknown_map` grid whatever the map file holds.  A **custom list-preview image is
   not supported** by the converter (the info-file keys `preview_bitmap_file` and `preview_crop` are ignored with a warning).
 * **A campaign level hung the graphics card in Vista** (the driver's timeout reset, then a crash a moment later).  It was traced in game to the
@@ -165,7 +165,7 @@ code), and **not yet confirmed in game**.
   4,450 sounds in one campaign is untested.
 * **`--description TEXT`** sets the map description in every language (language pack and info block).
 
-**Added or fixed in 0.4.0 (MCC to Vista).**  Same rule: unless a line says "played", the status is *checked* and **not yet confirmed in game**.
+**Added or fixed in 1.0.0 (MCC to Vista).**  Same rule: unless a line says "played", the status is *checked* and **not yet confirmed in game**.
 
 * **Alpha-tested foliage (palm trees, bushes) missing on NVIDIA cards.**  Two causes, both fixed by default.  (1) Two shader templates
   (`tex_bump_alpha_test_single_pass` and `tex_bump_alpha_test`) feed a 4x4 placeholder bitmap (`alpha_white`, `gray_50_percent`) to a texture stage of a Vista pass that MCC's
@@ -255,7 +255,7 @@ water (section 3.1).
   the file bytes as PCM).  They are now decoded (`ffmpeg` needed, optional) and encoded as ADPCM.
 * `cideral` and `nuclear` had a few shaders compiled against a different revision of a stock template (see above).
 
-**Added or fixed in 0.4.0 (Vista to MCC).**  *Status:* checked, not yet played unless a line says so.
+**Added or fixed in 1.0.0 (Vista to MCC).**  *Status:* checked, not yet played unless a line says so.
 
 * **Red and green "missing texture" checkers in MCC.**  Some community shaders were compiled with the placeholder `rasterizer\invalid` in a bitmap slot because the author's tags folder lacked a stock detail map; the original Vista map shows
   it too.  `h2conv\rev\data\bitmap_repairs.json` lists the shaders (and which bitmap every intact copy of the same shader carries in that slot); the converter puts that stock bitmap back, recomputes the
