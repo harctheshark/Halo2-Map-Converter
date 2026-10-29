@@ -11,7 +11,7 @@ glass and plasma fading, a washed-out couch colour, remastered sounds), with rep
 
 * **Converted maps now carry rendering fixes by default.**  A map converted with 0.4.0 has a few extra local shader tags (the foliage pass, the glass
   and plasma vertex shader and the templates that use them) instead of linking Vista's shared copies, so it is a little bigger.  Maps converted with
-  an earlier version do not change: convert them again.  Each fix has an off switch: `--no-foliage-fix`, `--no-rtx-foliage-fix`, `--no-reflection-vs-fix`.
+  an earlier version do not change: re-converting them is recommended.  Each fix has an off switch: `--no-foliage-fix`, `--no-rtx-foliage-fix`, `--no-reflection-vs-fix`.
 * **Everything from 0.3.0 still applies.**  To get the full map-list entry and to change teams in the lobby, a map with its own globals needs a six-byte
   patch of Cartographer's `halo2.exe` (or `--matg link --training-via-script`, which gives up the map's own globals); see `README.md`, "The map list entry,
   teams and the halo2.exe patch".  After you patch `halo2.exe`, or convert a map again, delete `Maps\Data Files\.h2mdat` once.  **Campaign (single-player) maps
@@ -21,7 +21,7 @@ glass and plasma fading, a washed-out couch colour, remastered sounds), with rep
   Cartographer's `xlive.dll` showed that the custom map list never builds the preview picture for any custom map, so there is nothing a map file can do about it.
 * **Confirmed in game vs checked by program.**
   * *Confirmed in game:* the **couch colour** of `chronopolis` (the shader override below: orange-red frame, dark brown cushions as in MCC); the **RTX foliage**
-    repair (the project notes record it as played on an RTX card, 2026-10-21); and everything already listed as played in 0.3.0 (workshop maps of the
+    repair (played on an RTX card); and everything already listed as played in 0.3.0 (workshop maps of the
     Digtacular and Uncut mods load and play, the tutorial-prompt square is gone, the seasonal-event spawn fix, map names in the list, the patched `halo2.exe` with description
     and team changing, campaign maps loading from the lobby).
   * *Checked by program, not yet played:* the glass and plasma fix, the foliage placeholder fix, the remastered-sound pairing, the sound reduction, the invalid-shader decal
