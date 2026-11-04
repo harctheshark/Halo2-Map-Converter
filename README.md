@@ -345,7 +345,9 @@ the maps of the original game get `_OG` (`Lockout_OG.map`).  The name in the gam
 **MCC packages.**  `--to mcc` converts Xbox to Vista to MCC in one run; the Vista files made on the way live in the cache and are deleted at the end.
 The result is one Excession mod package per pack, of at most 45 maps (`--max-maps-per-package`); a bigger pack is split into "Part 1", "Part 2" ...
 A package folder that already exists is never built into again (it would get a second, renamed copy of every map): the run stops before it starts
-unless `--overwrite` is given.
+unless `--overwrite` is given.  **Give `--to mcc` an `ffmpeg.exe`** (`H2CONV_FFMPEG`, `ffmpeg_path` in the settings file, or on the `PATH`): many Xbox
+maps carry their own WMA sounds (announcers, music), which MCC does not play; ffmpeg decodes them for the MCC map.  Without it they stay WMA and
+are silent in MCC (the map's conversion log says `snd_wma_no_decoder`).
 
 **Lightmaps.**  A mod that changed a BSP usually removed its lightmap, and the game reads the lightmap tables without checking them.  `--lightmap auto`
 (default) gives an unmodified stock BSP its complete stock lightmap and every other BSP without a usable lightmap a generated one (`native`) that the game

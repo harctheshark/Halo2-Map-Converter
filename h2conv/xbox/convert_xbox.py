@@ -84,6 +84,10 @@ EXIT_OK, EXIT_FAILED, EXIT_SKIPPED, EXIT_BAD_INPUT = 0, 1, 3, 4
 class NotMultiplayerError(ValueError):
     """A Halo 2 Xbox map that is not a multiplayer map (campaign, main menu, shared data): multiplayer maps only."""
 
+
+class NeedsStockMapsError(ValueError):
+    """The map reads data from a file only the original game has (single_player_shared.map) and it cannot be replaced: give the OG Xbox maps folder."""
+
 MP_MASK = 0x1400000
 VISTA_BUILD = '11081.07.04.30.0934.main'
 
@@ -2872,6 +2876,7 @@ class XboxToVista(object):
             return
         g = SX.Gestalt(self.xc)
         reach = set()
+        owner = {}                                    # chunk index -> (sound name, snd! Compression +0x5)
         for o in self.tags:
             if o.group != 'snd!' or o.kind != 'x':
                 continue
@@ -2884,7 +2889,10 @@ class XboxToVista(object):
                 for p in range(e.i16(8), e.i16(8) + max(e.i16(0xA), 0)):
                     if 0 <= p < len(g.perms):
                         pe = g.perms[p]
-                        reach.update(range(pe.i16(0xC), pe.i16(0xC) + max(pe.i16(0xE), 0)))
+                        ks = range(pe.i16(0xC), pe.i16(0xC) + max(pe.i16(0xE), 0))
+                        reach.update(ks)
+                        for kk in ks:
+                            owner.setdefault(kk, (o.name, b[5]))
         chunks = root.block('Permutation Chunks')
         seen = {}
         first = None
@@ -2897,7 +2905,20 @@ class XboxToVista(object):
                 c.patches[0], sw = seen[key]
                 c.set_u32(4, sw)
                 continue
-            data = self.xc.raw(ptr, szw & 0x3FFFFFFF)
+            try:
+                data = self.xc.raw(ptr, szw & 0x3FFFFFFF)
+            except XboxFormatError as ex:
+                # the chunk lives in a location file the pack does not ship (single_player_shared.map: only the original game has it, read
+                # through --stock-xbox-maps).  PCM / ADPCM: the same number of zero bytes, which decodes as silence of the same length; a WMA
+                # chunk cannot be replaced that way, so the map stops with a message that names the remedy.
+                name, comp = owner.get(k, ('?', None))
+                if comp not in (0, 1, 2, 3):
+                    raise NeedsStockMapsError('sound %s needs %s; set the OG Xbox maps folder (--stock-xbox-maps) to your original Xbox maps'
+                                              % (name, ex))
+                data = b'\0' * (szw & 0x3FFFFFFF)
+                if not self.stats['sound_chunks_unavailable']:
+                    self.warn('sound_chunks_unavailable', '%s: %s - silent (no OG Xbox maps folder with that file)' % (name, ex))
+                self.stats['sound_chunks_unavailable'] += 1
             if SX.is_asf(data):
                 # Xbox WMA = a whole ASF file; Vista wants media type + WAVEFORMATEX + packet payloads (sound_xbox.xbox_wma_to_vista)
                 try:
@@ -3848,6 +3869,10 @@ def main(argv=None):
         print('ERROR: %s' % ex, flush=True)
         _write_report(a.report, {'status': 'failed', 'code': 'truncated', 'message': str(ex), 'input': os.path.basename(a.src)})
         return EXIT_BAD_INPUT
+    except NeedsStockMapsError as ex:
+        print('ERROR: %s' % ex, flush=True)
+        _write_report(a.report, {'status': 'failed', 'code': 'needs_stock_xbox_maps', 'message': str(ex), 'input': os.path.basename(a.src)})
+        return EXIT_FAILED
     rep['status'] = 'ok' if not rep['validate_file'] else 'failed'
     rep['display_name'] = a.display_name or PK.display_name(a.src, conv.stock_dir)
     _write_report(a.report, rep)

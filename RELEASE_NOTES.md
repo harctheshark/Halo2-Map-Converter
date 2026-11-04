@@ -12,6 +12,9 @@ also fixes two MCC crashes of the Vista to MCC route and adds a lightmap generat
 * **Your original Xbox maps are optional but recommended.**  Set *OG Xbox maps folder* in the window program (section 4), `--stock-xbox-maps`
   or `stock_xbox_maps` in `settings.json`.  Without them every map still converts, but some come out less faithful; a note at the end of the run
   says which.  The first run with the folder builds an index in the converter's cache (a few minutes).
+* **For Xbox maps to MCC, have `ffmpeg.exe` available** (`H2CONV_FFMPEG`, `ffmpeg_path` in `settings.json`, or the `PATH`).  Many Xbox maps carry
+  their own WMA sounds (announcers, music), which MCC does not play; ffmpeg decodes them.  Without it those sounds are silent in MCC, and only the
+  per-map log says so (`snd_wma_no_decoder`).
 * **Multiplayer only.**  Xbox campaign maps, Halo 3 / Reach / Xbox 360 files that sit in Xbox folders, and truncated downloads are reported and skipped.
 * **Re-convert Vista to MCC maps that crash in MCC** with heavy weather or with dialogue sounds: both causes are fixed below.
 * **Not everything has been played.**  The Xbox route converts 208 of the 212 maps of the test set with no errors from the built-in checks;
@@ -64,6 +67,9 @@ also fixes two MCC crashes of the Vista to MCC route and adds a lightmap generat
 
 * 208 of 212 Xbox maps (the stock game and Phantom v1 / v2, Killtrocity v1 / v2, Killjoy) convert to Vista and on to MCC with 0 errors from the format
   validator, the reference and limit checks and the MCC verifier.  Not converted: one truncated download, three Halo 3 / Reach files.
+* The Windows programs were run like a fresh download (empty settings and cache): six Xbox maps, including the one with a modified BSP and no
+  lightmap, came out byte-identical to the Python source's conversions (apart from the creation time), with and without the original Xbox maps
+  (without them: the quality note at the end, as intended), and two of them as an MCC package that passes the package check.
 * The module tests of 1.0.0 pass, plus new suites for the Xbox command line, the portable setup (no developer paths, a fresh cache), the lightmap
   generator and the PRT code.
 

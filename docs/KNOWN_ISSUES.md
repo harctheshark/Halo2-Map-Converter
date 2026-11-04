@@ -458,6 +458,11 @@ These are statements the converter relies on that were read from the game's code
   the end of the run says which maps were affected.
 * **Generated lightmaps look flat.**  `native` (the default) reproduces how the Xbox draws a BSP without a lightmap; it is not a light bake.  A real
   bake of a modified BSP is not part of this tool.
+* **A map's own WMA sounds are silent in MCC without ffmpeg.**  MCC does not play WMA; the converter decodes those sounds with `ffmpeg.exe` when it
+  can find one (README, "Converting original Xbox maps").  Without it the per-map conversion log warns `snd_wma_no_decoder`, but the batch
+  summary (and the window's summary) does not repeat that warning yet.
+* **Without the original Xbox maps**, a sound chunk stored in the original game's `single_player_shared.map` (which map packs do not ship)
+  becomes silence of the same length (warning `sound_chunks_unavailable`); a WMA chunk there stops that map with a message that names the folder setting.
 * **Dialogue lip-sync** of a mod's own dialogue sounds is not generated on MCC (the sounds play; the empty entry above keeps MCC from crashing).
 * **A mod's own design can look like a bug:** a map that starts in a closed room, or a door that only a script of the original mod opens, behaves
   the same way it did on the Xbox.  Compare with the original before reporting it.
