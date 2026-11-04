@@ -14,8 +14,9 @@ games' shader source is described in section 1, "Halo CE port shader data").
 
 ### Assembly layout files - `h2conv/data/assembly/`
 
-133 plugin files (`Plugins/Halo2`: 98, `Plugins/Halo2MCC`: 35) and 3 format files (`Formats/Halo2Vista/H2V_GroupNames.xml`,
-`Formats/Halo2Vista/H2V_Scripting.xml`, `Formats/Halo2MCC/H2MCC_Scripting.xml`) of **Assembly**, the Halo cache file editor of the XboxChaos
+147 plugin files (`Plugins/Halo2`: 98, `Plugins/Halo2MCC`: 35, `Plugins/Halo2Xbox`: 14) and 5 format files (`Formats/Halo2Vista/H2V_GroupNames.xml`,
+`Formats/Halo2Vista/H2V_Scripting.xml`, `Formats/Halo2MCC/H2MCC_Scripting.xml`, `Formats/Halo2Xbox/H2X_Scripting.xml`,
+`Formats/Halo2Xbox/H2X_LocaleSymbols.xml`) of **Assembly**, the Halo cache file editor of the XboxChaos
 project (<https://github.com/XboxChaos/Assembly>).  They are byte-identical copies of release 2026.02.16 (in that source tree
 `H2MCC_Scripting.xml` is called `H2MCC_2023Jul_Scripting.xml`; the content is the same).  Licence: GNU General Public License, version 3 - the text
 is in `LICENSE`, the same file as in the Assembly source.  Only these XML files are included: no Assembly program, no Assembly source code.
@@ -27,7 +28,7 @@ Assembly folder and the unpacked Assembly source are both accepted.
 Credit.  These files are the work of the Assembly community.  The revision notes inside the plugin files name these authors (most revisions
 first): Iron_Forge, Lord Zedd, XZodia, Shalted, shade45 (with Talin64), turk645, DiscoBob, Soldier of Light, WastingBody, MT, neodos, km00,
 Toabn, -DeToX-, Selyb, Doom, trepdimeflou, XD, Snaku, plushiefire, pokecancer, Winkler707, TroyMac1ure, General_101 and TfAv1228 (one note also
-thanks Aequitas); the two HaloScript tables are marked "Created by Lord Zedd".  Assembly itself is the work of the XboxChaos team and
+thanks Aequitas); the three HaloScript tables are marked "Created by Lord Zedd".  Assembly itself is the work of the XboxChaos team and
 the Assembly contributors.  Thank you.
 
 ### libopus 1.5.2 - `h2conv/third_party/opus.dll`

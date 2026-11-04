@@ -1,0 +1,12 @@
+{
+ "format": 1,
+ "about": "Widgets (antennas ...) the Xbox converter removes from an object tag, keyed by CONTENT: the object tag name, the widget tag name and the content digest of the object's Model (hlmt) tag as the converter computes it (stock_index.Digester). The same object name over a different model keeps its widget. Only names and digests, no game data.",
+ "rules": [
+  {
+   "note": "the Phantom pack's bulldog: a warthog tag over the bulldog motorcycle model, which has no antenna marker (Xbox draws no antenna, Vista would draw it at the model origin)",
+   "object": "objects\\vehicles\\warthog\\warthog",
+   "widget": "objects\\vehicles\\warthog\\attachments\\warthog_antenna",
+   "model_digest": "ccbfd9a2eecca644dfe0e9116a5cdde4233da2d6"
+  }
+ ]
+}

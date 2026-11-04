@@ -6,7 +6,9 @@ https://github.com/XboxChaos/Assembly), release 2026.02.16:
 
     Plugins\Halo2\*.xml          98 files   the layout of every tag group of Halo 2 (Vista; also the MCC fallback)
     Plugins\Halo2MCC\*.xml       35 files   the layouts that differ in Halo 2 MCC
+    Plugins\Halo2Xbox\*.xml      14 files   the layouts that differ in the original Xbox Halo 2
     Formats\Halo2Vista\H2V_GroupNames.xml, H2V_Scripting.xml
+    Formats\Halo2Xbox\H2X_Scripting.xml, H2X_LocaleSymbols.xml
     Formats\Halo2MCC\H2MCC_Scripting.xml    the HaloScript function tables (the source tree calls this file H2MCC_2023Jul_Scripting.xml; same content)
 
 Licence.  GNU General Public License, version 3 (see the LICENSE file of the repository root and THIRD_PARTY_NOTICES.md for the credits).

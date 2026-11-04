@@ -4,7 +4,7 @@ This file is the honest ledger of the Halo 2 Map Converter: what went wrong whil
 fixed, what is still wrong, and how to work around it.  It is written for people who want to use converted maps and for
 people who want to help.
 
-Version 1.0.0.  Sections 1 and 3 are current for 1.0.0; section 2.1 lists what changed in 0.2.0, 0.3.0 and 1.0.0 at its end.
+Version 1.1.0.  Sections 1 and 3 are current for 1.1.0; section 2.1 lists what changed in 0.2.0, 0.3.0 and 1.0.0 at its end, section 2.2 the Vista to MCC fixes of 1.1.0, section 2.4 the original Xbox route.
 
 ## 1. How much has actually been tested
 
@@ -23,6 +23,7 @@ Two kinds of evidence are used throughout this file.  Please keep them apart.
 | MCC to Vista, played | A custom (MCC editing kit) `headlong` and a custom `chronopolis`, including its custom HUD pickup text, in Project Cartographer |
 | Vista to MCC, played | In MCC: the vehicle driver and gunner seats on a converted custom map (confirmed 2026-10-14), the water on converted custom maps, `Holidays Grave` and `corpsys` (confirmed 2026-10-15), and the sky fix on `Bikini Bottom` (section 2.2; confirmed 2026-10-15) |
 | MCC to Vista, workshop maps with their own `shared.map` (0.2.0, 0.3.0) | 125 multiplayer maps of six workshop mods: all 125 convert with 0 errors from the format validator, the limits check and the invariants (113 in 0.2.0; the other 12, the Halo CE ports, since 0.3.0, section 2.1).  **Checked, not all played.**  Played: workshop maps of the Digtacular and Uncut mods; the tutorial-prompt frame went away on a converted `chronopolis`; with the patched `halo2.exe` a converted `chronopolis` shows its description and the team menu works (section 3.3) |
+| Original Xbox to Vista and MCC (1.1.0) | 212 maps (the stock game and five community packs): 208 convert with 0 errors from the built-in checks, to Vista and on to MCC (the other four are a truncated download and three Halo 3 / Reach files).  **Checked, not all played.**  Played in MCC: maps of these packs, including the ones that crashed earlier builds (section 2.4 and the 1.1.0 items of 2.2), four maps with rebuilt precomputed lighting and a set of maps with a generated lightmap |
 | MCC to Vista, campaign maps from the multiplayer lobby | **Experimental.**  Several load and play, others crash; allies can be hostile, cutscenes do not play (section 3.3) |
 | Window program and Windows zip | New in 0.1.0, the least used part: it runs the same batch engine as the command line (the tested part).  **Checked:** three conversions made with `h2conv.exe` are byte-identical to the Python source's (except the header's creation time); a batch with `--isolate`, the sound transcoder's helper processes and the stop request work in the frozen program; the window's logic runs in automated tests without a screen.  **Not checked:** how the window looks on other screens (high-DPI), on Windows 10, or on a PC without Python or the Visual C++ runtime |
 | Everything else | **Not played.**  In particular campaign / solo maps, network play between machines, most of the community archive, sounds in every language |
@@ -267,11 +268,48 @@ water (section 3.1).
   object type it really holds, zero-padded to the size of its slot's group; MCC reads every weapon's fields at load and crashed on the short data.  The built-in checks know the padding.
 * **Batch:** `--title-from language|header` (the MapInfo title comes from the header's language pack, the default, or from the header's map name) and `--package-description TEXT`.
 
+**1.1.0:**
+
+* **MCC crashed about 40 seconds into a map with heavy weather** (a sand storm of 3000 particles).  MCC draws all weather particles of a view into one
+  fixed vertex buffer that holds 2730 particles, and copies into it without a size check; Vista and the Xbox draw 3000 without trouble.  The converter
+  now caps a weather system's particle count (the block's own counts and data, and the tag's *Maximum Number Of Particles*) at 2730 and reports
+  `weather_particles_clamped`.  The weather is about 9 % less dense on such a map.  *Confirmed in game.*
+* **MCC crashed while loading maps with dialogue sounds that have no lip-sync entry.**  At map load MCC reads the lip-sync ("extra info") entry of every
+  sound whose sound class is speech, without checking that the sound has one; every stock speech sound has one, sounds of many old mods do not.
+  Such a sound now gets an empty entry, the same shape MCC uses for its unused language slot.  *Confirmed in game* on four maps that crashed before.
+
 ### 2.3 Both directions
 
 **Package / batch behaviour.**  The batch dry run used to show misleading `name_<hash>` names for maps that were already in a package, because
 it did not hash its sources.  A dry run now hashes every source and makes exactly the decisions a real run would (a map that is already in
 the package is listed as up to date under its real name); `--no-hash` is an explicit fast approximation whose items are marked "provisional".
+
+### 2.4 Original Xbox to Vista and MCC (1.1.0)
+
+The Xbox route was built against the stock Xbox maps and five community packs (212 maps).  The problems below were found on the way; each fix
+is general (no per-map switch).
+
+* **Removed or shuffled tag names.**  Old mod tools often blanked a map's tag-name table, or shifted every name by a few characters, so tags carry
+  the names of other tags.  Names are recovered from the tags' content against the stock maps (exact data, then references, then the tag's place in
+  the closure); tags with no name anywhere are labelled `recovered\...`.  On one map the shifted names had made the converter take the mod's
+  rasterizer settings, which pointed the game's screen passes at a debug shader: the map loaded into a black screen with only the HUD.  The
+  globals' rasterizer block is now always the PC game's.
+* **Tags that point at another tag's data, editor junk and short structures.**  Some mods give an object's slot the data of another object (a weapon
+  entry that holds a machine), leave heap fill in editor-only blocks, or write structures shorter than the engine reads.  Each is detected and
+  rebuilt in the layout of what the data really is; damaged values that fail a plausibility check fall back to Bungie's tag.
+* **Lightmaps.**  A mod that changed a BSP usually stripped its lightmap.  The game reads the lightmap tables without bounds checks, and an empty or
+  short table crashed Vista and MCC at load or in the first frames.  An unmodified stock BSP gets its complete stock lightmap; any other BSP gets a
+  generated one (README, "Converting original Xbox maps").  *Confirmed in game:* several maps with a generated lightmap load and play.
+* **Precomputed lighting (PRT) that a mod zeroed** made some models flicker with stale lighting.  The data is rebuilt as valid, zero transfer, so
+  those models are drawn dark, as on the Xbox.  *Confirmed in game* on four maps.
+* **Sounds.**  Xbox WMA sounds are whole ASF files; the PC games want the bare stream with a media-type header, and the raw ASF crashed the WMA
+  decoder.  They are re-framed (byte-identical to Bungie's own conversion on all 480 stock pairs).
+* **Weather and water geometry** lacked a flag the PC games rely on (water: a crash at map load; weather: a crash on quitting to the menu, when
+  the geometry cache is freed), and a weather system with no particles at all crashed Vista at load.  Both are fixed (the empty weather system is dropped, as it draws nothing on the Xbox).
+* **Particles whose shader template Vista does not have** (`particle_alpha_test_no_lighting`) crashed Vista when a shot hit glass; they use Vista's
+  twin of that template.
+* **Multiplayer globals and HUD.**  The Xbox weapon list is one entry longer than Vista's (a trailing empty entry is dropped); a reticle a mod drew
+  with Bungie's split-screen sprite gets the full-screen one.
 
 ## 3. What is still open
 
@@ -408,6 +446,21 @@ These are statements the converter relies on that were read from the game's code
   list about 500 maps, and which default primary weapon Excession's map description should name, are all open until tested in the game.
 * **Single conversions never replace an existing file** unless you pass `--overwrite` (and they never touch the input).  Batch mode skips existing outputs unless told otherwise.
 * **Windows only.**  Uses `ctypes.windll`, `D3DCompiler_47.dll` and Windows process priorities.
+
+### 3.6 Original Xbox maps
+
+* **Most converted Xbox maps have not been played.**  All 208 convertible maps of the test set pass the built-in checks on Vista and on MCC; only
+  some were played.
+* **Not converted:** Xbox campaign maps; Halo 3, Reach and other Xbox 360 files that sit in Xbox map folders; truncated downloads (reported with
+  the number of missing bytes: download the map again).
+* **Without your original Xbox maps** (`--stock-xbox-maps`) the conversion is less faithful: tags that equal Bungie's cannot always be recognised and
+  are converted instead of linked, damaged tags cannot be repaired from the stock copy, and removed tag names are recovered less well.  A note at
+  the end of the run says which maps were affected.
+* **Generated lightmaps look flat.**  `native` (the default) reproduces how the Xbox draws a BSP without a lightmap; it is not a light bake.  A real
+  bake of a modified BSP is not part of this tool.
+* **Dialogue lip-sync** of a mod's own dialogue sounds is not generated on MCC (the sounds play; the empty entry above keeps MCC from crashing).
+* **A mod's own design can look like a bug:** a map that starts in a closed room, or a door that only a script of the original mod opens, behaves
+  the same way it did on the Xbox.  Compare with the original before reporting it.
 
 ## 4. Reporting a problem
 

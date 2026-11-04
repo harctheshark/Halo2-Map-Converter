@@ -185,6 +185,47 @@ class FfmpegDecoder(OggDecoder):
                            % (self.how, ENV_FFMPEG))
         return True, 'ffmpeg: %s (%s)' % (self.path, self.how)
 
+    def decode_container(self, data, suffix, channels, rate, codec):
+        """Any container ffmpeg reads (e.g. '.wav' holding WMA blocks, wma_to_xadpcm) with KNOWN channels / rate -> Decoded."""
+        x = self._ffmpeg_f32(data, suffix, channels)
+        pcm = np.clip(np.rint(x.astype(np.float64) * 32768.0), -32768, 32767).astype(np.int16)
+        return Decoded(pcm, rate, channels, codec)
+
+    def _ffmpeg_f32(self, data, suffix, ch):
+        ok, why = self.availability()
+        if not ok:
+            raise OggDecoderUnavailable(why)
+        fd, tmp = tempfile.mkstemp(suffix=suffix, prefix='h2conv_dec_', dir=self.temp_dir or None)
+        try:
+            with os.fdopen(fd, 'wb') as f:
+                f.write(bytes(data))
+            cmd = [self.path, '-hide_banner', '-nostdin', '-loglevel', 'error', '-i', tmp, '-map', '0:a:0', '-vn', '-f', 'f32le',
+                   '-acodec', 'pcm_f32le', 'pipe:1']
+            kw = dict(stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=self.timeout,
+                      creationflags=CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS)
+            try:
+                si = subprocess.STARTUPINFO()
+                si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                si.wShowWindow = 0                                         # SW_HIDE
+                kw['startupinfo'] = si
+            except AttributeError:                                         # not Windows
+                kw.pop('creationflags')
+            try:
+                r = subprocess.run(cmd, **kw)
+            except (OSError, subprocess.TimeoutExpired) as e:
+                raise OggDecodeFailed('ffmpeg failed to run: %r' % (e,))
+        finally:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+        if r.returncode != 0 or not r.stdout:
+            raise OggDecodeFailed('ffmpeg exit %d: %s' % (r.returncode, r.stderr.decode('utf8', 'replace').strip()[:300]))
+        raw = r.stdout
+        if len(raw) % (4 * ch):
+            raw = raw[:len(raw) // (4 * ch) * (4 * ch)]
+        return np.frombuffer(raw, dtype='<f4').reshape(-1, ch)
+
     def decode(self, data):
         ok, why = self.availability()
         if not ok:
@@ -297,6 +338,56 @@ def ogg_to_xadpcm(data, channels, rate_hz, decoder):
     res.mismatch = (dec.rate != rate_hz or dec.channels != channels)
     res.src_rate, res.src_channels, res.codec, res.granule = dec.rate, dec.channels, dec.codec, info.get('granule')
     res.native_frames = dec.frames                            # samples per channel at the stream's own rate (== the last Ogg granule for Vorbis)
+    res.frames = int(pcm.shape[0])
+    res.duration_ms = res.frames * 1000 // rate_hz
+    res.payload = sc.xadpcm_encode(pcm, channels)
+    return res
+
+
+# ------------------------------------------------------------------------------------------------
+# WMA (Vista / MCC 'auds' blob) -> Xbox ADPCM
+# ------------------------------------------------------------------------------------------------
+def auds_format(blob):
+    """(WAVEFORMATEX bytes, data bytes) of a Vista / MCC WMA chunk: AM_MEDIA_TYPE (64 B, cbFormat at +60) + WAVEFORMATEX + whole WMA
+    blocks (sound_xbox.xbox_wma_to_vista builds the same from an Xbox ASF file)."""
+    b = bytes(blob)
+    if b[:4] != b'auds' or len(b) < 64 + 18:
+        raise OggDecodeFailed('not a WMA "auds" blob')
+    cb = struct.unpack_from('<I', b, 60)[0]
+    if cb < 18 or 64 + cb > len(b):
+        raise OggDecodeFailed('WMA blob format size %d' % cb)
+    return b[64:64 + cb], b[64 + cb:]
+
+
+def auds_to_wav(blob):
+    """A Vista / MCC WMA blob as a RIFF WAVE file (format tag 0x160 / 0x161 + its extra bytes, the blocks as 'data'): ffmpeg's wav demuxer
+    hands it to its wmav1 / wmav2 decoder, so no ASF container has to be rebuilt."""
+    wfx, data = auds_format(blob)
+    fmt = b'fmt ' + struct.pack('<I', len(wfx)) + wfx + (b'\0' if len(wfx) & 1 else b'')
+    dat = b'data' + struct.pack('<I', len(data)) + data + (b'\0' if len(data) & 1 else b'')
+    return b'RIFF' + struct.pack('<I', 4 + len(fmt) + len(dat)) + b'WAVE' + fmt + dat
+
+
+def wma_channels(blob):
+    """(channels, sample rate) of a WMA blob's WAVEFORMATEX."""
+    wfx, _ = auds_format(blob)
+    return struct.unpack_from('<H', wfx, 2)[0], struct.unpack_from('<I', wfx, 4)[0]
+
+
+def wma_to_xadpcm(blob, channels, rate_hz, decoder):
+    """One WMA permutation (Vista 'auds' blob) -> OggResult with an Xbox ADPCM payload at rate_hz / channels.  MCC plays no WMA game sound
+    (stock MCC re-encoded every announcer; only the unused classic menu music is left as WMA): Tortuga's own announcer was silent on MCC
+    (2026-11-02).  The decoder must offer decode_container (the default FfmpegDecoder does); otherwise OggDecoderUnavailable."""
+    from h2conv import sound_codec as sc
+    if not hasattr(decoder, 'decode_container'):
+        raise OggDecoderUnavailable('the selected decoder cannot read WMA')
+    src_ch, src_rate = wma_channels(blob)
+    dec = decoder.decode_container(auds_to_wav(blob), '.wav', src_ch, src_rate, 'wma')
+    pcm = fit_pcm(dec.pcm, dec.rate, rate_hz, channels)
+    res = OggResult()
+    res.mismatch = (dec.rate != rate_hz or dec.channels != channels)
+    res.src_rate, res.src_channels, res.codec, res.granule = dec.rate, dec.channels, 'wma', None
+    res.native_frames = dec.frames
     res.frames = int(pcm.shape[0])
     res.duration_ms = res.frames * 1000 // rate_hz
     res.payload = sc.xadpcm_encode(pcm, channels)

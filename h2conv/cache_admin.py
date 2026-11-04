@@ -10,17 +10,24 @@ What is cached (all below the work folder: H2CONV_WORK / settings.json "work_dir
     mcc_decompressed\\   uncompressed copies of the compressed MCC maps (100-600 MB each) + cache_index.json (source map -> copy)
     sound_cache\\        one file per converted sound
     rev_planner\\        planner index of the Vista to MCC direction (small)
+    xbox_stock_index\\  index of your original Xbox maps (built on the first Xbox conversion that uses them, minutes to rebuild)
+    xbox_jobs\\         the Vista maps an Xbox -> MCC run makes on the way (one sub-folder per run, removed when the run ends; a run that was
+                        killed leaves its folder behind, and the next trim or `clear` removes it)
     validate_enum_seen.json                                                        (tiny)
 
 The cap is settings.json "cache_limit_gb" (default 5; 0 = never trim by itself; H2CONV_CACHE_LIMIT_GB overrides it).  It is applied at
 the end of a conversion run (`convert`, `rev`, and once at the end of a `batch`, not in every child process of a batch), oldest-USED
 files first.  "Used" is the file's modification time: every cache hit bumps it with os.utime (NTFS last-access times are unreliable).
 Files the run itself used are never removed by its own trim.  A file that cannot be deleted (another instance has it open) is skipped.
+xbox_stock_index is listed by `info` and removed by `clear`, but the size cap neither counts nor trims it: it is expensive to rebuild.  Its
+folder is <work folder>\\xbox_stock_index unless H2CONV_XBOX_INDEX_DIR / settings.json "xbox_index_dir" names another one; `clear` removes only
+the index's own files (content_*.pkl, combined_*.pkl, names_*.pkl) from it.
 
 Stdlib only.  A trim can never fail a conversion (trim_after_job swallows every error).
 """
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -31,8 +38,11 @@ GB = 1 << 30
 INDEX_NAME = 'cache_index.json'                  # inside mcc_decompressed: normalised source path -> name of the decompressed copy
 ENV_NO_TRIM = 'H2CONV_NO_CACHE_TRIM'             # set by `batch --isolate` in its children: only the batch parent trims
 DECOMP, SOUND, PLANNER, ENUM = 'mcc_decompressed', 'sound_cache', 'rev_planner', 'validate_enum_seen.json'
-TRIMMABLE = (DECOMP, SOUND)                      # the big folders; the small ones are only counted
-CATEGORIES = (DECOMP, SOUND, PLANNER, ENUM)      # what `cache clear` deletes
+XBOX_JOBS = 'xbox_jobs'                          # intermediate Vista maps of `h2conv xbox --to mcc` (h2conv.xbox_cli): protected while the run uses them
+XBOX_INDEX = _paths.XBOX_INDEX_NAME              # 'xbox_stock_index': the index of the user's original Xbox maps (h2conv.xbox.stock_index)
+TRIMMABLE = (DECOMP, SOUND, XBOX_JOBS)           # the big folders; the small ones are only counted
+KEPT = (XBOX_INDEX,)                             # shown and cleared, but neither counted against the size cap nor trimmed (minutes to rebuild)
+CATEGORIES = (DECOMP, SOUND, PLANNER, ENUM, XBOX_JOBS, XBOX_INDEX)      # what `cache clear` deletes
 PART_GUARD_S = 3600                              # a half-written *.part / *.tmp younger than this may belong to a running instance: never trimmed
 DATABASE_NAMES = ('shared.map', 'single_player_shared.map', 'mainmenu.map')   # = mcc_cache.DATABASE_FILE_NAMES (kept here: no import cycle)
 
@@ -174,8 +184,22 @@ def _files_in(folder):
     return out
 
 
+def category_path(name, work=None):
+    """The folder (or file) of a cache category.  The Xbox stock index follows paths.xbox_index_dir() (H2CONV_XBOX_INDEX_DIR / settings.json
+    "xbox_index_dir") unless an explicit work folder is given (`cache --work DIR`: then DIR\\xbox_stock_index)."""
+    if name == XBOX_INDEX and not work:
+        return _paths.xbox_index_dir()
+    return os.path.join(cache_root(work), name)
+
+
+XBOX_INDEX_FILE = re.compile(r'^(content|combined|names)_.*\.pkl$|\.pkl\.\d+\.tmp$', re.I)
+
+
 def category_files(name, work=None):
-    p = os.path.join(cache_root(work), name)
+    p = category_path(name, work)
+    if name == XBOX_INDEX:
+        # only the index's own files: a folder chosen by the user may hold other things, which `cache clear` must not touch
+        return [f for f in (_files_in(p) if os.path.isdir(p) and not _is_link(p) else []) if XBOX_INDEX_FILE.match(os.path.basename(f[0]))]
     if name == ENUM:
         try:
             st = os.stat(p)
@@ -196,7 +220,7 @@ def info(work=None):
         fs = category_files(name, work)
         n = sum(f[1] for f in fs)
         total += n
-        cats.append({'name': name, 'path': os.path.join(root, name), 'files': len(fs), 'bytes': n, 'trimmable': name in TRIMMABLE})
+        cats.append({'name': name, 'path': category_path(name, work), 'files': len(fs), 'bytes': n, 'trimmable': name in TRIMMABLE})
     return {'root': root, 'limit_gb': _paths.cache_limit_gb(), 'total_bytes': total, 'files': sum(c['files'] for c in cats), 'categories': cats}
 
 
@@ -227,6 +251,8 @@ def trim(limit_bytes=None, work=None, protect_since=None, protect=(), dry_run=Fa
     files = []
     before = 0
     for name in CATEGORIES:
+        if name in KEPT:
+            continue
         for path, size, mtime in category_files(name, work):
             before += size
             if name in TRIMMABLE and os.path.basename(path) != INDEX_NAME:
@@ -261,15 +287,18 @@ def trim(limit_bytes=None, work=None, protect_since=None, protect=(), dry_run=Fa
     res['after'] = total
     if not dry_run:
         _prune_empty(os.path.join(cache_root(work), SOUND))
+        _prune_empty(os.path.join(cache_root(work), XBOX_JOBS), deep=True)
     return res
 
 
-def _prune_empty(folder):
-    """Remove empty sub-folders of the sound cache (not the folder itself)."""
+def _prune_empty(folder, deep=False):
+    """Remove empty sub-folders of a cache folder (not the folder itself); deep: also the ones that only held empty sub-folders."""
     try:
         for name in os.listdir(folder):
             p = os.path.join(folder, name)
             if os.path.isdir(p) and not _is_link(p):
+                if deep:
+                    _prune_empty(p, deep=True)
                 try:
                     os.rmdir(p)                               # only when empty
                 except OSError:
@@ -309,13 +338,13 @@ def clear(work=None, dry_run=False):
     root = cache_root(work)
     res = {'removed': 0, 'freed': 0, 'failed': [], 'skipped_links': []}
     for name in CATEGORIES:
-        p = os.path.join(root, name)
+        p = category_path(name, work)
         if not os.path.lexists(p):
             continue
         if _is_link(p):
             res['skipped_links'].append(p)
             continue
-        if name == ENUM:
+        if name in (ENUM, XBOX_INDEX):
             files, dirs = category_files(name, work), []
         else:
             files = _files_in(p)
@@ -332,7 +361,7 @@ def clear(work=None, dry_run=False):
             except OSError:
                 res['failed'].append(path)
         if not dry_run and name != ENUM:
-            for d in sorted(dirs, key=len, reverse=True) + [p]:
+            for d in sorted(dirs, key=len, reverse=True) + [p]:         # rmdir removes a folder only when it is empty
                 try:
                     os.rmdir(d)
                 except OSError:
@@ -370,14 +399,15 @@ def print_info(inf, out=None):
         w('  %-24s %8s  %6d file(s)\n' % (c['name'], human(c['bytes']), c['files']))
     w('  %-24s %8s  %6d file(s)\n' % ('total', human(inf['total_bytes']), inf['files']))
     w('size cap     : %s\n' % (('%g GB (settings.json "cache_limit_gb"; 0 = no automatic trimming)' % lim) if lim > 0 else '0 = no automatic trimming'))
-    if lim > 0 and inf['total_bytes'] > lim * GB:
+    if lim > 0 and sum(c['bytes'] for c in inf['categories'] if c['name'] not in KEPT) > lim * GB:
         w('over the cap : yes - `h2conv cache trim` removes the oldest files; a conversion run does it by itself at its end\n')
 
 
 def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(prog='h2conv cache', description='Look at, trim or clear the converter\'s cache folders (decompressed MCC maps, converted '
-                                 'sounds).  Caches are rebuilt when needed; deleting them only makes the next conversion slower.')
+                                 'sounds, the index of your original Xbox maps).  Caches are rebuilt when needed; deleting them only makes the next '
+                                 'conversion slower.')
     ap.add_argument('--work', default=None, metavar='DIR', help='cache (work) folder to use instead of H2CONV_WORK / settings.json / the default')
     sub = ap.add_subparsers(dest='cmd', required=True)
     s = sub.add_parser('info', help='folder, size per category, file counts, size cap')

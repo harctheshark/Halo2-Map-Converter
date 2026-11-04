@@ -1,7 +1,8 @@
-Halo 2 Map Converter - the Windows programs (version 1.0.0)
+Halo 2 Map Converter - the Windows programs (version 1.1.0)
 ===========================================================
 
-Convert Halo 2 maps between Halo 2 Vista / Project Cartographer and Halo 2: The Master Chief Collection (MCC), in both directions.
+Convert Halo 2 maps between Halo 2 Vista / Project Cartographer and Halo 2: The Master Chief Collection (MCC), in both directions,
+and original Xbox multiplayer maps to Vista or MCC.
 You need no Python: everything the programs use is in the folder called _internal.  You do need your own copies of the games.
 
 
@@ -9,11 +10,12 @@ Start here
 ----------
   Halo 2 Map Converter.exe    The window program.  Double-click it.
                               1. Choose the folder that holds your maps.  It is searched, with every folder below it.
-                              2. Press "Find maps": the list shows every Halo 2 map that was recognised (Vista or MCC), what will
+                              2. Press "Find maps": the list shows every Halo 2 map that was recognised (Vista, MCC or original Xbox), what will
                                  happen to it, and what is skipped and why.
                               3. Check the folders under "Where the converted maps go":
                                    Vista to MCC  ->  your Excession folder (an Excession mod package is made or extended there)
                                    MCC to Vista  ->  your Halo 2 Maps folder (Documents\My Games\Halo 2\Maps)
+                                   Xbox maps     ->  the Halo 2 Maps folder, or MCC packages beside the Excession package
                               4. Press "Convert".  A map that fails is skipped and the rest carry on.  At the end the Summary tab
                                  lists the maps that failed (with the reason) and the output folders, each with an "Open folder" button.
                               Cancel stops after the map that is being converted; "Stop now" ends it at once.
@@ -33,7 +35,10 @@ Good to know
   (in a Command Prompt:  certutil -hashfile <zip file> SHA256).  The full source code is in the release, and the licence is GPL-3.0.
 * MCC multiplayer maps from workshop mods that ship their own shared.map are converted; campaign maps that need a custom shared.map, and maps whose shared.map is not found, are listed and skipped.
 * The 12 Halo CE port maps of workshop mod 3583572796 convert as well (new in 0.3.0).
-* New in 1.0.0 (since 0.3.0): rendering fixes for converted maps (foliage on NVIDIA cards, glass and plasma fading), repaired missing-texture slots in Vista to MCC maps, sound size
+* New in 1.1.0: original Xbox multiplayer maps (the stock game and the community map packs) convert to Vista, or to MCC as one
+  Excession package per pack.  Choose the Xbox target in the window and, for better results, set "OG Xbox maps folder" (section 4) to
+  your original Xbox maps.  Two MCC crashes of Vista to MCC maps are fixed (heavy weather, dialogue sounds); RELEASE_NOTES.md lists everything.
+* 1.0.0: rendering fixes for converted maps (foliage on NVIDIA cards, glass and plasma fading), repaired missing-texture slots in Vista to MCC maps, sound size
   reduction as an option, and more; RELEASE_NOTES.md lists everything.  A custom list-preview image is not supported.
 * Converted multiplayer maps keep their own globals.  For the full entry in Cartographer's map list and for changing teams in the lobby, Cartographer's
   halo2.exe needs a six-byte patch (or convert with --matg link --training-via-script, which gives up the map's own globals).  README.md explains both

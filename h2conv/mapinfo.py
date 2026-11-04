@@ -5,7 +5,7 @@ Pure stdlib (+ lazy imports of h2conv.vista_cache / h2conv.handlers.locale for m
 
 Public API
 ----------
-identify(path, deep=True)   -> MapRecord      header-only look at one file (v8 Vista / v13 MCC / invalid), never raises
+identify(path, deep=True)   -> MapRecord      header-only look at one file (v8 Vista / v8 original Xbox / v13 MCC / invalid), never raises
 scan_folder(root)           -> [MapRecord]    recursive scan for *.map (junctions/symlinks are not followed), sorted by path
 stock_mcc_times()           -> {'mainmenu','shared','single_player_shared': FILETIME}   creation times of the stock MCC databases
 read_titles(path)           -> {'title','description','source'}   localized map name / description of a Vista map
@@ -25,6 +25,11 @@ Classification (MapRecord.status / .code):
              support, step 2; campaign maps with shared tags stay skipped)
     invalid  not a usable Halo 2 cache: 'unreadable', 'too_small', 'bad_signature', 'unsupported_version', 'bad_footer',
              'bad_type', 'not_pc_build', 'truncated', 'bad_tags_header'
+
+Original Xbox maps (cache v8, build 02.09.27.09809; MapRecord.fmt 'xbox'): a multiplayer map is ok (code 'xbox'; a header that says campaign
+but a scenario that says multiplayer - 24 Phantom maps - counts as multiplayer, exactly as the converter decides); a campaign map is skip /
+'not_multiplayer'; mainmenu / shared / single_player_shared are skip / 'database'; a download that is shorter than its header says is invalid /
+'truncated'; Halo 3, Halo 3: ODST, Reach and other Xbox 360 maps (a big-endian header) are skip / 'not_halo2' ("not a Halo 2 map").
 """
 import ctypes
 try:
@@ -47,6 +52,8 @@ MCC_HEADER_SIZE = 0x380
 VISTA_HEADER_SIZE = 0x800
 MCC_VERSION = 13
 VISTA_VERSION = 8
+XBOX_BUILD = '02.09.27.09809'      # the build string of the original Xbox Halo 2 maps (cache v8; h2conv.xbox.xbox_cache.XBOX_BUILD), at 0x120
+XBOX_BUILD_OFFSET = 0x120          # (the Xbox header is the Vista header without 12 bytes at 0x20: Vista's build string is at 0x12C)
 TAGS_SIG = b'sgat'                 # 'tags' stored little endian, at <tag region>+0x1C in both games
 NONE32 = 0xFFFFFFFF
 
@@ -140,7 +147,7 @@ def source_sha256(path, block=1 << 22):
 # MapRecord
 # ======================================================================================================
 class MapRecord(object):
-    """One looked-at file.  `fmt` 'vista' | 'mcc' | 'invalid'; `status` 'ok' | 'skip' | 'invalid'; `code` machine readable cause."""
+    """One looked-at file.  `fmt` 'vista' | 'mcc' | 'xbox' | 'invalid'; `status` 'ok' | 'skip' | 'invalid'; `code` machine readable cause."""
     FIELDS = ('path', 'size', 'mtime', 'fmt', 'version', 'kind', 'type_code', 'name', 'scenario_path', 'build', 'compressed',
               'style', 'creation_time', 'shared_times', 'custom_shared', 'external_tags', 'status', 'code', 'reason', 'warnings',
               'header_file_size', 'data_dir', 'custom_shared_dir', 'custom_shared_map')
@@ -192,6 +199,8 @@ class MapRecord(object):
         """Short human readable classification, e.g. 'Vista v8 multiplayer (build 11081.07.04.30.0934.main)'."""
         if self.fmt == 'vista':
             return 'Vista v8 %s (build %s)' % (self.kind, self.build)
+        if self.fmt == 'xbox':
+            return 'Xbox v8 %s (build %s)' % (self.kind, self.build)
         if self.fmt == 'mcc':
             extra = ['compressed' if self.compressed else 'uncompressed', 'H2EK self-contained' if self.style == 'h2ek' else 'stock-linked']
             if self.custom_shared_dir:
@@ -384,15 +393,62 @@ def identify(path, deep=True, mcc_dir=None):
         return _set(rec, 'invalid', 'unreadable', 'cannot read: %s' % ex)
     if len(buf) < MCC_HEADER_SIZE:
         return _set(rec, 'invalid', 'too_small', 'file is only %d bytes (a cache header is 0x380 / 0x800)' % len(buf))
+    if buf[:4] == b'head':                      # a big-endian cache: Halo 3, Halo 3: ODST, Reach and other Xbox 360 maps
+        return _identify_x360(rec, buf)
     if buf[:4] != b'daeh':
         return _set(rec, 'invalid', 'bad_signature', "not a Halo 2 cache file (signature %r, expected b'daeh')" % bytes(buf[:4]))
     rec.version = _u32(buf, 4)
     if rec.version == MCC_VERSION:
         return _identify_mcc(rec, buf, deep, mcc_dir)
     if rec.version == VISTA_VERSION:
+        if _cstr(buf, XBOX_BUILD_OFFSET, 0x20) == XBOX_BUILD:
+            return _identify_xbox(rec, buf)
         return _identify_vista(rec, buf)
     return _set(rec, 'invalid', 'unsupported_version',
                 'cache version %d (this tool handles Halo 2 Vista = 8 and Halo 2 MCC = 13)' % rec.version)
+
+
+def _identify_x360(rec, buf):
+    """Halo 3 / Halo 3: ODST / Reach / other Xbox 360 maps (big-endian header): not a Halo 2 map, skipped with a clear sentence."""
+    from .xbox import xbox_cache as XC
+    bad = XC.classify_header(buf, rec.size)
+    return _set(rec, 'skip', 'not_halo2', bad[1] if bad else 'not a Halo 2 map')
+
+
+def _identify_xbox(rec, buf):
+    """An original Xbox Halo 2 map (cache v8, build 02.09.27.09809; its header is the Vista header without the 12 bytes at 0x20).
+    Multiplayer maps are ok (code 'xbox'); campaign maps are skipped ('not_multiplayer'), the databases (mainmenu / shared /
+    single_player_shared) are skipped as 'database', a truncated download is invalid ('truncated')."""
+    from .xbox import xbox_cache as XC
+    rec.fmt = 'xbox'
+    rec.build = XC.XBOX_BUILD
+    rec.header_file_size = _u32(buf, 8)
+    rec.type_code = struct.unpack_from('<h', buf, 0x140)[0]
+    rec.name = _cstr(buf, 0x198, 0x20)
+    rec.scenario_path = _cstr(buf, 0x1BC, 0x100)
+    if len(buf) < VISTA_HEADER_SIZE or buf[0x7FC:0x800] != b'toof':
+        return _set(rec, 'invalid', 'bad_footer', "no 'foot' marker at 0x7FC")
+    bad = XC.classify_header(buf, rec.size)
+    if bad:
+        return _set(rec, 'invalid', bad[0], bad[1])
+    kind, _stype = XC.file_kind(rec.path, rec.type_code)
+    if kind == 'unknown':
+        return _set(rec, 'invalid', 'bad_type', 'scenario type %d outside [0,5)' % rec.type_code)
+    rec.kind = kind
+    short = XC.short_bytes(buf, rec.size)
+    if short:
+        rec.warnings.append('file is %d bytes shorter than its header says (the end of the last tag is missing; check the download)' % short)
+    elif rec.size > rec.header_file_size:
+        rec.warnings.append('file is %d bytes larger than its header says (trailing data)' % (rec.size - rec.header_file_size))
+    if rec.is_database:
+        return _set(rec, 'skip', 'database', '%s is a shared database map, not a playable map' % rec.kind)
+    if kind != 'multiplayer':
+        return _set(rec, 'skip', 'not_multiplayer',
+                    'an original Xbox campaign map (single-player). Only multiplayer Xbox maps can be converted')
+    if rec.type_code != 1:
+        rec.warnings.append("header scenario type %d, but the scenario's own Type says multiplayer (a mod tool zeroed the header): converted as "
+                            "multiplayer" % rec.type_code)
+    return _set(rec, 'ok', 'xbox', '')
 
 
 def _identify_vista(rec, buf):
@@ -773,7 +829,7 @@ def campaign_mapinfo(guid, scenario_file, title, description=None, *, flags=MAP_
 def main(argv=None):
     """py -3 -m h2conv.mapinfo <file-or-folder> [...]   print the classification of every map found."""
     import argparse
-    ap = argparse.ArgumentParser(prog='h2conv.mapinfo', description='Classify Halo 2 .map files (Vista v8 / MCC v13 / invalid).')
+    ap = argparse.ArgumentParser(prog='h2conv.mapinfo', description='Classify Halo 2 .map files (Vista v8 / original Xbox v8 / MCC v13 / invalid).')
     ap.add_argument('paths', nargs='+')
     ap.add_argument('--json', action='store_true', help='print JSON records')
     ap.add_argument('--titles', action='store_true', help='also read the localized name / description of Vista maps')

@@ -50,8 +50,22 @@ DIRECTION_LABELS = OD([
     ('vista2mcc', 'Vista maps to MCC only (an Excession mod package)'),
     ('mcc2vista', 'MCC maps to Vista only (Project Cartographer)'),
 ])
+XBOX_LABELS = OD([
+    ('vista', 'Original Xbox maps to Vista'),
+    ('mcc', 'Original Xbox maps to MCC (one mod package per map pack, 45 maps at most)'),
+    ('none', 'Leave original Xbox maps alone'),
+])
+# shown (before Convert) when original Xbox maps are in the list and no OG Xbox maps folder is set; the converter's own summary repeats it once
+XBOX_NO_STOCK_WARNING = ('%d original Xbox map(s) will be converted without your original Halo 2 Xbox maps, which costs some quality (edited shaders, '
+                         'models and sounds can be replaced by the standard Vista version, re-skinned menu pictures and damaged tags are not recognised '
+                         'or repaired, and removed tag names are recovered less well). Set "OG Xbox maps folder" under 4. Games and layout files to the '
+                         'folder with your original Xbox maps (lockout.map, ascension.map, shared.map, mainmenu.map ...) to avoid this.')
 # plain words for the machine codes of h2conv.batch / h2conv.mapinfo
 SKIP_WORDS = OD([
+    ('not_multiplayer', 'Xbox campaign map: only multiplayer Xbox maps are converted'),
+    ('not_halo2', 'not a Halo 2 map (Halo 3, Reach or another Xbox 360 file)'),
+    ('not_xbox', 'not an original Xbox map'),
+    ('truncated', 'incomplete download'),
     ('database', 'game database (shared / mainmenu), not a playable map'),
     ('custom_shared_missing', 'needs a custom shared.map that was not found next to the mod - skipped'),
     ('duplicate', 'byte-identical copy of another map'),
@@ -65,14 +79,16 @@ SKIP_WORDS = OD([
 SOURCE_WORDS = {'auto': 'found automatically', 'settings': 'from your saved settings', 'env': 'from an environment variable',
                 'option': 'from the command line', 'bundled': 'bundled with the program', 'chosen': 'chosen by you',
                 'default': 'the standard folder', 'none': 'not set'}
-FOLDER_ORDER = ('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps', 'mcc_out', 'vista_out')
+FOLDER_ORDER = ('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps', 'stock_xbox_maps', 'mcc_out', 'vista_out')
+OPTIONAL_FOLDERS = ('h2ek_maps', 'stock_xbox_maps')           # may stay unset
 FOLDER_LABELS = OD([
     ('mcc_maps', 'Halo 2 MCC maps folder'),
     ('vista_maps', 'Halo 2 Vista maps folder (stock maps)'),
     ('assembly', 'Assembly layout files'),
     ('h2ek_maps', 'MCC Halo 2 Editing Kit maps (optional extra donors)'),
-    ('mcc_out', 'Excession mod package (output of Vista to MCC)'),
-    ('vista_out', 'Halo 2 maps folder (output of MCC to Vista)'),
+    ('stock_xbox_maps', 'OG Xbox maps folder (optional: your original Halo 2 Xbox maps, better quality when converting Xbox maps)'),
+    ('mcc_out', 'Excession mod package (output of Vista to MCC; Xbox map packs are made beside it)'),
+    ('vista_out', 'Halo 2 maps folder (output of MCC and Xbox to Vista)'),
 ])
 MCC_HINT = 'the halo2\\h2_maps_win64_dx11 folder of Halo: The Master Chief Collection'
 VISTA_HINT = 'the "maps" folder of Halo 2 for Windows Vista / Project Cartographer (with shared.map, mainmenu.map and single_player_shared.map)'
@@ -142,6 +158,34 @@ def count_maps(folder):
         return sum(1 for n in os.listdir(folder) if n.lower().endswith('.map'))
     except OSError:
         return 0
+
+
+XBOX_BUILD = b'02.09.27.09809'                  # the build string of the original Xbox Halo 2 maps (h2conv.xbox.xbox_cache.XBOX_BUILD)
+
+
+def count_xbox_maps(folder):
+    """-> (number of original Halo 2 Xbox (cache v8, Xbox build) maps in `folder`, [of shared.map / mainmenu.map / single_player_shared.map the
+    ones that are not there]).  Reads the first bytes of each .map only."""
+    n, have = 0, set()
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return 0, []
+    for name in names:
+        p = os.path.join(folder, name)
+        if not name.lower().endswith('.map') or not os.path.isfile(p):
+            continue
+        try:
+            with open(p, 'rb') as fh:
+                head = fh.read(0x140)
+        except OSError:
+            continue
+        # a Halo 2 cache v8 map of the Xbox retail build: 'daeh', version 8, build string at 0x120
+        if (len(head) >= 0x140 and head[:4] == b'daeh' and int.from_bytes(head[4:8], 'little') == 8
+                and head[0x120:0x140].split(b'\0')[0] == XBOX_BUILD):
+            n += 1
+            have.add(name.lower())
+    return n, [x for x in ('shared.map', 'mainmenu.map', 'single_player_shared.map') if x not in have]
 
 
 def free_bytes(folder):
@@ -248,8 +292,11 @@ class ScanRow(object):
 
 def _what(rec):
     if rec.fmt == 'invalid':
-        return 'not a usable Halo 2 map'
-    kind = {'solo': 'campaign', 'multiplayer': 'multiplayer'}.get(rec.kind, rec.kind or '?')
+        return 'not a Halo 2 map' if rec.code == 'not_halo2' else 'not a usable Halo 2 map'
+    kind = {'solo': 'campaign', 'multiplayer': 'multiplayer', 'mainmenu': 'main menu', 'shared': 'shared data',
+            'single_player_shared': 'shared data'}.get(rec.kind, rec.kind or '?')
+    if rec.fmt == 'xbox':
+        return 'Xbox %s' % kind
     return '%s %s' % ('Vista' if rec.fmt == 'vista' else 'MCC', kind)
 
 
@@ -265,15 +312,19 @@ class ScanResult(object):
         self.n_files = len(records)
         self.vista = [r for r in ok if r.fmt == 'vista']
         self.mcc = [r for r in ok if r.fmt == 'mcc']
+        self.xbox = [r for r in ok if r.fmt == 'xbox']
         self.to_vista2mcc = [i for i in self.items if i.action == 'convert' and i.direction == 'vista2mcc']
         self.to_mcc2vista = [i for i in self.items if i.action == 'convert' and i.direction == 'mcc2vista']
+        self.to_xbox2vista = [i for i in self.items if i.action == 'convert' and i.direction == 'xbox2vista']
+        self.to_xbox2mcc = [i for i in self.items if i.action == 'convert' and i.direction == 'xbox2mcc']
+        self.xbox_packages = list(getattr(plan, 'xbox_packages', None) or []) if plan is not None else []
         self.skipped = collections.Counter(i.code for i in self.items if i.action == 'skip')
         self.invalid = [i for i in self.items if i.action == 'invalid']
         self.custom_shared = [r for r in records if r.status == 'skip' and r.code == 'custom_shared_missing']
 
     @property
     def n_convert(self):
-        return len(self.to_vista2mcc) + len(self.to_mcc2vista)
+        return len(self.to_vista2mcc) + len(self.to_mcc2vista) + len(self.to_xbox2vista) + len(self.to_xbox2mcc)
 
     def _rec_row(self, r):
         return ScanRow(r.path, os.path.basename(r.path), _what(r), 'found' if r.status == 'ok' else 'ignored', one_line(r.reason), code=r.code)
@@ -282,7 +333,10 @@ class ScanResult(object):
         r = it.rec
         name = rel_path(r.path, self.root)
         if it.action == 'convert':
-            act = 'Vista -> MCC' if it.direction == 'vista2mcc' else 'MCC -> Vista'
+            act = {'vista2mcc': 'Vista -> MCC', 'mcc2vista': 'MCC -> Vista', 'xbox2vista': 'Xbox -> Vista', 'xbox2mcc': 'Xbox -> MCC'}[it.direction]
+            if it.direction == 'xbox2mcc':
+                return ScanRow(r.path, name, _what(r), act, ('package "%s"  (%s)' % (it.package.title, it.display)) if it.package is not None else it.display,
+                               it.direction, it.code)
             return ScanRow(r.path, name, _what(r), act, ('-> %s.map  %s' % (it.stem, B.plan_label(it))).strip(), it.direction, it.code)
         if it.action == 'skip':
             return ScanRow(r.path, name, _what(r), 'skipped', SKIP_WORDS.get(it.code) or one_line(it.reason), code=it.code)
@@ -296,9 +350,15 @@ class ScanResult(object):
         bits = ['%d .map files found' % self.n_files]
         bits.append('%d Vista maps (%d multiplayer, %d campaign)' % (len(self.vista), mp_v, len(self.vista) - mp_v))
         bits.append('%d MCC maps (%d multiplayer, %d campaign)' % (len(self.mcc), mp_m, len(self.mcc) - mp_m))
+        n_xbox = sum(1 for r in self.records if r.fmt == 'xbox')
+        if n_xbox:
+            bits.append('%d original Xbox maps (%d multiplayer)' % (n_xbox, len(self.xbox)))
         text = '; '.join(bits) + '.'
-        text += '  To convert now: %d (%d Vista to MCC, %d MCC to Vista).' % (self.n_convert, len(self.to_vista2mcc), len(self.to_mcc2vista))
-        return text
+        text += '  To convert now: %d (%d Vista to MCC, %d MCC to Vista' % (self.n_convert, len(self.to_vista2mcc), len(self.to_mcc2vista))
+        if self.to_xbox2vista or self.to_xbox2mcc:
+            text += ', %d Xbox to %s' % (len(self.to_xbox2vista) + len(self.to_xbox2mcc),
+                                         'Vista' if self.to_xbox2vista else 'MCC in %d package(s)' % len(self.xbox_packages))
+        return text + ').'
 
     def skipped_text(self):
         """One line about what is left out, '' when nothing is."""
@@ -308,12 +368,18 @@ class ScanResult(object):
                 continue
             bits.append('%d %s' % (n, SKIP_WORDS.get(code, code)))
         if self.invalid:
-            bits.append('%d not usable Halo 2 maps' % len(self.invalid))
+            trunc = sum(1 for i in self.invalid if i.code == 'truncated')
+            if trunc:
+                bits.append('%d %s' % (trunc, SKIP_WORDS['truncated']))
+            if len(self.invalid) > trunc:
+                bits.append('%d not usable Halo 2 maps' % (len(self.invalid) - trunc))
         return ('Left out: ' + '; '.join(bits) + '.') if bits else ''
 
     def to_dict(self):
         return OD([('root', self.root), ('files', self.n_files), ('vista', len(self.vista)), ('mcc', len(self.mcc)), ('to_vista2mcc', len(self.to_vista2mcc)),
-                   ('to_mcc2vista', len(self.to_mcc2vista)), ('skipped', dict(self.skipped)), ('invalid', len(self.invalid)),
+                   ('to_mcc2vista', len(self.to_mcc2vista)), ('xbox', len(self.xbox)), ('to_xbox2vista', len(self.to_xbox2vista)),
+                   ('to_xbox2mcc', len(self.to_xbox2mcc)), ('xbox_packages', [p.title for p in self.xbox_packages]),
+                   ('skipped', dict(self.skipped)), ('invalid', len(self.invalid)),
                    ('custom_shared', len(self.custom_shared)), ('error', self.error)])
 
 
@@ -471,7 +537,8 @@ class BatchRun(object):
 # ======================================================================================================
 # the summary
 # ======================================================================================================
-OUTPUT_LABELS = {'mcc': 'Excession mod package (MCC maps)', 'vista': 'Halo 2 maps folder (Vista maps)'}
+OUTPUT_LABELS = {'mcc': 'Excession mod package (MCC maps)', 'vista': 'Halo 2 maps folder (Vista maps)',
+                 'xbox_mcc': 'Folder with the Excession mod packages (Xbox maps to MCC)'}
 
 
 def _map_name(src):
@@ -491,6 +558,8 @@ class Summary(object):
         self.output_dirs = []                # [(label, folder)]
         self.package = None
         self.validation = None
+        self.notes = []                      # told once per run: [{'code','message','maps'}] (no OG Xbox maps folder ...)
+        self.xbox_packages = []              # [{'title','folder','maps','validation'}]
         self.elapsed = None
         self.interrupted = False
         self.exit_code = None
@@ -506,6 +575,7 @@ class Summary(object):
         s.elapsed = rep.get('elapsed_s')
         s.interrupted = bool(rep.get('interrupted'))
         s.package, s.validation = rep.get('package'), rep.get('package_validation')
+        s.notes, s.xbox_packages = list(rep.get('xbox_notes') or []), list(rep.get('xbox_packages') or [])
         for d in rep.get('items') or []:
             st = d.get('status')
             if st == 'converted':
@@ -536,9 +606,10 @@ class Summary(object):
                                         'seconds': p['seconds'], 'direction': None})
                 elif p['failed']:
                     s.failed.append({'name': p['name'], 'src': None, 'reason': one_line(p['message'] or 'unknown reason')})
-            m = re.match(r'^output directory \((MCC maps|Vista maps)\): (.+)$', ln)
+            m = re.match(r'^output directory \((MCC maps|Vista maps|MCC mod packages)\): (.+)$', ln)
             if m:
-                s.output_dirs.append(('Excession mod package (MCC maps)' if m.group(1) == 'MCC maps' else 'Halo 2 maps folder (Vista maps)', m.group(2)))
+                s.output_dirs.append(({'MCC maps': OUTPUT_LABELS['mcc'], 'MCC mod packages': OUTPUT_LABELS['xbox_mcc']}.get(m.group(1), OUTPUT_LABELS['vista']),
+                                      m.group(2)))
         s.counts = OD([('converted', len(s.converted)), ('failed', len(s.failed))])
         s.note = ('The batch did not finish normally (exit code %s) and wrote no report, so this list is built from its output lines.' % exit_code)
         return s
@@ -571,6 +642,10 @@ class Summary(object):
             out += ['  %s - %s' % (a['name'], a['reason']) for a in self.attention]
         if self.skipped:
             out += ['', 'Skipped: ' + ', '.join('%d %s' % (n, SKIP_WORDS.get(c, c or 'other')) for c, n in sorted(self.skipped.items(), key=lambda kv: -kv[1]))]
+        for n in self.notes:
+            out += ['', 'Note (%d Xbox map(s)): %s' % (n.get('maps', 0), n.get('message', ''))]
+        for pk in self.xbox_packages:
+            out += ['', 'Mod package "%s": %d map(s) in %s' % (pk.get('title'), pk.get('maps', 0), pk.get('folder'))]
         for label, folder in self.output_dirs:
             out += ['', '%s: %s' % (label, folder)]
             for cv in self.converted:
@@ -597,6 +672,7 @@ class Controller(object):
         self.settings = B.Settings(settings_path)
         self.root = ''
         self.direction = 'auto'
+        self.xbox_to = 'vista'               # where original Xbox maps go: vista | mcc | none
         self.multiplayer = True
         self.campaign = True
         self.overwrite = False
@@ -627,6 +703,7 @@ class Controller(object):
         s = self.settings
         self.root = root or s.get('last_scan_root') or ''
         self.direction = s.get('direction') if s.get('direction') in DIRECTION_LABELS else 'auto'
+        self.xbox_to = s.get('xbox_to') if s.get('xbox_to') in XBOX_LABELS else 'vista'
         self.package_title = s.get('package_title') or EX.DEFAULT_TITLE
         for kind in FOLDER_ORDER:
             self.detect(kind)
@@ -648,10 +725,11 @@ class Controller(object):
                 elif kind == 'vista_out':
                     v, src = P.vista_out_dir(required=False), 'default'
         if v is None:
-            fc.ok = kind in ('h2ek_maps',)                       # the extra donors are optional
+            fc.ok = kind in OPTIONAL_FOLDERS                     # the extra donors and the original Xbox maps are optional
             fc.message = {'mcc_maps': 'Halo: The Master Chief Collection was not found. Use "Change" and pick %s.' % MCC_HINT,
                           'vista_maps': 'The Vista maps folder was not found. Use "Change" and pick %s.' % VISTA_HINT,
                           'h2ek_maps': 'not used',
+                          'stock_xbox_maps': 'not used',
                           'mcc_out': 'Choose where the Excession mod package goes (needed to convert Vista maps to MCC).',
                           'vista_out': 'Choose your Halo 2 Maps folder (needed to convert MCC maps to Vista).'}.get(kind, '')
             return fc
@@ -690,6 +768,13 @@ class Controller(object):
                 return False, one_line(ex, 400), path
             c = lay.counts()
             return True, '%d Halo 2 + %d Halo 2 MCC layout files' % (c['Halo2'], c['Halo2MCC']), path
+        if kind == 'stock_xbox_maps':
+            if not os.path.isdir(path):
+                return False, 'This folder does not exist.', path
+            n, missing = count_xbox_maps(path)
+            if not n:
+                return False, 'No original Halo 2 Xbox maps (.map files of the Xbox version) in this folder.', path
+            return True, '%d Halo 2 Xbox maps%s' % (n, ('; missing ' + ', '.join(missing)) if missing else ''), path
         if kind == 'h2ek_maps':
             if not os.path.isdir(path):
                 return False, 'This folder does not exist.', path
@@ -723,7 +808,7 @@ class Controller(object):
 
     def _output_clash(self, out, what):
         """A message when an output folder would sit inside a folder the program only reads."""
-        for kind in ('mcc_maps', 'vista_maps', 'h2ek_maps'):
+        for kind in ('mcc_maps', 'vista_maps', 'h2ek_maps', 'stock_xbox_maps'):
             fc = self.folders[kind]
             if fc.path and is_inside(out, fc.path):
                 return '%s must not be inside %s (%s). It is only ever read, never written.' % (what, fc.label.lower(), fc.path)
@@ -760,6 +845,11 @@ class Controller(object):
             raise GuiError('unknown direction %r' % (d,))
         self.direction = d
 
+    def set_xbox_to(self, d):
+        if d not in XBOX_LABELS:
+            raise GuiError('unknown choice %r for the original Xbox maps' % (d,))
+        self.xbox_to = d
+
     def set_kinds(self, multiplayer, campaign):
         self.multiplayer, self.campaign = bool(multiplayer), bool(campaign)
 
@@ -784,6 +874,7 @@ class Controller(object):
         s = self.settings
         s.set('last_scan_root', self.root_path())
         s.set('direction', self.direction)
+        s.set('xbox_to', self.xbox_to)
         s.set('package_title', self.package_title)
         for kind, key in (('mcc_out', 'mcc_output_dir'), ('vista_out', 'vista_output_dir')):
             fc = self.folders[kind]
@@ -794,7 +885,8 @@ class Controller(object):
     # -- the scan -----------------------------------------------------------------------------------
     def scan_key(self):
         f = self.folders
-        return (self.root_path(), self.direction, self.kinds(), self.overwrite, self.force, f['mcc_out'].path, f['vista_out'].path, f['mcc_maps'].path)
+        return (self.root_path(), self.direction, self.kinds(), self.overwrite, self.force, f['mcc_out'].path, f['vista_out'].path, f['mcc_maps'].path,
+                self.xbox_to, f['stock_xbox_maps'].path)
 
     def scan_is_current(self):
         return self.scan_result is not None and self.scan_result.key == self.scan_key()
@@ -821,7 +913,8 @@ class Controller(object):
         opts = B.Options(direction=self.direction, mcc_out=mcc_out or os.path.join(P.settings_dir(), PLACEHOLDER_PACKAGE),
                          vista_out=vista_out or P.documents_maps_dir(), vista_maps=f['vista_maps'].path, mcc_maps=mcc_dir, dry_run=True,
                          hash_sources=False, kinds=self.kinds(), overwrite=self.overwrite, force=self.force, remember=False, quiet=True,
-                         settings_path=False, package_title=self.package_title)
+                         settings_path=False, package_title=self.package_title, xbox_to=self.xbox_to,
+                         stock_xbox_maps=f['stock_xbox_maps'].path if f['stock_xbox_maps'].ok else None)
         plan, err = None, ''
         try:
             plan = B.make_plan(root, opts, records=recs)
@@ -844,6 +937,14 @@ class Controller(object):
             d = self.folders['vista_out'].path
             est = int(sum(i.rec.size * (ESTIMATE_FACTOR_H2EK if i.rec.style == 'h2ek' else ESTIMATE_FACTOR_STOCK) for i in res.to_mcc2vista))
             out.append(('MCC to Vista', len(res.to_mcc2vista), est, free_bytes(d), d))
+        from . import xbox_cli as XB
+        if res.to_xbox2vista:
+            d = self.folders['vista_out'].path
+            out.append(('Xbox to Vista', len(res.to_xbox2vista), sum(XB.estimate_bytes(i.rec, False) for i in res.to_xbox2vista), free_bytes(d), d))
+        if res.to_xbox2mcc:
+            d = self.folders['mcc_out'].path
+            d = os.path.dirname(d) if d else d
+            out.append(('Xbox to MCC', len(res.to_xbox2mcc), sum(XB.estimate_bytes(i.rec, True) for i in res.to_xbox2mcc), free_bytes(d), d))
         return out
 
     # -- checks before Convert --------------------------------------------------------------------
@@ -868,14 +969,24 @@ class Controller(object):
                 errs.append('%s: %s' % (f[kind].label, f[kind].message or 'not set'))
         if f['h2ek_maps'].path and not f['h2ek_maps'].ok:
             errs.append('%s: %s' % (f['h2ek_maps'].label, f['h2ek_maps'].message))
+        if f['stock_xbox_maps'].path and not f['stock_xbox_maps'].ok:
+            errs.append('%s: %s' % (f['stock_xbox_maps'].label, f['stock_xbox_maps'].message))
         if res.n_files and not res.n_convert:
             errs.append('There is nothing to convert in this folder with the current choices. %s' % (res.skipped_text() or ''))
         if not res.n_files:
             errs.append('No .map files were found in this folder or the folders below it.')
         if res.to_vista2mcc and not (f['mcc_out'].path and f['mcc_out'].ok):
             errs.append('Choose the Excession mod package folder: %s' % (f['mcc_out'].message or 'not set'))
-        if res.to_mcc2vista and not (f['vista_out'].path and f['vista_out'].ok):
+        if (res.to_mcc2vista or res.to_xbox2vista) and not (f['vista_out'].path and f['vista_out'].ok):
             errs.append('Choose your Halo 2 Maps folder: %s' % (f['vista_out'].message or 'not set'))
+        if res.to_xbox2mcc and not (f['mcc_out'].path and f['mcc_out'].ok):
+            errs.append('Choose the Excession mod package folder (the Xbox map packs are made beside it): %s' % (f['mcc_out'].message or 'not set'))
+        clash = sorted({i.package.title for i in res.items if i.direction == 'xbox2mcc' and i.code == 'exists' and i.package is not None})
+        if clash:
+            errs.append('The mod package folder(s) %s already exist; a package is never built into again. Tick the replace box, or choose another folder.'
+                        % ', '.join('"%s"' % t for t in clash))
+        if res.xbox and (res.to_xbox2vista or res.to_xbox2mcc) and not (f['stock_xbox_maps'].path and f['stock_xbox_maps'].ok):
+            warns.append(XBOX_NO_STOCK_WARNING % (len(res.to_xbox2vista) + len(res.to_xbox2mcc)))
         if res.custom_shared:
             warns.append('%d MCC map(s) need a custom shared.map that was not found next to the mod: they are listed and skipped (multiplayer maps whose mod ships the shared.map, and maps that use none of its tags, are converted).' % len(res.custom_shared))
         for label, n, est, free, folder in self.estimate(res):
@@ -908,6 +1019,9 @@ class Controller(object):
                 a += [opt, f[kind].path]
         if f['assembly'].path and f['assembly'].ok and f['assembly'].source != 'bundled':
             a += ['--assembly-dir', f['assembly'].path]
+        a += ['--xbox-to', self.xbox_to]
+        if f['stock_xbox_maps'].path and f['stock_xbox_maps'].ok:
+            a += ['--stock-xbox-maps', f['stock_xbox_maps'].path]
         if self.overwrite:
             a.append('--overwrite')
         if self.force:
@@ -1120,22 +1234,58 @@ def selftest(report_path=None, out=None):
         os.makedirs(os.path.join(work, 'sound_cache', 'ab'))
         with open(os.path.join(work, 'sound_cache', 'ab', 'k.bin'), 'wb') as fh:
             fh.write(b'x' * 4096)
-        cc = Controller(settings_path=sp, opener=lambda p: None).load()
-        info = cc.cache_info()
-        label = cc.cache_label(info)
-        cc.state = 'running'
-        try:
-            cc.clear_cache()
-            refused = False
-        except GuiError:
-            refused = True
-        cc.state = 'idle'
-        res = cc.clear_cache()
+        # the scratch folders also beat H2CONV_WORK / H2CONV_XBOX_INDEX_DIR and command-line folders, which would otherwise win over the
+        # scratch settings file and let this check clear the real cache
+        with P.scoped(sp, work=work, xbox_index=os.path.join(work, P.XBOX_INDEX_NAME)):
+            cc = Controller(settings_path=sp, opener=lambda p: None).load()
+            info = cc.cache_info()
+            label = cc.cache_label(info)
+            cc.state = 'running'
+            try:
+                cc.clear_cache()
+                refused = False
+            except GuiError:
+                refused = True
+            cc.state = 'idle'
+            res = cc.clear_cache()
+            after = cc.cache_info()['total_bytes']
         check('cache command and controller (size, label, clear, refused while busy)',
               'cache' in entry.COMMANDS and info['total_bytes'] == 4096 and info['limit_gb'] >= 0 and label.startswith('Clear cache (') and refused
-              and res['removed'] == 1 and cc.cache_info()['total_bytes'] == 0, '%s; cleared %d file' % (label, res['removed']))
+              and res['removed'] == 1 and after == 0, '%s; cleared %d file' % (label, res['removed']))
     except Exception as ex:                                                       # noqa: BLE001
         check('cache command and controller', False, '%s: %s' % (type(ex).__name__, ex))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    # 4c. the original Xbox route: the bundled Xbox layout files and data tables load, the command is registered, a synthetic Xbox header is recognised
+    tmp = tempfile.mkdtemp(prefix='h2conv_selftest_xbox_')
+    try:
+        from . import __main__ as entry
+        from . import xbox_cli as XB
+        from .xbox import convert_xbox as CX
+        from .xbox import layouts as XL
+        lx = XL.xbox_layouts()
+        check('Xbox layout files (bundled Halo2Xbox plugins)', len(lx) >= 50 and 'scnr' in lx and 'bitm' in lx, '%d groups' % len(lx))
+        sm, tg, wd = CX.load_slot_evidence(), CX.load_tagref_groups(), CX.load_widget_drops()
+        lut = os.path.join(P.data_dir(), 'p8_bump_lut.json')
+        check('Xbox data tables (shader slots, tag reference groups, widget rules, bump table)',
+              len(sm) >= 100 and len(tg) >= 10 and isinstance(wd, (dict, list, tuple)) and os.path.isfile(lut),
+              '%d shader templates, %d reference rules' % (len(sm), len(tg)))
+        head = bytearray(0x800)
+        head[:4], head[0x7FC:0x800] = b'daeh', b'toof'
+        head[4:8] = (8).to_bytes(4, 'little')
+        head[8:12] = (0x800).to_bytes(4, 'little')
+        head[0x120:0x12E] = b'02.09.27.09809'
+        head[0x140:0x142] = (1).to_bytes(2, 'little')
+        head[0x198:0x19C] = b'test'
+        xp = os.path.join(tmp, 'test.map')
+        with open(xp, 'wb') as fh:
+            fh.write(bytes(head))
+        rec = MI.identify(xp)
+        check('Xbox command and map recognition (a synthetic Xbox header)',
+              'xbox' in entry.COMMANDS and (rec.fmt, rec.kind, rec.status, rec.code) == ('xbox', 'multiplayer', 'ok', 'xbox')
+              and XB.split_sizes(47) == [24, 23] and B.child_command('xbox')[-1] in ('h2conv.xbox_cli', 'xbox'), rec.label())
+    except Exception as ex:                                                       # noqa: BLE001
+        check('Xbox route', False, '%s: %s\n%s' % (type(ex).__name__, ex, traceback.format_exc()))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     # 5. tkinter (no window is created: only the Tcl interpreter and the files Tk needs are looked at)
@@ -1225,6 +1375,7 @@ class App(object):
         wrap = self.px(900)
         self.var_root = tk.StringVar(master=self.win)
         self.var_direction = tk.StringVar(master=self.win, value='auto')
+        self.var_xbox = tk.StringVar(master=self.win, value='vista')
         self.var_mp = tk.BooleanVar(master=self.win, value=True)
         self.var_camp = tk.BooleanVar(master=self.win, value=True)
         self.var_overwrite = tk.BooleanVar(master=self.win, value=False)
@@ -1236,7 +1387,7 @@ class App(object):
         self.var_cache_note = tk.StringVar(master=self.win, value='')
         self.var_out_mcc = tk.StringVar(master=self.win)
         self.var_out_vista = tk.StringVar(master=self.win)
-        self.var_game = {k: tk.StringVar(master=self.win) for k in ('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps')}
+        self.var_game = {k: tk.StringVar(master=self.win) for k in ('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps', 'stock_xbox_maps')}
         self.var_out_note = {k: tk.StringVar(master=self.win) for k in ('mcc_out', 'vista_out')}
 
         main = ttk.Frame(self.win, padding=10)
@@ -1246,8 +1397,8 @@ class App(object):
         main.columnconfigure(0, weight=1)
         main.rowconfigure(6, weight=1)
 
-        ttk.Label(main, text='Pick the folder that holds your Halo 2 maps. The program looks in it and in every folder below it, recognises Halo 2 Vista '
-                             'and Halo 2 MCC maps by their file header, and converts them all. Nothing is ever uploaded.', wraplength=wrap,
+        ttk.Label(main, text='Pick the folder that holds your Halo 2 maps. The program looks in it and in every folder below it, recognises Halo 2 Vista, '
+                             'Halo 2 MCC and original Xbox Halo 2 multiplayer maps by their file header, and converts them all. Nothing is ever uploaded.', wraplength=wrap,
                   justify='left').grid(row=0, column=0, sticky='ew', pady=(0, 8))
 
         # 1. root folder
@@ -1269,16 +1420,20 @@ class App(object):
             rb = ttk.Radiobutton(f2, text=label, value=key, variable=self.var_direction, command=self.on_options)
             rb.grid(row=0, column=i, sticky='w', padx=(0, 14))
             self.radios.append(rb)
+        for i, (key, label) in enumerate(XBOX_LABELS.items()):
+            rb = ttk.Radiobutton(f2, text=label, value=key, variable=self.var_xbox, command=self.on_options)
+            rb.grid(row=1, column=i, sticky='w', padx=(0, 14), pady=(4, 0))
+            self.radios.append(rb)
         self.chk_mp = ttk.Checkbutton(f2, text='Multiplayer maps', variable=self.var_mp, command=self.on_options)
-        self.chk_mp.grid(row=1, column=0, sticky='w', pady=(6, 0))
+        self.chk_mp.grid(row=2, column=0, sticky='w', pady=(6, 0))
         self.chk_camp = ttk.Checkbutton(f2, text='Campaign maps', variable=self.var_camp, command=self.on_options)
-        self.chk_camp.grid(row=1, column=1, sticky='w', pady=(6, 0))
-        self.chk_overwrite = ttk.Checkbutton(f2, text='Replace Vista maps that already exist in the output folder', variable=self.var_overwrite, command=self.on_options)
-        self.chk_overwrite.grid(row=2, column=0, columnspan=2, sticky='w')
+        self.chk_camp.grid(row=2, column=1, sticky='w', pady=(6, 0))
+        self.chk_overwrite = ttk.Checkbutton(f2, text='Replace Vista maps and Xbox map packages that already exist in the output folder', variable=self.var_overwrite, command=self.on_options)
+        self.chk_overwrite.grid(row=3, column=0, columnspan=2, sticky='w')
         self.chk_force = ttk.Checkbutton(f2, text='Convert again maps that are already in the Excession mod package', variable=self.var_force, command=self.on_options)
-        self.chk_force.grid(row=2, column=2, sticky='w')
+        self.chk_force.grid(row=3, column=2, sticky='w')
         jobs = ttk.Frame(f2)
-        jobs.grid(row=1, column=2, sticky='w', pady=(6, 0))
+        jobs.grid(row=2, column=2, sticky='w', pady=(6, 0))
         ttk.Label(jobs, text='Maps at the same time (1 to 4; each needs about 1.5 GB of memory):').grid(row=0, column=0)
         self.spin_jobs = ttk.Spinbox(jobs, from_=1, to=4, width=3, textvariable=self.var_jobs, command=self.on_options)
         self.spin_jobs.grid(row=0, column=1, padx=4)
@@ -1305,7 +1460,7 @@ class App(object):
         f4.grid(row=4, column=0, sticky='ew', pady=3)
         f4.columnconfigure(1, weight=1)
         self.game_buttons = []
-        for r, kind in enumerate(('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps')):
+        for r, kind in enumerate(('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps', 'stock_xbox_maps')):
             ttk.Label(f4, text=FOLDER_LABELS[kind] + ':').grid(row=r, column=0, sticky='w')
             ttk.Label(f4, textvariable=self.var_game[kind]).grid(row=r, column=1, sticky='w', padx=6)
             b = ttk.Button(f4, text='Change ...', command=(lambda k=kind: self.on_choose_folder(k)))
@@ -1440,6 +1595,7 @@ class App(object):
         c = self.c
         c.set_root(self.var_root.get())
         c.set_direction(self.var_direction.get())
+        c.set_xbox_to(self.var_xbox.get())
         c.set_kinds(self.var_mp.get(), self.var_camp.get())
         c.overwrite, c.force = bool(self.var_overwrite.get()), bool(self.var_force.get())
         c.set_jobs(self.var_jobs.get())
@@ -1459,6 +1615,7 @@ class App(object):
         c = self.c
         self.var_root.set(c.root)
         self.var_direction.set(c.direction)
+        self.var_xbox.set(c.xbox_to)
         self.var_mp.set(c.multiplayer)
         self.var_camp.set(c.campaign)
         self.var_overwrite.set(c.overwrite)
@@ -1469,10 +1626,10 @@ class App(object):
 
     def _refresh_folders(self):
         f = self.c.folders
-        for kind in ('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps'):
+        for kind in ('mcc_maps', 'vista_maps', 'assembly', 'h2ek_maps', 'stock_xbox_maps'):
             fc = f[kind]
-            text = fc.describe() if fc.path else ('not used' if kind == 'h2ek_maps' else 'NOT FOUND')
-            if fc.message and kind != 'h2ek_maps':
+            text = fc.describe() if fc.path else ('not used' if kind in OPTIONAL_FOLDERS else 'NOT FOUND')
+            if fc.message and (kind not in OPTIONAL_FOLDERS or (kind == 'stock_xbox_maps' and fc.path)):
                 text += '   -   ' + one_line(fc.message, 150)
             self.var_game[kind].set(text)
         self.var_out_mcc.set(f['mcc_out'].path or '')
@@ -1502,6 +1659,7 @@ class App(object):
         fc = self.c.folders[kind]
         hint = {'mcc_maps': 'Choose ' + MCC_HINT, 'vista_maps': 'Choose ' + VISTA_HINT, 'assembly': 'Choose a folder with Assembly layout files',
                 'h2ek_maps': 'Choose the MCC Halo 2 Editing Kit maps folder (h2_maps_win64_dx11)',
+                'stock_xbox_maps': 'Choose the folder with your original Halo 2 Xbox maps (lockout.map, ascension.map, ...)',
                 'mcc_out': 'Choose the folder for the Excession mod package (or the folder that holds your mod packages)',
                 'vista_out': 'Choose your Halo 2 Maps folder (Documents\\My Games\\Halo 2\\Maps)'}[kind]
         start = fc.path if (fc.path and os.path.isdir(fc.path)) else None
@@ -1761,6 +1919,8 @@ class App(object):
             t.insert('', 'end', values=('FAILED', f['name'], f['reason']), tags=('failed',))
         for a in s.attention:
             t.insert('', 'end', values=('skipped', a['name'], a['reason']))
+        for n in s.notes:
+            t.insert('', 'end', values=('note', '%d Xbox map(s)' % n.get('maps', 0), one_line(n.get('message', ''), 400)))
         for cv in s.converted:
             t.insert('', 'end', values=('converted', cv['name'], ('%s  (%s)' % (os.path.basename(cv['out'] or ''), human(cv['size']))) if cv.get('size') else (cv.get('out') or '')))
         if s.note:

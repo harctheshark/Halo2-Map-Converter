@@ -3,6 +3,8 @@
 
     convert     MCC -> Vista    (h2conv.convert)
     rev         Vista -> MCC    (h2conv.rev.convert)
+    xbox        original Xbox multiplayer maps -> Vista, or -> Vista -> MCC mod packages (h2conv.xbox_cli)
+    lightmap    give a Vista map whose BSP lightmap is missing, foreign or too short a generated one (h2conv.lightmap_cli)
     batch       a whole folder, either direction (h2conv.batch)
     mapinfo     what is this .map file? (h2conv.mapinfo)
     excession   inspect / validate an Excession mod package (h2conv.excession)
@@ -16,12 +18,12 @@
 
 `py -3 -m h2conv.convert ...` and the other module entry points keep working.  This file exists so that ONE program (a frozen exe, where there
 is no `python -m`) can start every tool, and so that `batch --isolate` can start its child processes the same way in both cases: from a
-frozen exe a child is `<exe> convert|rev <arguments>`, from a Python install it is `python -m h2conv.convert|h2conv.rev.convert <arguments>`.
+frozen exe a child is `<exe> convert|rev|xbox <arguments>`, from a Python install it is `python -m h2conv.convert|h2conv.rev.convert|h2conv.xbox_cli <arguments>`.
 """
 import sys
 
 # command -> (module, function).  Plain import statements below (not importlib) so that a freezer such as PyInstaller sees every module.
-COMMANDS = ('convert', 'rev', 'batch', 'mapinfo', 'excession', 'validate', 'limits', 'invariants', 'paths', 'cache', 'gui')
+COMMANDS = ('convert', 'rev', 'xbox', 'lightmap', 'batch', 'mapinfo', 'excession', 'validate', 'limits', 'invariants', 'paths', 'cache', 'gui')
 
 
 def _run(cmd, argv):
@@ -29,6 +31,10 @@ def _run(cmd, argv):
         from h2conv import convert as m
     elif cmd == 'rev':
         from h2conv.rev import convert as m
+    elif cmd == 'xbox':
+        from h2conv import xbox_cli as m
+    elif cmd == 'lightmap':
+        from h2conv import lightmap_cli as m
     elif cmd == 'batch':
         from h2conv import batch as m
     elif cmd == 'mapinfo':

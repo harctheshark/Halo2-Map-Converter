@@ -140,6 +140,32 @@ def convert_block_rev(kind, blk, entries, sds, rds, strict=False, stats=None):
     return nblk, nent, len(nsd), nrds
 
 
+MCC_WEATHER_MAX_PARTICLES = 2730
+# MCC halo2.dll draws a weather particle system (sub_1807E5FA0) as 6 vertices x 28 B per particle into ONE dynamic vertex buffer of
+# 458752 B (sub_1807E9370) and memcpy's them (sub_180965270) with no clamp: 16384 vertices = 2730 particles per view.  More particles
+# write past the mapped buffer (VCRUNTIME140 memcpy access violation in game - H2.5 Sandtrap's sand, 3000, 2026-11-02).
+# The particle count the renderer walks is the section data's own block count, not the tag's 'Maximum Number Of Particles'.
+
+
+def clamp_weather_block(blk, entries, sds, rds, cap=MCC_WEATHER_MAX_PARTICLES):
+    """A weat Particle System block with more than `cap` particles -> the same block with the first `cap` particles.
+    Section data = one (count, pointer) tagblock per resource entry at entry.dup; every payload is count x stride.
+    Returns (blk, entries, sds, rds, old_count) - unchanged (old_count None) unless the block is consistent and over the cap."""
+    sd, pays = split_block(blk, sds, rds, entries)
+    counts = [struct.unpack_from('<I', sd, e.dup)[0] if e.dup + 4 <= len(sd) else 0 for e in entries]
+    if not entries or max(counts) <= cap or any(c == 0 or e.size % c for c, e in zip(counts, entries)):
+        return blk, entries, sds, rds, None
+    nsd = bytearray(sd)
+    npays = []
+    for c, e, p in zip(counts, entries, pays):
+        n = min(c, cap)
+        struct.pack_into('<I', nsd, e.dup, n)
+        npays.append(p[:n * (e.size // c)])
+    ents = [e._replace(size=len(p)) for e, p in zip(entries, npays)]
+    nblk, nent, nrds = layout_block(bytes(nsd), npays, ents)
+    return nblk, nent, sds, nrds, max(counts)
+
+
 def _vista_tail(blk, sds, rds, entries):
     """Bytes of the Vista resource data behind the layout rule's end (align4 of the last payload end); b'' for every conforming block."""
     last = max((e.offset + e.size for e in entries), default=0)
@@ -253,10 +279,11 @@ def _add_raw(ctx, block):
         return ctx.add_raw('geometry', block)
 
 
-def convert_info_rev(ctx, kind, vista_info36, vista_entry_bytes, owner_datum=None, strict=False):
+def convert_info_rev(ctx, kind, vista_info36, vista_entry_bytes, owner_datum=None, strict=False, block_filter=None):
     """Convert one geometry_block_info.
 
     vista_info36       the 36 info bytes of the Vista struct;  vista_entry_bytes  list of the Vista `Resources` elements (16 B each)
+    block_filter       optional fn(blk, entries, sds, rds) -> (blk, entries, sds, rds) applied to the Vista block before conversion
     Returns (mcc_info36 with the block offset word left 0, [16-byte MCC entries], token or None).
     An info WITHOUT a block (offset 0 / -1, size 0) returns token None and keeps the offset word: only the size numbers are converted."""
     bo, bs, sds, rds = _INFO_HEAD.unpack_from(vista_info36, 0)
@@ -268,6 +295,8 @@ def convert_info_rev(ctx, kind, vista_info36, vista_entry_bytes, owner_datum=Non
         _INFO_HEAD.pack_into(info, 0, bo, bs, nsds, nrds)
         return bytes(info), [encode_entry(e) for e in nent], None
     blk, cache = read_vista_block(ctx, bo, bs, sds, rds)
+    if block_filter is not None:
+        blk, entries, sds, rds = block_filter(blk, entries, sds, rds)
     nblk, nent, nsds, nrds = convert_block_rev(kind, blk, entries, sds, rds, strict, getattr(ctx, 'stats', None))
     if kind == 'bsp':
         _store(ctx, '_geometry_rev_numbers').setdefault((sds, rds), set()).add((nsds, nrds))
@@ -306,7 +335,7 @@ def _entry_bytes(node, f):
     return [bytes(k.data) for k in (node.blocks.get(f.offset) or [])]
 
 
-def convert_site_node(ctx, vista_node, mcc_node, info_off, kind, vista_info_off=None):
+def convert_site_node(ctx, vista_node, mcc_node, info_off, kind, vista_info_off=None, block_filter=None):
     """Node handler body: convert the geometry_block_info at vista_info_off (default: info_off) of the Vista struct into the one at
     info_off of the MCC struct (idempotent)."""
     from ... import tagtree as T
@@ -316,7 +345,7 @@ def convert_site_node(ctx, vista_node, mcc_node, info_off, kind, vista_info_off=
     v_info = bytes(vista_node.data[voff:voff + INFO_SIZE])
     ventries = _entry_bytes(vista_node, f_v)
     try:
-        info, entries, token = convert_info_rev(ctx, kind, v_info, ventries, strict=False)
+        info, entries, token = convert_info_rev(ctx, kind, v_info, ventries, strict=False, block_filter=block_filter)
     except GeometryError as ex:
         if not (getattr(ctx, 'opts', None) or {}).get('geometry_lenient'):
             raise GeometryError('%s|%s: %s' % (mcc_node.group, mcc_node.path, ex))
@@ -386,8 +415,34 @@ def ugh_extra_info_node(ctx, vista_node, mcc_node):
                       vista_info_off=G.UGH_EXTRA_INFO_VISTA_OFFSET)
 
 
+def weather_particle_system_node(ctx, vista_node, mcc_node, site):
+    """weat Particle System: the generic conversion, with the particle count clamped to what MCC can draw (MCC_WEATHER_MAX_PARTICLES)
+    in the block and in the tag's 'Maximum Number Of Particles'."""
+    clamped = []
+
+    def clamp(blk, entries, sds, rds):
+        blk, entries, sds, rds, old = clamp_weather_block(blk, entries, sds, rds)
+        if old is not None:
+            clamped.append(old)
+        return blk, entries, sds, rds
+
+    convert_site_node(ctx, vista_node, mcc_node, site.info_off, site.kind, block_filter=clamp)
+    for f in mcc_node.fields:
+        if f.name == 'Maximum Number Of Particles' and f.size == 4 and mcc_node.i32(f.offset) > MCC_WEATHER_MAX_PARTICLES:
+            clamped.append(mcc_node.i32(f.offset))
+            mcc_node.set_i32(f.offset, MCC_WEATHER_MAX_PARTICLES)
+    if clamped:
+        _stat(ctx, 'weather_particles_clamped')
+        ctx.warn('weather_particles_clamped', '%s|%s: %d particles -> %d (MCC draws at most %d per weather system; more overruns its '
+                 'vertex buffer and crashes)' % (mcc_node.group, mcc_node.path, max(clamped), MCC_WEATHER_MAX_PARTICLES,
+                                                 MCC_WEATHER_MAX_PARTICLES))
+
+
 def _make_handler(site):
     def handler(ctx, vista_node, mcc_node):
+        if site.group == 'weat':
+            weather_particle_system_node(ctx, vista_node, mcc_node, site)
+            return
         convert_site_node(ctx, vista_node, mcc_node, site.info_off, site.kind)
     handler.__name__ = 'rev_geometry_%s_%s' % (site.group.replace('*', 'x').replace('!', 'x'),
                                               site.label.replace(' ', '_').replace('/', '_'))

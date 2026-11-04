@@ -431,12 +431,52 @@ or from Project Cartographer's open source engine code; they are not documented 
 | `h2conv\ce_port_build.py`, `h2conv\dx11to9.py`, `h2conv\dxbc9.py` | developer tools that made the Halo CE port table (the converter does not call them): the editing-kit source to the table, the Direct3D 11 to 9 source rewrite, the DXBC to HLSL translator |
 | `h2conv\mpnames.py` | stand-alone repair tool (`py -3 -m h2conv.mpnames`) for the blank name of an already converted multiplayer map in Cartographer's list |
 | `h2conv\paths.py` | where the converter looks for your games, for Assembly and for its caches (option, environment variable, settings file, auto-detection) |
+| `h2conv\xbox_cli.py`, `h2conv\xbox\` | original Xbox to Vista (and on to MCC): the Xbox cache reader, the planner against the pack's `shared.map` and the stock maps, name recovery, tag salvage, Xbox geometry / bitmap / sound conversion, pack names and the converter itself (section 16) |
+| `h2conv\lightmap_gen.py`, `lightmap_bucket.py`, `lightmap_cli.py`, `prt_gen.py` | the generated lightmap of a BSP without a usable one, `py -3 -m h2conv lightmap`, and the precomputed-lighting (PRT) checks and rebuild (section 16) |
+| `h2conv\cache_admin.py` | `py -3 -m h2conv cache info|trim|clear` and the cache size cap |
 
 **Runtime data files.**  Besides the code the converter reads: `h2conv\data\` (shader parameter tables, extra layouts, the enum policy
-table and two block-alignment tables), `h2conv\data\ce_port\` (the Halo CE port registry and Direct3D 9 programs, section 10.3), `h2conv\data\assembly\` (Assembly's layout and HaloScript XML files), `h2conv\rev\data\` (tag group
+table and two block-alignment tables; for the Xbox route the shader slot evidence, the tag-reference group table, the widget rules and the P8 bump
+table), `h2conv\data\ce_port\` (the Halo CE port registry and Direct3D 9 programs, section 10.3), `h2conv\data\assembly\` (Assembly's layout and HaloScript XML files, including its Halo 2 Xbox layouts), `h2conv\rev\data\` (tag group
 table, null-word and default tables, register layouts) and `h2conv\third_party\opus.dll`.  The Assembly files are read from the bundled copy
 unless you point the converter at another set with `--assembly-dir`.
 
 **What is not in this repository.**  The test and proof harnesses used during development (the interpreters that compare the
 Direct3D 9 and Direct3D 11 shader code, the comparisons against stock maps, the module tests) read real maps from the maintainer's
 game installs and are not part of this release.  The numbers quoted in this document come from them.
+
+## 16. Original Xbox maps and generated lightmaps (1.1.0)
+
+**The format.**  An original Xbox map is a cache file of the same generation as Vista's (version 8), with a header 12 bytes shorter, two
+address bases (tag data and the map's own raw resources) and data the Xbox GPU reads directly: compressed vertex formats (int16 and packed
+normals become floats), swizzled and palettised bitmaps, Xbox ADPCM and Xbox-framed WMA sounds, and shaders that exist only as Xbox
+pixel-shader programs.  The tag layouts come from Assembly's Halo 2 Xbox plugins (`h2conv\data\assembly\Plugins\Halo2Xbox`) on top of the Vista ones.
+
+**The pack.**  Half of an Xbox map's content lives in the `shared.map` and `mainmenu.map` it was released with.  The converter opens the map together
+with that pair (`--pack-dir`) and, when given, the original game's maps (`--stock-xbox-maps`, indexed once in the cache by content).
+
+**The plan.**  Every tag the output needs is placed in one of a few tiers, in this order: *link* (equal to a tag of Vista's `shared.map`, as stock Vista
+maps do), *Vista port* (equal to a stock Xbox tag that Bungie ported to Vista: Bungie's port is used, its references remapped), *convert* (the mod's own
+content, converted field by field) and *drop* (things the Xbox never draws, such as empty decorator sets).  Equality is decided on content, never on the
+name alone: mods often re-texture a stock-named shader in place.  A tag whose only difference is a reference to a converted tag takes Bungie's port with
+that reference redirected.
+
+**Damaged maps.**  Names: a blanked or shifted name table is rebuilt from the tags' content (KNOWN_ISSUES.md, section 2.4).  Data: a salvage ladder
+(shift a misplaced block back, restore a stale pointer from the stock copy, clamp a count that is really a string id, zero-fill, empty) runs on a tag that
+does not decode; the result must pass a plausibility check or Bungie's tag is used.  An object whose slot holds another kind of object is converted as
+what it is.
+
+**Shaders.**  A custom Xbox shader is written on the Vista copy of a shader of the same template (its "skeleton"), with every array slot mapped from Xbox
+to Vista order.  The slot maps are learned from every shader Bungie shipped on both platforms under the same name (`h2conv\data\xbox_shader_slot_maps.json`
+stores only names, lengths and slot pairs; values are read from your own stock Vista maps).  Sky layers move to Bungie's PC sky templates.
+
+**Lightmaps.**  The game reads a BSP's lightmap tables (one entry per cluster and per instanced-geometry instance, the geometry buckets they point to, and
+a Structure Checksum that must equal the BSP's) with no bound checks.  `h2conv\lightmap_gen.py` builds a complete lightmap tag from the BSP itself: every
+table sized from the BSP, per-vertex buckets with the vertex counts of the BSP's own sections, one neutral lighting environment.  `native` leaves the
+Bitmap Group empty, which the game's "lightmap valid" test (the same test in Vista, MCC and on the Xbox) reads as *no lightmap*: the BSP is then drawn the
+way the Xbox draws a BSP without one.  `neutral-valid` adds a tiny grey bitmap group, so the lightmap counts as valid with constant lighting.
+
+**Precomputed radiance transfer (PRT).**  `h2conv\prt_gen.py` checks the PRT data of every render model; data a mod zeroed or broke is rebuilt as valid,
+zero transfer (the model is drawn dark, as on the Xbox, instead of reading stale lighting).
+
+**MCC.**  `--to mcc` runs Xbox to Vista into the cache, then the Vista to MCC converter of sections 3 to 13, and writes one Excession package per pack.

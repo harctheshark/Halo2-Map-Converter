@@ -17,6 +17,13 @@ Directions
                (--vista-out; default <Documents>\\My Games\\Halo 2\\Maps when that game folder exists)
     auto       every convertible map goes the other way (Vista maps to the mod package, MCC maps to the Maps folder)
 
+Original Xbox maps (cache v8, Xbox build) found in the folder follow --xbox-to, independent of --direction:
+    vista      h2conv xbox: Xbox -> Vista, <Map>_<PackSuffix>.map in the Vista output folder (--vista-out)
+    mcc        Xbox -> Vista -> MCC in one run: one Excession mod package per source pack (at most 45 maps each) in --xbox-out
+               (default: the folder that holds the --mcc-out package); an existing package folder is never built into again
+    none       leave the Xbox maps alone
+Only multiplayer Xbox maps are converted; campaign maps, Halo 3 / Reach files and truncated downloads are listed and skipped.
+
 Per-map failures are caught, recorded and never stop the batch; the summary lists failed / skipped maps with reasons and the
 output directories.  Skipped on purpose: shared / single_player_shared / mainmenu databases, MCC maps that need a CUSTOM
 shared.map AND use tags from it when that shared.map is not found in the mod (a multiplayer map whose mod ships it is converted: the tags the mod changed are copied; a map that uses none of its tags is converted with the mod's own textures.dat), byte-identical duplicates, maps already converted (resume), outputs that already exist (mcc2vista).
@@ -97,7 +104,7 @@ def settings_dir():
 
 class Settings(object):
     """Remembered choices.  Corrupt / missing file -> defaults.  Never raises on load; save() reports failure by returning False.
-    The same file holds the folders h2conv.paths reads (mcc_maps_dir, vista_maps_dir, assembly_dir, work_dir, h2ek_maps_dir, excession_dir).
+    The same file holds the folders h2conv.paths reads (mcc_maps_dir, vista_maps_dir, assembly_dir, work_dir, h2ek_maps_dir, stock_xbox_maps, excession_dir).
     Keys this version does not know are kept when the file is saved again."""
     DEFAULTS = OD([
         ('version', 1),
@@ -109,9 +116,11 @@ class Settings(object):
         ('work_dir', None),                                # caches (None = H2CONV_WORK, then %LOCALAPPDATA%\H2MapConverter\work)
         ('cache_limit_gb', None),                          # size cap of the caches in GB (None = 5; 0 = never trim by itself; see h2conv cache)
         ('h2ek_maps_dir', None),                           # MCC Halo 2 Editing Kit maps = extra donors for Vista -> MCC (None = not used)
+        ('stock_xbox_maps', None),                         # your ORIGINAL Halo 2 Xbox maps (optional reference of the Xbox -> Vista converter; None = H2CONV_STOCK_XBOX_MAPS, else none)
         ('excession_dir', None),                           # Excession install (optional; None = looked up in your Steam libraries)
         ('last_scan_root', ''),
         ('direction', 'auto'),
+        ('xbox_to', 'vista'),                              # where original Xbox maps go: 'vista' | 'mcc' | 'none'
         ('package_title', EX.DEFAULT_TITLE),
     ])
 
@@ -180,6 +189,11 @@ class Item(object):
         self.naming = None              # why the output has this name: new | sanitised | suffix | replaces (see NAMING_LABELS); None = no name planned
         self.naming_note = ''           # one sentence for the UI / report
         self.kind = None                # 'multiplayer' | 'campaign'
+        self.pack = None                # original Xbox maps: the pack the map belongs to (h2conv.xbox.packs.PackInfo)
+        self.display = None             # original Xbox maps: the in-game name the converted map gets
+        self.package = None             # Xbox -> MCC: the PackagePlan (h2conv.xbox_cli) this map goes into
+        self.stage_path = None          # Xbox -> MCC: the Vista map made on the way (deleted when the run ends)
+        self.stage_rec = None
         self.warnings = list(rec.warnings)
         # result
         self.status = None              # converted | failed | skipped | invalid | planned
@@ -205,6 +219,9 @@ class Item(object):
         d['guid'] = self.guid
         d['naming'] = self.naming
         d['naming_note'] = self.naming_note
+        if self.pack is not None:
+            d['pack'] = self.pack.title
+            d['package'] = self.package.title if self.package is not None else None
         d['provisional'] = bool(self.guid_provisional)
         d['seconds'] = round(self.seconds, 2)
         d['out_size'] = self.out_size
@@ -225,6 +242,14 @@ class Options(object):
         self.vista_maps = None          # stock Vista maps folder: None = H2CONV_VISTA_MAPS / settings.json / a search of the drives
         self.mcc_maps = None            # MCC maps folder: None = H2CONV_MCC_MAPS / settings.json / your Steam library
         self.h2ek_maps = None           # H2EK maps folder = extra donors for vista2mcc (None = H2CONV_H2EK_MAPS / settings.json, else not used)
+        self.stock_xbox_maps = None     # your ORIGINAL Xbox maps (optional reference of the Xbox converter; None = H2CONV_STOCK_XBOX_MAPS / settings.json)
+        self.xbox_to = 'vista'          # original Xbox maps: 'vista' | 'mcc' (Excession packages, h2conv.xbox_cli) | 'none'
+        self.xbox_out = None            # Xbox -> MCC: the folder that receives the packages (None = the folder that holds the mcc_out package)
+        self.xbox_out_file = None       # Xbox -> Vista of ONE map: the exact output file (h2conv xbox ... --out file.map)
+        self.xbox_only = False          # h2conv xbox: Vista and MCC maps are listed and skipped
+        self.pack_dir = None            # Xbox: folder of the pack's shared.map / mainmenu.map (None = looked for beside the map)
+        self.lightmap = 'auto'          # Xbox: 'auto' | 'native' | 'neutral-valid' - the lightmap of a BSP that has no usable one (h2conv.lightmap_gen)
+        self.max_per_package = None     # Xbox -> MCC: most maps in one package (None = 45)
         self.assembly_dir = None        # Assembly layout files (None = H2CONV_ASSEMBLY / settings.json / the bundled copy)
         self.dry_run = False
         self.only = []                  # fnmatch patterns on the file stem
@@ -377,6 +402,7 @@ class Plan(object):
         self.package = None              # ModPackage (real or virtual) for vista2mcc
         self.package_note = ''
         self.vista_used = set()
+        self.xbox_packages = []          # Xbox -> MCC: the PackagePlans (h2conv.xbox_cli.plan_xbox)
         self.stock_names = set()         # --avoid-stock-names: lower-case stems of the stock Vista maps (also in vista_used)
         self.notes = []
 
@@ -436,6 +462,25 @@ def make_plan(root, opts, records=None, log=None):
             it.action, it.code, it.reason = 'skip', r.code, r.reason
             continue
         # a playable map
+        if opts.xbox_only and r.fmt != 'xbox':
+            it.action, it.code = 'skip', 'not_xbox'
+            it.reason = 'a Halo 2 %s map, not an original Xbox map (%s)' % (
+                'Vista' if r.fmt == 'vista' else 'MCC', 'h2conv rev converts it to MCC' if r.fmt == 'vista' else 'h2conv convert converts it to Vista')
+            continue
+        if r.fmt == 'xbox':
+            if opts.xbox_to == 'none':
+                it.action, it.code, it.reason = 'skip', 'not_selected', 'Xbox maps are not selected'
+                continue
+            if r.kind not in opts.kinds:
+                it.action, it.code, it.reason = 'skip', 'not_selected', 'kind %s not selected' % r.kind
+                continue
+            if not _wanted(r, opts):
+                it.action, it.code, it.reason = 'skip', 'not_selected', 'filtered out by --only / --exclude'
+                continue
+            it.direction = 'xbox2mcc' if opts.xbox_to == 'mcc' else 'xbox2vista'
+            it.action = 'convert'
+            by_size[(it.direction, r.size)].append(it)
+            continue
         want = {'vista': 'vista2mcc', 'mcc': 'mcc2vista'}[r.fmt]
         if opts.direction in ('vista2mcc', 'mcc2vista') and opts.direction != want:
             it.action, it.code = 'skip', 'wrong_direction'
@@ -511,7 +556,7 @@ def make_plan(root, opts, records=None, log=None):
                                 'run the dry run without --no-hash to confirm; --force redoes it)' % it.stem
                 else:
                     it.reason = 'already converted from this exact source (use --force to redo)'
-        else:
+        elif it.direction == 'mcc2vista':
             if not opts.vista_out:
                 raise RuntimeError(NEED_VISTA_OUT)
             it.kind = 'multiplayer' if r.kind == 'multiplayer' else 'campaign'
@@ -535,6 +580,9 @@ def make_plan(root, opts, records=None, log=None):
                 else:
                     it.action, it.code, it.reason = 'skip', 'exists', 'output %s already exists (use --overwrite)' % it.out_path
                     it.naming, it.naming_note = None, ''        # skipped: no output name is planned, so no naming explanation
+    if any(i.action == 'convert' and i.direction in ('xbox2vista', 'xbox2mcc') for i in plan.items):
+        from . import xbox_cli as XB
+        XB.plan_xbox(plan, opts)                # <Map>_<PackSuffix>.map names, or the Excession packages (at most 45 maps each)
     return plan
 
 
@@ -671,12 +719,12 @@ def _reverse_inprocess(item, out_file, opts):
 
 
 def child_command(tool):
-    """The command that starts one converter in its own process: tool 'convert' = MCC -> Vista, 'rev' = Vista -> MCC.
-    From a Python install:  python -m h2conv.convert | h2conv.rev.convert.  From a frozen exe (sys.frozen) there is no `python -m`: the exe is
-    the single entry point (h2conv/__main__.py), so the child is `<exe> convert|rev <arguments>`."""
+    """The command that starts one converter in its own process: tool 'convert' = MCC -> Vista, 'rev' = Vista -> MCC, 'xbox' = Xbox -> Vista.
+    From a Python install:  python -m h2conv.convert | h2conv.rev.convert | h2conv.xbox_cli.  From a frozen exe (sys.frozen) there is no
+    `python -m`: the exe is the single entry point (h2conv/__main__.py), so the child is `<exe> convert|rev|xbox <arguments>`."""
     if getattr(sys, 'frozen', False):
         return [sys.executable, tool]
-    return [sys.executable, '-m', {'convert': 'h2conv.convert', 'rev': 'h2conv.rev.convert'}[tool]]
+    return [sys.executable, '-m', {'convert': 'h2conv.convert', 'rev': 'h2conv.rev.convert', 'xbox': 'h2conv.xbox_cli'}[tool]]
 
 
 def _subprocess_convert(item, out_file, opts):
@@ -684,7 +732,10 @@ def _subprocess_convert(item, out_file, opts):
     stage = os.path.dirname(out_file)
     rep_path = os.path.join(stage, item.stem + '.report.json')
     vista_maps = _paths.vista_maps_dir(opts.vista_maps)
-    if item.direction == 'mcc2vista':
+    if item.direction in ('xbox2vista', 'xbox2mcc'):
+        from . import xbox_cli as XB
+        cmd = child_command('xbox') + XB.child_arguments(item, out_file, rep_path, opts, vista_maps)
+    elif item.direction == 'mcc2vista':
         cmd = child_command('convert') + [item.src, out_file, '--name', item.stem, '--quiet', '--report', rep_path,
                                           '--vista-maps', vista_maps, '--matg', opts.matg]
         if getattr(opts, 'mp_info_dir', None):
@@ -703,8 +754,9 @@ def _subprocess_convert(item, out_file, opts):
             cmd += ['--h2ek-maps', opts.h2ek_maps]
     if opts.assembly_dir:
         cmd += ['--assembly-dir', opts.assembly_dir]
-    cmd.append('--overwrite')        # the staging folder is the batch's own scratch space (it removed any leftover); what may replace what is decided by the plan
-    if item.direction != 'mcc2vista':
+    if item.direction not in ('xbox2vista', 'xbox2mcc'):
+        cmd.append('--overwrite')    # the staging folder is the batch's own scratch space (it removed any leftover); what may replace what is decided by the plan
+    if item.direction == 'vista2mcc':
         # reverse planner options, e.g. H2CONV_REV_PLAN_OPTS="shared_policy=mcc".  NEVER stem_fallback:
         # substitute templates are never used - shaders are ported faithfully or flagged unportable.
         for kv in (os.environ.get('H2CONV_REV_PLAN_OPTS') or '').split(';'):
@@ -778,8 +830,63 @@ def _clear_staged(staged):
             os.remove(p)
 
 
+def _convert_xbox_item(item, plan, opts):
+    """Original Xbox map -> Vista map: into the Vista output folder (xbox2vista), or - the first half of Xbox -> MCC - into the job folder in the
+    converter's cache (xbox2mcc), from where h2conv.xbox_cli.package_job builds the packages.  Never raises (except KeyboardInterrupt)."""
+    from . import xbox_cli as XB
+    from . import cache_admin as _cache
+    t0 = time.time()
+    staged = None
+    try:
+        if item.direction == 'xbox2vista':
+            stage_dir = os.path.join(opts.vista_out, '.h2conv_staging')
+        else:
+            stage_dir = XB.stage_dir(plan, item)
+        os.makedirs(stage_dir, exist_ok=True)
+        staged = os.path.join(stage_dir, item.stem + '.map')
+        _clear_staged(staged)
+        if opts.isolate:
+            rep, ok, why = _subprocess_convert(item, staged, opts)
+        else:
+            rep, ok, why = XB.convert_inprocess(item, staged, opts)
+        if not ok:
+            raise ConvertError(why or 'the converter reported errors')
+        if not os.path.isfile(staged):
+            raise ConvertError('the converter finished but wrote no output file')
+        got = MI.identify(staged, deep=False)
+        if got.fmt != 'vista' or got.status == 'invalid':
+            raise ConvertError('output is not a valid Vista map: %s' % (got.reason or got.label()))
+        item.out_size = os.path.getsize(staged)
+        item.report = _brief_report(rep)
+        XB.collect_notes(plan, item, rep)
+        if item.direction == 'xbox2vista':
+            os.makedirs(os.path.dirname(item.out_path), exist_ok=True)
+            os.replace(staged, item.out_path)
+        else:
+            item.stage_path, item.stage_rec = staged, got
+            _cache.note_used(staged)                 # the Vista map of a running Xbox -> MCC job is never trimmed away
+        item.status = 'converted'
+    except KeyboardInterrupt:
+        raise
+    except BaseException as ex:                                                 # noqa: BLE001 - includes SystemExit from a converter
+        item.status = 'failed'
+        msg = '%s: %s' % (type(ex).__name__, ex) if not isinstance(ex, ConvertError) else str(ex)
+        item.error = msg[:600]
+        item.report = {'traceback': traceback.format_exc().splitlines()[-6:]}
+        try:
+            if staged:
+                _clear_staged(staged)
+        except OSError:
+            pass
+    finally:
+        item.seconds = time.time() - t0
+        gc.collect()
+
+
 def _convert_item(item, plan, opts):
     """Convert one planned item; sets item.status / error / out_size.  Never raises (except KeyboardInterrupt)."""
+    if item.direction in ('xbox2vista', 'xbox2mcc'):
+        return _convert_xbox_item(item, plan, opts)
     t0 = time.time()
     pkg = plan.package
     try:
@@ -862,7 +969,8 @@ def run_batch(root, opts, log=say, plan=None, progress=None):
     # the folders of this run are what the converters (in this process and in --isolate children) must use; they are forgotten when the run ends
     from . import cache_admin as _cache
     _cache.begin_job()
-    with _paths.scoped(mcc_maps=opts.mcc_maps, vista_maps=opts.vista_maps, assembly=opts.assembly_dir, h2ek_maps=opts.h2ek_maps):
+    with _paths.scoped(mcc_maps=opts.mcc_maps, vista_maps=opts.vista_maps, assembly=opts.assembly_dir, h2ek_maps=opts.h2ek_maps,
+                       stock_xbox_maps=opts.stock_xbox_maps):
         try:
             return _run_batch(root, opts, log, plan, progress)
         finally:
@@ -888,8 +996,11 @@ def _run_batch(root, opts, log, plan, progress):
     result['output_dirs'] = OD()
     if any(i.direction == 'vista2mcc' for i in items):
         result['output_dirs']['mcc'] = opts.mcc_out
-    if any(i.direction == 'mcc2vista' for i in items):
+    if any(i.direction in ('mcc2vista', 'xbox2vista') for i in items):
         result['output_dirs']['vista'] = opts.vista_out
+    if any(i.direction == 'xbox2mcc' for i in items):
+        from . import xbox_cli as XB
+        result['output_dirs']['xbox_mcc'] = XB.xbox_out_dir(opts)
     log('scanned %s: %d .map files, %d to convert' % (root, len(items), len(todo)))
     if opts.dry_run:
         for i in todo:
@@ -904,6 +1015,8 @@ def _run_batch(root, opts, log, plan, progress):
                     log('%-5s %-9s %-8s %s%s   [%s] %s%s' % ('skip' if i.action == 'skip' else 'bad', i.direction or '-', i.kind or i.rec.kind or '-', i.rec.path,
                                                              (' -> %s.map' % i.stem) if i.stem else '', i.code, i.reason,
                                                              '   (provisional - not hashed)' if i.guid_provisional else ''))
+            for pp in plan.xbox_packages:
+                log('package "%s": %d map(s) -> %s' % (pp.title, len(pp.items), pp.folder))
     else:
         locks = []
         try:
@@ -911,10 +1024,13 @@ def _run_batch(root, opts, log, plan, progress):
                 log('package manifest: the absolute source paths of an older version were reduced to file names')
             if plan.package is not None and any(i.direction == 'vista2mcc' for i in todo):
                 locks.append(_lock(os.path.join(plan.package.root, EX.STATE_DIR, 'batch.lock')))
-            if any(i.direction == 'mcc2vista' for i in todo):
+            if any(i.direction in ('mcc2vista', 'xbox2vista') for i in todo):
                 os.makedirs(opts.vista_out, exist_ok=True)
                 locks.append(_lock(os.path.join(opts.vista_out, '.h2conv_staging', 'batch.lock')))
             _execute(todo, plan, opts, log, progress)
+            if any(i.direction == 'xbox2mcc' for i in todo):
+                from . import xbox_cli as XB
+                XB.package_job(plan, opts, log)
             if any(i.code == 'cancelled' for i in todo):
                 log('stopped as requested - the maps converted so far are kept')
                 result['interrupted'] = True
@@ -924,11 +1040,14 @@ def _run_batch(root, opts, log, plan, progress):
         finally:
             for rel in locks:
                 rel()
-            for sd in ([os.path.join(plan.package.root, EX.STATE_DIR, 'staging')] if plan.package is not None and not plan.package.is_virtual else [])                     + ([os.path.join(opts.vista_out, '.h2conv_staging')] if opts.vista_out and any(i.direction == 'mcc2vista' for i in todo) else []):
+            for sd in ([os.path.join(plan.package.root, EX.STATE_DIR, 'staging')] if plan.package is not None and not plan.package.is_virtual else [])                     + ([os.path.join(opts.vista_out, '.h2conv_staging')] if opts.vista_out and any(i.direction in ('mcc2vista', 'xbox2vista') for i in todo) else []):
                 try:
                     os.rmdir(sd)                       # only when empty
                 except OSError:
                     pass
+            if any(i.direction == 'xbox2mcc' for i in todo):
+                from . import xbox_cli as XB
+                XB.cleanup(plan)                       # the Vista maps made on the way
         if plan.package is not None and opts.sort_maps and any(i.status == 'converted' and i.direction == 'vista2mcc' for i in todo):
             plan.package.sort_maps()
             plan.package.save()
@@ -947,6 +1066,10 @@ def _run_batch(root, opts, log, plan, progress):
     result['items'] = [i.to_dict() for i in items]
     result['failed'] = [i.to_dict() for i in failed]
     result['needs_attention'] = [i.to_dict() for i in items if (i.status == 'skipped' and i.code not in BENIGN_SKIPS) or i.status == 'invalid']
+    if any(i.direction in ('xbox2vista', 'xbox2mcc') for i in items):
+        from . import xbox_cli as XB
+        result['xbox_notes'] = XB.notes_for_result(plan)        # the warnings told once per run (no OG Xbox maps folder ...), not once per map
+        result['xbox_packages'] = [p.result for p in plan.xbox_packages if p.result]
     result['elapsed_s'] = round(time.time() - t_start, 1)
     if plan.package is not None:
         result['package'] = dict(plan.package.summary(), note=plan.package_note)
@@ -954,10 +1077,17 @@ def _run_batch(root, opts, log, plan, progress):
             iss = plan.package.validate()
             result['package_validation'] = {'errors': len(EX.errors_of(iss)), 'warnings': sum(1 for x in iss if x.level == 'warning'),
                                             'first_errors': [str(x) for x in EX.errors_of(iss)[:10]]}
+    if result.get('xbox_packages') and 'package_validation' not in result:
+        vs = [p['validation'] for p in result['xbox_packages']]
+        result['package_validation'] = {'errors': sum(v['errors'] for v in vs), 'warnings': sum(v['warnings'] for v in vs),
+                                        'first_errors': [e for v in vs for e in v['first_errors']][:10]}
     # disk space / size estimate (dry run and real run)
     est = {}
-    tgt = {'vista2mcc': opts.mcc_out, 'mcc2vista': opts.vista_out}
-    for d in ('vista2mcc', 'mcc2vista'):
+    tgt = {'vista2mcc': opts.mcc_out, 'mcc2vista': opts.vista_out, 'xbox2vista': opts.vista_out, 'xbox2mcc': None}
+    if any(i.direction == 'xbox2mcc' for i in todo):
+        from . import xbox_cli as XB
+        tgt['xbox2mcc'] = XB.xbox_out_dir(opts)
+    for d in ('vista2mcc', 'mcc2vista', 'xbox2vista', 'xbox2mcc'):
         n = sum(1 for i in todo if i.direction == d)
         if not n:
             continue
@@ -972,7 +1102,10 @@ def _run_batch(root, opts, log, plan, progress):
         except OSError:
             free = None
         src_bytes = sum(i.rec.size for i in todo if i.direction == d)
-        if d == 'vista2mcc':
+        if d in ('xbox2vista', 'xbox2mcc'):
+            from . import xbox_cli as XB
+            out_bytes = sum(XB.estimate_bytes(i.rec, d == 'xbox2mcc') for i in todo if i.direction == d)
+        elif d == 'vista2mcc':
             out_bytes = sum(estimate_mcc_bytes(i.rec) for i in todo if i.direction == d)
         else:   # measured: custom H2EK headlong 336 MB -> 75 MB (x0.22, chronopolis 560 -> 243 MB = x0.43); stock compressed maps 1.7-4 MB -> 26-45 MB (x11..x20)
             out_bytes = int(sum(i.rec.size * (0.4 if i.rec.style == 'h2ek' else 15) for i in todo if i.direction == d))
@@ -983,8 +1116,10 @@ def _run_batch(root, opts, log, plan, progress):
         settings.set('direction', opts.direction)
         if any(i.direction == 'vista2mcc' for i in todo):
             settings.set('mcc_output_dir', opts.mcc_out)
-        if any(i.direction == 'mcc2vista' for i in todo):
+        if any(i.direction in ('mcc2vista', 'xbox2vista') for i in todo):
             settings.set('vista_output_dir', opts.vista_out)
+        if any(i.direction in ('xbox2vista', 'xbox2mcc') for i in todo) and not opts.xbox_only:
+            settings.set('xbox_to', opts.xbox_to)
         settings.save()
     if opts.report:
         try:
@@ -1054,7 +1189,10 @@ def human(n):
 def print_summary(res, log=say):
     c = res['counts']
     log('')
-    log('=== batch %s: %s ===' % ('DRY RUN' if res['dry_run'] else 'finished', res['direction']))
+    if res['direction'] == 'xbox':                  # h2conv xbox
+        log('=== original Xbox maps: %s ===' % ('DRY RUN' if res['dry_run'] else 'finished'))
+    else:
+        log('=== batch %s: %s ===' % ('DRY RUN' if res['dry_run'] else 'finished', res['direction']))
     log('scanned %d files: %d convertible, %d converted, %d failed, %d skipped, %d invalid%s' % (
         c['scanned'], c['convertible'], c['converted'], c['failed'], c['skipped'], c['invalid'],
         (', %d planned' % c['planned']) if c['planned'] else ''))
@@ -1081,6 +1219,13 @@ def print_summary(res, log=say):
             'free space on the target drive: %s' % (d, e['maps'], human(e['source_bytes']), human(e['estimated_output_bytes']), human(e['free_bytes'])))
         if e['free_bytes'] is not None and e['estimated_output_bytes'] > e['free_bytes']:
             log('  WARNING: the estimated output is larger than the free space')
+    for n in res.get('xbox_notes') or []:
+        log('')
+        log('NOTE (%d Xbox map(s)): %s' % (n['maps'], n['message']))
+    for p in res.get('xbox_packages') or []:
+        log('')
+        log('Excession mod package "%s": %s  (%d maps; check: %d error(s), %d warning(s))' % (
+            p['title'], p['folder'], p['maps'], p['validation']['errors'], p['validation']['warnings']))
     if res.get('package'):
         p = res['package']
         log('')
@@ -1092,7 +1237,7 @@ def print_summary(res, log=say):
     if res['output_dirs']:
         log('')
         for k, v in res['output_dirs'].items():
-            log('output directory (%s): %s' % ('MCC maps' if k == 'mcc' else 'Vista maps', v))
+            log('output directory (%s): %s' % ({'mcc': 'MCC maps', 'xbox_mcc': 'MCC mod packages'}.get(k, 'Vista maps'), v))
     log('elapsed %s s' % res['elapsed_s'])
 
 
@@ -1122,7 +1267,12 @@ def main(argv=None):
     r.add_argument('--no-recursive', action='store_true', help='only the files directly in ROOT')
     r.add_argument('--mcc-out', default=None, help='Excession mod package folder for the MCC output of Vista -> MCC (required the first time; remembered afterwards)')
     r.add_argument('--vista-out', default=None, help='Halo 2 Maps folder for the Vista output of MCC -> Vista (default: remembered / <Documents>\\My Games\\Halo 2\\Maps)')
-    _paths.add_common_options(r, mcc=True, vista=True, assembly=True, h2ek=True)
+    _paths.add_common_options(r, mcc=True, vista=True, assembly=True, h2ek=True, stock_xbox=True)
+    r.add_argument('--xbox-to', choices=('vista', 'mcc', 'none'), default=None,
+                   help='original Xbox maps found in ROOT: convert to Vista (default / remembered), to MCC (Excession packages, at most 45 maps each, one '
+                        'per source pack) or leave them alone')
+    r.add_argument('--xbox-out', default=None, help='Xbox -> MCC: the folder that receives the packages (default: the folder that holds the --mcc-out package)')
+    r.add_argument('--lightmap', choices=('auto', 'native', 'neutral-valid'), default='auto', help='original Xbox maps: ' + 'what a map gets whose BSP has no usable lightmap (the mod stripped it, or it does not fit the BSP): auto (default) = the complete stock lightmap when the BSP is the unmodified BSP of a stock map, else native; native = a complete lightmap generated from the BSP that the game treats as not valid, so the BSP is drawn as on the original Xbox (no lightmap); neutral-valid = a generated valid lightmap with constant grey lighting. Maps that carry a working lightmap keep it.')
     r.add_argument('--dry-run', action='store_true', help='scan, classify and plan names only; nothing is written')
     r.add_argument('--only', default='', help='comma separated file-stem patterns (fnmatch), e.g. "lockout,h2.5*"')
     r.add_argument('--exclude', default='')
@@ -1212,6 +1362,8 @@ def main(argv=None):
             vista_maps=_paths.vista_maps_dir(a.vista_maps, required=not a.dry_run),
             mcc_maps=_paths.pick('mcc_maps', a.mcc_maps)[0],                  # None = the installed game (auto-detected where it is needed)
             h2ek_maps=_paths.h2ek_maps_dir(a.h2ek_maps),                      # None = no H2EK donors
+            stock_xbox_maps=_paths.stock_xbox_maps_dir(a.stock_xbox_maps),    # None = none (optional; the Xbox converter says what that costs)
+            xbox_to=a.xbox_to or st['xbox_to'] or 'vista', xbox_out=os.path.abspath(a.xbox_out) if a.xbox_out else None,
             assembly_dir=_paths.pick('assembly', a.assembly_dir)[0],          # None = the bundled copy
             dry_run=a.dry_run, only=_split(a.only), exclude=_split(a.exclude),
             kinds=('multiplayer', 'solo') if a.kind == 'all' else (a.kind,), limit=a.limit, force=a.force, overwrite=a.overwrite,
@@ -1219,7 +1371,7 @@ def main(argv=None):
             sort_maps=not a.keep_order, refresh_metadata=a.refresh_metadata, package_title=a.package_title or st['package_title'],
             package_description=a.package_description or EX.DEFAULT_DESCRIPTION, title_from=a.title_from,
             remember=not a.no_remember, recursive=not a.no_recursive, settings_path=a.settings, report=a.report, quiet=a.quiet, list_plan=a.list,
-            cancel_file=a.cancel_file, announce=a.announce)
+            cancel_file=a.cancel_file, announce=a.announce, lightmap=a.lightmap)
         res = run_batch(os.path.abspath(a.root), opts)
     except (RuntimeError, EX.PackageError) as ex:
         print('ERROR: %s' % ex)

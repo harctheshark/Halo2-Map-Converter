@@ -16,6 +16,8 @@ Every folder the converter needs is looked up here, in this order (first hit win
     caches / scratch             -                 H2CONV_WORK                   work_dir          (default: %LOCALAPPDATA%\\H2MapConverter\\work)
     cache size cap (GB)          -                 H2CONV_CACHE_LIMIT_GB         cache_limit_gb    (default: 5; 0 = no automatic trimming; h2conv cache ...)
     H2EK maps (extra donors)     --h2ek-maps       H2CONV_H2EK_MAPS              h2ek_maps_dir     (never auto-detected)
+    OG Xbox maps (stock, optional) --stock-xbox-maps H2CONV_STOCK_XBOX_MAPS      stock_xbox_maps   (never auto-detected; see stock_xbox_maps_dir)
+    Xbox stock index folder (opt.) -                 H2CONV_XBOX_INDEX_DIR       xbox_index_dir    (default: <work folder>\\xbox_stock_index)
     Vista output (batch)         --vista-out       -                             vista_output_dir  (default: Documents\\My Games\\Halo 2\\Maps)
     MCC output package (batch)   --mcc-out         -                             mcc_output_dir    (no default)
     Excession (optional)         -                 H2CONV_EXCESSION              excession_dir
@@ -58,6 +60,8 @@ ENV_VISTA_MAPS_OLD = 'H2V_MAPS'                  # the name the validator used b
 ENV_ASSEMBLY = 'H2CONV_ASSEMBLY'
 ENV_WORK = 'H2CONV_WORK'
 ENV_H2EK_MAPS = 'H2CONV_H2EK_MAPS'
+ENV_STOCK_XBOX_MAPS = 'H2CONV_STOCK_XBOX_MAPS'
+ENV_XBOX_INDEX_DIR = 'H2CONV_XBOX_INDEX_DIR'
 ENV_EXCESSION = 'H2CONV_EXCESSION'
 ENV_FFMPEG = 'H2CONV_FFMPEG'
 ENV_CARTOGRAPHER_SRC = 'H2CONV_CARTOGRAPHER_SRC'
@@ -67,6 +71,8 @@ ENV = {
     'assembly': (ENV_ASSEMBLY,),
     'work': (ENV_WORK,),
     'h2ek_maps': (ENV_H2EK_MAPS,),
+    'stock_xbox_maps': (ENV_STOCK_XBOX_MAPS,),
+    'xbox_index': (ENV_XBOX_INDEX_DIR,),
     'excession': (ENV_EXCESSION,),
     'ffmpeg': (ENV_FFMPEG,),
     'cartographer_src': (ENV_CARTOGRAPHER_SRC,),
@@ -74,17 +80,21 @@ ENV = {
 SETTING = {
     'mcc_maps': 'mcc_maps_dir', 'vista_maps': 'vista_maps_dir', 'assembly': 'assembly_dir', 'work': 'work_dir',
     'h2ek_maps': 'h2ek_maps_dir', 'excession': 'excession_dir', 'vista_out': 'vista_output_dir', 'mcc_out': 'mcc_output_dir',
-    'ffmpeg': 'ffmpeg_path', 'cartographer_src': 'cartographer_src_dir',
+    'ffmpeg': 'ffmpeg_path', 'cartographer_src': 'cartographer_src_dir', 'stock_xbox_maps': 'stock_xbox_maps',
+    'xbox_index': 'xbox_index_dir',
 }
 OPTION = {
     'mcc_maps': '--mcc-maps', 'vista_maps': '--vista-maps', 'assembly': '--assembly-dir', 'h2ek_maps': '--h2ek-maps',
     'vista_out': '--vista-out', 'mcc_out': '--mcc-out', 'work': None, 'excession': None, 'ffmpeg': None, 'cartographer_src': None,
+    'stock_xbox_maps': '--stock-xbox-maps', 'xbox_index': None,
 }
 LABEL = {
     'mcc_maps': 'Halo 2 MCC maps folder', 'vista_maps': 'Halo 2 Vista (Project Cartographer) stock maps folder',
     'assembly': 'Assembly layout files', 'work': 'work folder (caches)', 'h2ek_maps': 'H2EK maps folder (extra donors)',
     'vista_out': 'Vista output folder', 'mcc_out': 'MCC output package folder', 'excession': 'Excession install',
     'ffmpeg': 'ffmpeg (Ogg sounds)', 'cartographer_src': 'Cartographer source folder',
+    'stock_xbox_maps': 'OG Xbox maps folder (the original Halo 2 Xbox maps; optional)',
+    'xbox_index': 'Xbox stock index folder (optional; default: inside the work folder)',
 }
 
 
@@ -662,6 +672,27 @@ def h2ek_maps_dir(explicit=None):
     return v
 
 
+def stock_xbox_maps_dir(explicit=None):
+    """The folder with the ORIGINAL Halo 2 Xbox maps (lockout.map, ascension.map, the campaign maps, shared.map, mainmenu.map,
+    single_player_shared.map), used by the Xbox -> Vista converter as the reference for what the original game ships: it tells a map
+    that really changed a tag from one that only carries the stock copy.  Optional: without it the converter still works, with lower quality
+    for some maps (it says so).  --stock-xbox-maps / H2CONV_STOCK_XBOX_MAPS / settings.json "stock_xbox_maps"; never auto-detected.
+    -> the absolute path as given (it may not exist: the converter reports that), or None when nothing names a folder."""
+    v, _src = pick('stock_xbox_maps', explicit)
+    return os.path.abspath(v) if v else None
+
+
+def xbox_index_dir():
+    """Where the converter keeps the index of the stock Xbox maps (built on first use, rebuilt when a stock map changes): H2CONV_XBOX_INDEX_DIR,
+    else settings.json "xbox_index_dir", else the sub-folder xbox_stock_index of the work folder.  Listed and cleared by `h2conv cache` but never
+    trimmed by the size cap (rebuilding takes minutes)."""
+    v, _src = pick('xbox_index')
+    return os.path.abspath(v) if v else work_subdir(XBOX_INDEX_NAME)
+
+
+XBOX_INDEX_NAME = 'xbox_stock_index'
+
+
 def sample_maps():
     """{'custom': the H2EK headlong, 'mcc': the stock MCC headlong (the untouched copy in 'Backup NOT MODDED' when there is one), 'vista': the stock Vista
     headlong, 'vista_shared' / 'vista_sp_shared' / 'vista_mainmenu': the Vista databases} for the developer tools and tests that open maps by key; a key whose
@@ -896,11 +927,12 @@ def assembly_dir(explicit=None):
 # --------------------------------------------------------------------------------------------------
 # command line helpers
 # --------------------------------------------------------------------------------------------------
-_COMMON = {'--mcc-maps': 'mcc_maps', '--vista-maps': 'vista_maps', '--assembly-dir': 'assembly', '--h2ek-maps': 'h2ek_maps'}
+_COMMON = {'--mcc-maps': 'mcc_maps', '--vista-maps': 'vista_maps', '--assembly-dir': 'assembly', '--h2ek-maps': 'h2ek_maps',
+           '--stock-xbox-maps': 'stock_xbox_maps'}
 
 
-def add_common_options(ap, mcc=False, vista=False, assembly=True, h2ek=False):
-    """Add --assembly-dir (and, when asked, --mcc-maps / --vista-maps / --h2ek-maps) to an argparse parser, with the resolution order in the help."""
+def add_common_options(ap, mcc=False, vista=False, assembly=True, h2ek=False, stock_xbox=False):
+    """Add --assembly-dir (and, when asked, --mcc-maps / --vista-maps / --h2ek-maps / --stock-xbox-maps) to an argparse parser, with the resolution order in the help."""
     if mcc:
         ap.add_argument('--mcc-maps', default=None, help='folder with the MCC maps / textures.dat / sounds_*.dat (default: H2CONV_MCC_MAPS, the settings '
                                                          'file, then your Steam library)')
@@ -913,12 +945,16 @@ def add_common_options(ap, mcc=False, vista=False, assembly=True, h2ek=False):
     if h2ek:
         ap.add_argument('--h2ek-maps', default=None, help='MCC Halo 2 Editing Kit maps folder: its maps become an extra, last donor tier (default: '
                                                           'H2CONV_H2EK_MAPS or the settings file; otherwise none)')
+    if stock_xbox:
+        ap.add_argument('--stock-xbox-maps', default=None, metavar='DIR', help='folder with the ORIGINAL Halo 2 Xbox maps (optional; default: '
+                                                                               'H2CONV_STOCK_XBOX_MAPS, then "stock_xbox_maps" in the settings file; otherwise none)')
 
 
 def configure_from_args(a):
     """configure() from an argparse namespace made with add_common_options() (missing attributes are ignored)."""
     configure(mcc_maps=getattr(a, 'mcc_maps', None), vista_maps=getattr(a, 'vista_maps', None), assembly=getattr(a, 'assembly_dir', None),
-              h2ek_maps=getattr(a, 'h2ek_maps', None), vista_out=getattr(a, 'vista_out', None), mcc_out=getattr(a, 'mcc_out', None))
+              h2ek_maps=getattr(a, 'h2ek_maps', None), vista_out=getattr(a, 'vista_out', None), mcc_out=getattr(a, 'mcc_out', None),
+              stock_xbox_maps=getattr(a, 'stock_xbox_maps', None))
 
 
 def consume_common_options(argv):
@@ -1000,6 +1036,12 @@ def describe():
             else 'optional: not used (pass --h2ek-maps to use it)', required=False)
     except PathsError as ex:
         add('h2ek_maps', None, None, False, str(ex), required=False)
+    # OG Xbox maps (optional)
+    sx = stock_xbox_maps_dir()
+    v, src = pick('stock_xbox_maps')
+    add('stock_xbox_maps', sx, src if sx else 'not set', True,
+        ('%d .map files' % len([f for f in os.listdir(sx) if f.lower().endswith('.map')])) if sx and os.path.isdir(sx)
+        else ('this folder does not exist' if sx else 'optional: only for converting original Xbox maps (--stock-xbox-maps)'), required=False)
     # outputs
     v, src = pick('vista_out')
     o = vista_out_dir(required=False)
@@ -1018,7 +1060,7 @@ def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(prog='h2conv.paths', description='Show where the converter looks for every folder it needs, where each value came '
                                  'from (option / env / settings / auto / bundled), and whether the key files are there.')
-    add_common_options(ap, mcc=True, vista=True, assembly=True, h2ek=True)
+    add_common_options(ap, mcc=True, vista=True, assembly=True, h2ek=True, stock_xbox=True)
     ap.add_argument('--json', action='store_true', help='machine readable output')
     a = ap.parse_args(argv)
     configure_from_args(a)

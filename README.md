@@ -8,15 +8,16 @@ directions: with a **window program** (pick a folder, let it find the maps, conv
 |---|---|---|---|
 | MCC to Vista | `py -3 -m h2conv convert` | Halo 2 MCC map (cache version 13): stock maps and maps built with the MCC Halo 2 Editing Kit | Halo 2 Vista map (cache version 8) that Project Cartographer's `halo2.exe` can load as a custom map |
 | Vista to MCC | `py -3 -m h2conv rev` | Halo 2 Vista map (cache version 8): stock maps and community custom maps | self-contained Halo 2 MCC map (cache version 13) |
-| many maps at once | `py -3 -m h2conv batch` | a folder tree full of maps | scans, classifies and converts every map in the right direction; Vista maps go into one Excession mod package, MCC maps into your Cartographer Maps folder |
+| original Xbox to Vista or MCC | `py -3 -m h2conv xbox` | Halo 2 multiplayer map of the original Xbox (stock maps and the community map packs) | a Vista map, or (Xbox to Vista to MCC in one run) one Excession mod package per map pack |
+| many maps at once | `py -3 -m h2conv batch` | a folder tree full of maps | scans, classifies and converts every map in the right direction; Vista maps go into one Excession mod package, MCC maps into your Cartographer Maps folder, original Xbox maps to Vista or into MCC mod packages |
 
-`py -3 -m h2conv` is the one entry point (`convert`, `rev`, `batch`, `mapinfo`, `excession`, `validate`, `limits`, `invariants`,
-`paths`, and `gui` for the window program).  The older module forms still work and are used in the examples below where they read better:
+`py -3 -m h2conv` is the one entry point (`convert`, `rev`, `xbox`, `lightmap`, `batch`, `mapinfo`, `excession`, `validate`, `limits`, `invariants`,
+`paths`, `cache`, and `gui` for the window program).  The older module forms still work and are used in the examples below where they read better:
 `py -3 -m h2conv.convert`, `py -3 -m h2conv.rev.convert`, `py -3 -m h2conv.batch`.
 In the Windows zip the same commands are `h2conv.exe convert`, `h2conv.exe rev`, `h2conv.exe batch` and so on
 (see [The Windows programs](#the-windows-programs)); the examples in this file are written for Python.
 
-**Version 1.0.0.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
+**Version 1.1.0.**  It comes in two forms: a **Windows zip** (about 60 MB) with `Halo 2 Map Converter.exe` (the window
 program) and `h2conv.exe` (the command line), which needs no Python, and this **source** (a Python package, run with `py -3 -m h2conv`).
 Both do the same conversions (see "Status" below for how that was checked).
 It has been run over hundreds of community maps and several fixes were confirmed by playing, but most converted maps have not
@@ -36,6 +37,12 @@ short table of per-map shader overrides (today: the couch of `chronopolis`).  Vi
 known community shaders, gives a multiplayer map without starting equipment the stock entry, and reads tags whose data is another kind of object than their slot says;
 the batch command has `--title-from` and `--package-description`.  **A custom list-preview image is not supported** (the `preview_bitmap_file` key of the info file is
 ignored with a warning).  See [RELEASE_NOTES.md](RELEASE_NOTES.md).
+
+**New in 1.1.0:** **original Xbox multiplayer maps** convert to Vista and to MCC (`py -3 -m h2conv xbox`, the batch command and the window
+program); see [Converting original Xbox maps](#converting-original-xbox-maps).  A BSP whose lightmap is missing or does not fit gets a generated
+one (`py -3 -m h2conv lightmap`, and automatically on the Xbox route), and render models whose precomputed lighting a mod zeroed or broke
+get valid data again (drawn dark, as the Xbox draws them).  Vista to MCC fixes two MCC crashes: weather with more particles than MCC can draw (it is capped at 2730), and dialogue
+sounds without lip-sync data (MCC's map loader requires an entry for them).  See [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 ### Limits you should know before you start
 
@@ -74,6 +81,12 @@ played in Project Cartographer.
   that exists in MCC's stock maps is taken from there (MCC "donor" tags); everything the custom map adds is converted.
   Custom shaders are converted by a faithful port of their compiled Direct3D 9 code to MCC's Direct3D 11 shader format, not by
   guessing a look-alike.
+* **Original Xbox to Vista and MCC.**  Reads a multiplayer map of the original Xbox game (the stock maps and community map packs such as Phantom,
+  Killtrocity and Killjoy), with the pack's own `shared.map` and `mainmenu.map`, and writes a Vista map; with `--to mcc` the Vista maps go on to
+  MCC in the same run and become one Excession mod package per map pack.  Xbox vertex formats, bitmaps, sounds (including Xbox-framed WMA),
+  shaders and scripts are converted to their PC form; tags equal to Bungie's own are linked to the stock Vista copy.  Maps whose tag names a
+  mod tool removed or shuffled are handled by recovering the names from the tags' content.  BSPs without a usable lightmap get a generated one
+  that looks like the Xbox draws a map with no lightmap.
 * **Batch mode.**  Scans a folder tree (recursively), identifies every Halo 2 map by its header, skips duplicates and files it
   cannot or should not convert, converts the rest, keeps going when one map fails, and prints a summary of what failed and why.
   It can plan first (`--dry-run`) and can be re-run later to convert only what is new.
@@ -108,6 +121,12 @@ How it works in detail: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
   lobby on a converted `chronopolis`.  The fixes of 0.3.0 for the Halo CE ports, the preview image and the campaign maps were derived from
   the games' own code and data and checked on the files; they are listed in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) (section 2.1) as "not
   yet confirmed in game".
+* **Original Xbox maps (new in 1.1.0):** 208 of the 212 maps of the stock Xbox game and five community packs (Phantom v1 and v2, Killtrocity v1
+  and v2, Killjoy) convert with no errors from the built-in checks, to Vista and on to MCC.  The four that do not are a truncated download and
+  three files that are not Halo 2 multiplayer maps (Halo 3 / Reach files that sit in the same folders).  *Confirmed by playing, in MCC:* maps of
+  these packs load and play, including several that crashed earlier builds (heavy weather, dialogue sounds without lip-sync data, a black screen on
+  one map with shuffled tag names) and four maps with repaired precomputed lighting; a set of maps with a generated lightmap loaded without a
+  crash.  **Most of the converted Xbox maps have not been played**, on Vista or on MCC.
 * **Newest, least used:** the window program and the Windows zip.  They run the same batch engine as the command line, which is the part
   that has been tested at scale.  What was checked: three conversions made with `h2conv.exe` (MCC to Vista `lockout`, Vista to MCC `lockout`
   and `Holidays Grave`) are byte-for-byte identical to the Python source's output (apart from the creation time in the header); the sound
@@ -176,7 +195,7 @@ or modded MCC maps in a sub-folder or in another folder.
 
 ## The Windows programs
 
-The release's **Windows zip** (`Halo2-Map-Converter-1.0.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
+The release's **Windows zip** (`Halo2-Map-Converter-1.1.0-windows-x64.zip`, about 60 MB, about 150 MB unzipped) holds one folder,
 `Halo2MapConverter`, with two programs that share their libraries and need no Python and no installer:
 
 * **`Halo 2 Map Converter.exe`** - the window program.  You choose a root folder; it scans that folder and every folder below it, recognises
@@ -293,6 +312,47 @@ simply be started again.
 The Excession mod package folder must sit directly below one of the folders Excession scans for mods; see Excession's own
 documentation for how to enable and load a mod package.  `py -3 -m h2conv.excession check-root "<mods root folder>"` replays that scan and
 `py -3 -m h2conv.excession validate "<package folder>"` checks the package.
+
+## Converting original Xbox maps
+
+```
+py -3 -m h2conv xbox "<pack folder, for example Phantom v1>" --to vista --out "<your Halo 2 Maps folder>"
+py -3 -m h2conv xbox "<folder with several packs>" --to mcc --out "<your Excession mods folder>" --stock-xbox-maps "<your original Xbox maps>"
+```
+
+In the window program, choose **Original Xbox maps to Vista** or **Original Xbox maps to MCC** for the Xbox maps it finds, and set
+**OG Xbox maps folder** under *4. Games and layout files* (see below).  The batch command picks Xbox maps up in the same scan
+(`--xbox-to vista|mcc|none`).
+
+**What to point it at.**  A map file or a folder (searched recursively, `--no-recursive` to stop that).  Only **multiplayer** maps of the original
+Xbox Halo 2 are converted; campaign maps, Halo 3 / Reach / Xbox 360 files and maps of the PC versions are reported and skipped.
+
+**The pack's own `shared.map` and `mainmenu.map` are needed.**  An Xbox map is only half of its content: the rest lives in the `shared.map` and
+`mainmenu.map` it was released with (a community pack ships its own pair, the stock game has its own).  The converter looks for them in the map's
+folder, the folder above it and a `maps` folder beside it; `--pack-dir` names the folder directly.  Without them the map is not converted and the
+message says which file is missing.
+
+**Your original Xbox maps (optional, recommended).**  `--stock-xbox-maps DIR`, the environment variable `H2CONV_STOCK_XBOX_MAPS`, the settings key
+`stock_xbox_maps` or the window's *OG Xbox maps folder*: the folder with the maps of the original game (`lockout.map`, `ascension.map` ...,
+`shared.map`, `mainmenu.map`).  With them the converter can tell which tags a mod really changed (and link the rest to Bungie's Vista copies),
+repair tags that were damaged when the mod was made, and recover tag names a mod tool removed.  Without them every map still converts, but some
+come out less faithful, and a note at the end of the run says so.  The first run with a new folder builds an index of those maps in the
+converter's cache (a few minutes; `h2conv cache info` shows it, the cache trim never removes it).
+
+**Names.**  `--to vista` names a file after the map and its pack: `bulldog.map` from the pack folder `Phantom v1` becomes `Bulldog_PhantomV1.map`,
+the maps of the original game get `_OG` (`Lockout_OG.map`).  The name in the game's map list is the map's own name.
+
+**MCC packages.**  `--to mcc` converts Xbox to Vista to MCC in one run; the Vista files made on the way live in the cache and are deleted at the end.
+The result is one Excession mod package per pack, of at most 45 maps (`--max-maps-per-package`); a bigger pack is split into "Part 1", "Part 2" ...
+A package folder that already exists is never built into again (it would get a second, renamed copy of every map): the run stops before it starts
+unless `--overwrite` is given.
+
+**Lightmaps.**  A mod that changed a BSP usually removed its lightmap, and the game reads the lightmap tables without checking them.  `--lightmap auto`
+(default) gives an unmodified stock BSP its complete stock lightmap and every other BSP without a usable lightmap a generated one (`native`) that the game
+treats as "no lightmap", so the BSP is drawn the way the Xbox draws it.  `--lightmap neutral-valid` generates a valid lightmap with constant grey
+lighting instead.  Maps that carry a working lightmap keep it.  `py -3 -m h2conv lightmap <map> <out>` does the same for a Vista map.
+
+What does not convert, and the differences that are known: [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md), "Original Xbox maps".
 
 ## Maps from workshop mods (a custom `shared.map`)
 
@@ -421,6 +481,8 @@ at once).  It is plain JSON; the keys below can be edited by hand.
 | Assembly layout files | `--assembly-dir` | `H2CONV_ASSEMBLY` | `assembly_dir` | the bundled copy in `h2conv\data\assembly` |
 | caches | | `H2CONV_WORK` | `work_dir` | `%LOCALAPPDATA%\H2MapConverter\work` |
 | H2EK maps (extra donors, optional) | `--h2ek-maps`, `--no-h2ek-donors` | `H2CONV_H2EK_MAPS` | `h2ek_maps_dir` | not used (never auto-detected) |
+| original Xbox maps (optional, for the Xbox route) | `--stock-xbox-maps` | `H2CONV_STOCK_XBOX_MAPS` | `stock_xbox_maps` | not used (a note at the end of an Xbox run says what that cost) |
+| Xbox to MCC packages (batch) | `--xbox-out` | | | the folder that holds the `--mcc-out` package |
 | Vista output folder (batch) | `--vista-out` | | `vista_output_dir` | `Documents\My Games\Halo 2\Maps`, if it exists |
 | MCC output package (batch) | `--mcc-out` | | `mcc_output_dir` | none: required the first time |
 | Excession install (optional) | | `H2CONV_EXCESSION` | `excession_dir` | found in your Steam libraries |

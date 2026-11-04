@@ -45,6 +45,10 @@ WMA_BYTES_PER_SECOND = 44100            # MCC time -> byte arithmetic for compre
 I16_MAX = 32767
 MCC_SOUND_ALIGN = 0x80                  # every chunk of the H2EK-built maps starts on a 128-byte boundary, packed back to back (100 % of 3 maps)
 MCC_CH = {0: 1, 1: 2, 3: 4}
+# MCC halo2.dll sub_180036470 (map load) reads ugh! Extra Info[snd +0x0E] of every snd! whose class is speech (sncl Internal Flags bit 1) with
+# no -1 check: halo2.dll+0x36597.  Every stock MCC speech sound has an element; Xbox mods' dialog sounds often have none (2026-11-02: 14 Xbox
+# pack maps, Swamp / Isolation / Burnt Blood / Sanctus crashed in game).  Such a sound gets one shared empty element (no lip-sync).
+MCC_SPEECH_CLASSES = frozenset((19, 44, 45, 46, 47, 48))   # stock MCC shared.map sncl
 
 
 # ------------------------------------------------------------------------------------------------
@@ -528,6 +532,18 @@ class Builder(object):
                 elif kind == 'wma':
                     if payload[:4] != b'auds':
                         self.warn('snd_wma_head', '%s: permutation %d is a codec-encoded sound but its blob does not start with "auds"' % (rec.name, pidx))
+                    elif self.opts.get('wma_to_xadpcm', True):
+                        res = self._wma_perm(rec, pidx, payload, rate)
+                        if res is not None:
+                            payload = res.payload
+                            kind = 'xadpcm'
+                            pi.kind = kind
+                            ch = res.src_channels
+                            rec.codec = (rate, 1 if ch == 2 else 0, 1)
+                            v_sizes = [len(payload)]
+                            v_f31 = [False]
+                            rec.ogg_perms += 1                               # 'decoded' permutation: its real length sets Maximum Play Time
+                            rec.decoded_ms = max(rec.decoded_ms, res.duration_ms)
                 else:                                                        # raw PCM -> Xbox ADPCM (the classic MCC path); synthetic tests only, no community sound
                     raw = _swap16(payload) if s['compression'] == 0 else payload
                     payload = sc.pcm_le_to_vista_xadpcm(raw, ch, SAMPLE_RATE_HZ.get(rate, 44100), SAMPLE_RATE_HZ.get(rate, 44100))
@@ -540,6 +556,35 @@ class Builder(object):
                 perms.append(pi)
                 kind = self._kind_of(s)                                      # a PCM permutation does not change the kind of the next one
             rec.prs.append((pr, perms))
+
+    def _wma_perm(self, rec, pidx, payload, rate):
+        """A map's own WMA permutation -> og.OggResult (Xbox ADPCM, the clip's own channel count, the sound's labelled rate), or None when it
+        cannot be decoded (the WMA is then kept, as before: MCC plays it silent).  MCC has no WMA game sounds at all - stock MCC re-encoded
+        every Vista WMA announcer to Xbox ADPCM / Opus - so a map's custom WMA announcer (Tortuga) was silent on MCC (2026-11-02).
+        opts['wma_to_xadpcm'] = False keeps the WMA."""
+        hz = SAMPLE_RATE_HZ.get(rate, 44100)
+        key = ('wma', hashlib.md5(payload).digest(), hz)
+        res = self._ogg_cache.get(key)
+        if res is None:
+            try:
+                dec = og.get_decoder(self.opts)
+                ok, why = dec.availability()
+                if not ok:
+                    raise og.OggDecoderUnavailable(why)
+                ch, _ = og.wma_channels(payload)
+                res = og.wma_to_xadpcm(payload, ch, hz, dec)
+            except og.OggDecoderUnavailable as e:
+                if not getattr(self, '_wma_no_decoder_warned', False):
+                    self._wma_no_decoder_warned = True
+                    self.warn('snd_wma_no_decoder', 'the map\'s own WMA sounds (e.g. snd! %s) stay WMA, which MCC does not play: %s' % (rec.name, e))
+                return None
+            except og.OggError as e:
+                self.warn('snd_wma_decode_failed', '%s: permutation %d WMA could not be decoded (%s) - kept as WMA' % (rec.name, pidx, e))
+                return None
+            self._ogg_cache[key] = res
+        self.warn('snd_wma_decoded', '%s: permutation %d decoded from WMA (%d Hz x %d ch, %d samples, %d ms) and encoded as Xbox ADPCM (%d B)'
+                  % (rec.name, pidx, res.src_rate, res.src_channels, res.native_frames, res.duration_ms, len(res.payload)))
+        return res
 
     def _ogg_perm(self, rec, pidx, payload, ch, rate):
         """One permutation whose payload is an Ogg stream -> og.OggResult (Xbox ADPCM payload at the sound's labelled rate / channel count).
@@ -666,6 +711,19 @@ class Builder(object):
         B.playbacks, B.scales, B.pr_params, B.import_names = pb_t.items, sc_t.items, ip_t.items, imp_t.items
         # ---- first-use tables
         promo_map, extra_map, cust_map = {}, {}, {}
+        empty_extra = []
+
+        def speech_extra(cls, ex):
+            """ex, or the shared empty Extra Info element for a speech-class sound without one (MCC_SPEECH_CLASSES)."""
+            if ex >= 0 or cls not in MCC_SPEECH_CLASSES:
+                return ex
+            if not empty_extra:
+                f = mf['Extra Info']
+                mn = T.Node('ugh!', T.child_path('', f), f.children, R.MCC_EXTRA_SIZE, b'\0' * R.MCC_EXTRA_SIZE)
+                empty_extra.append(len(B.extras))
+                B.extras.append(ExtraInfo(mn, None))
+            B.notes['speech_sounds_given_empty_extra_info'] = B.notes.get('speech_sounds_given_empty_extra_info', 0) + 1
+            return empty_extra[0]
         refl_map, low_map = {}, {}
         rem_t = _Table()
         audio_by_key = {}
@@ -855,7 +913,7 @@ class Builder(object):
                     return -1
             cu_new = safe_index(cust_index, s['custom_playback'], 'custom playback')
             pr_new = safe_index(promo_index, s['promotion'], 'promotion')
-            ex_new = safe_index(extra_index, s['extra_info'], 'extra info')
+            ex_new = speech_extra(s['cls'], safe_index(extra_index, s['extra_info'], 'extra info'))
             if is_mcc:
                 rem_new = remastered_index(src, s['remastered_index'], r.name)
                 rf_new, rc_new = reflection_range(src, s['refl_first'], s['refl_count'], r.name)
@@ -880,7 +938,7 @@ class Builder(object):
             if r.body is None:
                 s = r.snd
                 fl = s['flags'] if r.sel.side == 'mcc' else R.vista_flags_to_mcc(s['flags'])
-                r.body = R.mcc_snd_body(fl, s['cls'], codec_index[(1, 0, 1)], -1, -1, -1, 0, -1, -1, -1, -1, 0)
+                r.body = R.mcc_snd_body(fl, s['cls'], codec_index[(1, 0, 1)], -1, -1, -1, 0, -1, -1, -1, speech_extra(s['cls'], -1), 0)
         B.notes['budget_problems'] = check_budgets(ctx, B, self.warn)
 
 

@@ -1,0 +1,1781 @@
+{
+"_doc": "tag reference field (owner group|block path|field name) -> {target index group: references seen} in stock Vista + stock Xbox data (2026-10-26)",
+"fields": {
+"*cen|/Crates Palette|Crate": {
+"bloc": 330
+},
+"*cen|/Scenery Palette|Scenery": {
+"scen": 851
+},
+"*eap|/Weapon Palette|Name": {
+"weap": 187
+},
+"*ehi|/Vehicle Palette|Name": {
+"vehi": 98
+},
+"*igh|/Light Volumes Palette|Light Volume": {
+"ligh": 169
+},
+"*ipd|/Biped Palette|Biped": {
+"bipd": 134
+},
+"*qip|/Equipment Palette|Equipment": {
+"eqip": 43
+},
+"*rea|/Creatures Palette|Creature": {
+"crea": 3
+},
+"*sce|/Sound Scenery Palette|Sound Scenery": {
+"ssce": 186
+},
+"DECR|/Shaders|Shader": {
+"shad": 72
+},
+"DECR||Owner Tag": {
+"DECR": 45
+},
+"MGS2|/Volumes|Bitmap": {
+"bitm": 14
+},
+"PRTM|/Attached Particle Systems|Particle": {
+"prt3": 4
+},
+"PRTM||Owner Tag": {
+"PRTM": 75
+},
+"PRTM||Shader": {
+"shad": 75
+},
+"ai**|/Character Palette|Character": {
+"char": 183
+},
+"ai**|/Flocks|Creature": {
+"crea": 31
+},
+"ai**|/Style Palette|Style": {
+"styl": 73
+},
+"ai**|/Vehicle Palette|Vehicle": {
+"vehi": 162
+},
+"ai**|/Weapon Palette|Weapon": {
+"weap": 324
+},
+"ant!||Bitmap": {
+"bitm": 6
+},
+"ant!||Physics": {
+"pphy": 6
+},
+"bipd|/Attachments|Type": {
+"cont": 6,
+"effe": 32,
+"lens": 42,
+"ligh": 32,
+"lsnd": 16
+},
+"bipd|/Camera Tracks|Track": {
+"trak": 80
+},
+"bipd|/New HUD Interfaces|New Unit HUD Interface": {
+"nhdt": 16
+},
+"bipd|/Predicted Resources|Tag Index": {
+"bitm": 2695,
+"mode": 86
+},
+"bipd|/Weapons|Weapon": {
+"weap": 16
+},
+"bipd|/Widgets|Type": {
+"clwd": 2
+},
+"bipd||Area Damage Effect": {
+"effe": 40
+},
+"bipd||Boarding Melee Damage": {
+"jpt!": 42
+},
+"bipd||Boarding Melee Response": {
+"jpt!": 8
+},
+"bipd||Death Spawn Character": {
+"char": 4
+},
+"bipd||Flurry Melee Damage": {
+"jpt!": 2
+},
+"bipd||Integrated Light Toggle": {
+"effe": 6
+},
+"bipd||Landing Melee Damage": {
+"jpt!": 2
+},
+"bipd||Material Effects": {
+"foot": 54
+},
+"bipd||Melee Damage": {
+"jpt!": 40
+},
+"bipd||Model": {
+"hlmt": 86
+},
+"bipd||Obstacle Smash Damage": {
+"jpt!": 34
+},
+"bipd||Reanimation Character": {
+"char": 4
+},
+"bitm|/Bitmaps|Datum": {
+"bitm": 37898
+},
+"bloc|/Attachments|Type": {
+"effe": 32,
+"lens": 6,
+"ligh": 9,
+"lsnd": 102
+},
+"bloc|/Predicted Resources|Tag Index": {
+"bitm": 4332,
+"mode": 569
+},
+"bloc||Crate Object": {
+"bloc": 20
+},
+"bloc||Material Effects": {
+"foot": 79
+},
+"bloc||Model": {
+"hlmt": 569
+},
+"bsdt|/Particle Effects/Emitters|Particle Physics": {
+"pmov": 4
+},
+"bsdt|/Particle Effects|Particle": {
+"prt3": 4
+},
+"bsdt||Sound": {
+"snd!": 4
+},
+"char|/Charge Properties|Berserk Weapon": {
+"weap": 2
+},
+"char|/Firing Pattern Properties|Weapon": {
+"weap": 82
+},
+"char|/Retreat Properties|Backup Weapon": {
+"weap": 20
+},
+"char|/Vehicle Properties|Style": {
+"styl": 20
+},
+"char|/Vehicle Properties|Unit": {
+"bipd": 10,
+"vehi": 18
+},
+"char|/Weapons Properties|Weapon": {
+"weap": 70
+},
+"char|/Weapons Properties|Weapon Melee Damage": {
+"jpt!": 4
+},
+"char||Creature": {
+"crea": 2
+},
+"char||Major Character": {
+"char": 22
+},
+"char||Parent Character": {
+"char": 120
+},
+"char||Style": {
+"styl": 122
+},
+"char||Unit": {
+"bipd": 114,
+"vehi": 2
+},
+"clu*|/Atmospheric Fog Palette|Patchy Fog": {
+"fpch": 11
+},
+"clu*|/Background Sound Palette|Background Sound": {
+"lsnd": 171
+},
+"clu*|/Background Sound Palette|Inside Cluster Sound": {
+"lsnd": 3
+},
+"clu*|/Sound Environment Palette|Sound Environment": {
+"snde": 132
+},
+"clu*|/Weather Palette|Weather System": {
+"weat": 13
+},
+"clwd||Shader": {
+"shad": 4
+},
+"coll|/Regions/Permutations/BSP Physics|Runtime Model Tag": {
+"hlmt": 276
+},
+"cont|/Point States|Physics": {
+"pphy": 112
+},
+"cont||Bitmap": {
+"bitm": 68
+},
+"crea|/Attachments|Type": {
+"lens": 4,
+"ligh": 30,
+"lsnd": 8
+},
+"crea|/Predicted Resources|Tag Index": {
+"bitm": 107,
+"mode": 20
+},
+"crea||Impact Damage": {
+"jpt!": 4
+},
+"crea||Impact Shield Damage": {
+"jpt!": 4
+},
+"crea||Material Effects": {
+"foot": 8
+},
+"crea||Model": {
+"hlmt": 20
+},
+"ctrl|/Attachments|Type": {
+"ligh": 2,
+"lsnd": 4
+},
+"ctrl|/Predicted Resources|Tag Index": {
+"bitm": 258,
+"mode": 30
+},
+"ctrl||Close (Down)": {
+"snd!": 10
+},
+"ctrl||Model": {
+"hlmt": 30
+},
+"ctrl||Open (Up)": {
+"snd!": 19
+},
+"dc*s|/Decorator Palette|Decorator Set": {
+"DECR": 90
+},
+"dec*|/Decals Palette|Decal": {
+"deca": 219
+},
+"deca||Bitmap": {
+"bitm": 334
+},
+"deca||Next Decal In Chain": {
+"deca": 36
+},
+"dgr*|/Controls Palette|Control": {
+"ctrl": 29
+},
+"dgr*|/Machines Palette|Machine": {
+"mach": 194
+},
+"effe|/Events/Beams|Shader": {
+"shad": 10
+},
+"effe|/Events/Particle Systems/Emitters|Particle Physics": {
+"pmov": 3805
+},
+"effe|/Events/Particle Systems|Particle": {
+"PRTM": 246,
+"prt3": 5410
+},
+"effe|/Events/Parts|Type": {
+"MGS2": 18,
+"bloc": 359,
+"char": 2,
+"deca": 646,
+"jpt!": 34,
+"lens": 102,
+"ligh": 128,
+"proj": 4,
+"snd!": 402,
+"tdtl": 12
+},
+"effe||Looping Sound": {
+"lsnd": 134
+},
+"egor||Shader": {
+"shad": 4
+},
+"eqip|/Predicted Resources|Tag Index": {
+"bitm": 187,
+"mode": 26
+},
+"eqip||Detonation Damage Effect": {
+"jpt!": 4
+},
+"eqip||Detonation Effect": {
+"effe": 6
+},
+"eqip||Material Effects": {
+"foot": 14
+},
+"eqip||Model": {
+"hlmt": 26
+},
+"eqip||Pickup Sound": {
+"snd!": 22
+},
+"fog |/Patchy Fog|Patchy Fog": {
+"fpch": 12
+},
+"foot|/Effects/Effects|Secondary Tag": {
+"effe": 1406
+},
+"foot|/Effects/Effects|Tag": {
+"effe": 1949
+},
+"foot|/Effects/Sounds|Tag": {
+"lsnd": 216,
+"snd!": 3174
+},
+"fpch||Noise Map": {
+"bitm": 25
+},
+"garb|/Predicted Resources|Tag Index": {
+"bitm": 8,
+"mode": 2
+},
+"garb||Material Effects": {
+"foot": 2
+},
+"garb||Model": {
+"hlmt": 2
+},
+"goof|/Game Engine Settings/Options|Value Pairs": {
+"sily": 450
+},
+"goof||Default Variant Strings": {
+"unic": 2
+},
+"hlmt|/New Damage Info/Damage Sections/Instant Responses|Delay Effect": {
+"effe": 8
+},
+"hlmt|/New Damage Info/Damage Sections/Instant Responses|Transition Damage Effect": {
+"jpt!": 57
+},
+"hlmt|/New Damage Info/Damage Sections/Instant Responses|Transition Effect": {
+"effe": 465
+},
+"hlmt|/New Damage Info|Overshield First Person Shader": {
+"shad": 10
+},
+"hlmt|/New Damage Info|Overshield Shader": {
+"shad": 12
+},
+"hlmt|/New Damage Info|Shield Damaged Effect": {
+"effe": 12
+},
+"hlmt|/New Damage Info|Shield Damaged First Person Shader": {
+"shad": 10
+},
+"hlmt|/New Damage Info|Shield Damaged Shader": {
+"shad": 32
+},
+"hlmt|/New Damage Info|Shield Depleted Effect": {
+"effe": 34
+},
+"hlmt|/New Damage Info|Shield Recharging Effect": {
+"effe": 18
+},
+"hlmt|/Variants/Objects|Child Object": {
+"mach": 2,
+"scen": 24,
+"vehi": 98,
+"weap": 64
+},
+"hlmt|/Variants/Regions/Permutations/States|Looping Effect": {
+"effe": 494
+},
+"hlmt|/Variants|Dialogue": {
+"udlg": 124
+},
+"hlmt||Active Camo Shader": {
+"shad": 14
+},
+"hlmt||Animation": {
+"jmad": 693
+},
+"hlmt||Collision Model": {
+"coll": 1270
+},
+"hlmt||Default Dialogue": {
+"udlg": 22
+},
+"hlmt||Hologram Shader": {
+"shad": 10
+},
+"hlmt||Physics": {
+"phys": 2
+},
+"hlmt||Physics Model": {
+"phmo": 1090
+},
+"hlmt||Render Model": {
+"mode": 1859
+},
+"hudg|/Dashlights|Bitmap": {
+"bitm": 18
+},
+"hudg|/Dashlights|Shader": {
+"shad": 18
+},
+"hudg|/Dashlights|Sound": {
+"snd!": 6
+},
+"hudg|/HUD Sounds|Chief Sound": {
+"lsnd": 10,
+"snd!": 2
+},
+"hudg|/HUD Sounds|Dervish Sound": {
+"lsnd": 10,
+"snd!": 2
+},
+"hudg|/Waypoint Arrows|Bitmap": {
+"bitm": 6
+},
+"hudg|/Waypoint Arrows|Border Bitmap": {
+"bitm": 4
+},
+"hudg|/Waypoint Arrows|Shader": {
+"shad": 6
+},
+"hudg|/Waypoints|Bitmap": {
+"bitm": 16
+},
+"hudg|/Waypoints|Shader": {
+"shad": 16
+},
+"hudg||Arrow Bitmap": {
+"bitm": 2
+},
+"hudg||Damage Indicator Bitmap": {
+"bitm": 2
+},
+"hudg||Elite Training Middle": {
+"bitm": 2
+},
+"hudg||Elite Training Top Center": {
+"bitm": 2
+},
+"hudg||Elite Training Top Left": {
+"bitm": 2
+},
+"hudg||Elite Training Top Right": {
+"bitm": 2
+},
+"hudg||HUD Text": {
+"unic": 2
+},
+"hudg||Human Training Middle": {
+"bitm": 2
+},
+"hudg||Human Training Top Center": {
+"bitm": 2
+},
+"hudg||Human Training Top Left": {
+"bitm": 2
+},
+"hudg||Human Training Top Right": {
+"bitm": 2
+},
+"hudg||Icon Bitmap": {
+"bitm": 2
+},
+"hudg||Primary Message Sound": {
+"snd!": 2
+},
+"hudg||Secondary Message Sound": {
+"snd!": 2
+},
+"hudg||Training Shader": {
+"shad": 2
+},
+"itmc|/Item Permutations|Item": {
+"eqip": 23,
+"weap": 30
+},
+"jmad|/Effect References|Effect": {
+"effe": 29
+},
+"jmad|/Inheritance List|Inherited Graph": {
+"jmad": 214
+},
+"jmad|/Sound References|Sound": {
+"snd!": 1387
+},
+"jmad|/Tag Resource Groups|Datum": {
+"jmad": 1835
+},
+"jmad||Parent Animation Graph": {
+"jmad": 190
+},
+"jpt!||Sound": {
+"snd!": 4
+},
+"lens||Bitmap": {
+"bitm": 334
+},
+"ligh||Gel Map": {
+"bitm": 154
+},
+"ligh||Lens Flare": {
+"lens": 102
+},
+"ligh||Light Volume": {
+"MGS2": 3
+},
+"ligh||Shader": {
+"shad": 3
+},
+"lsnd|/Detail Sounds|Sound": {
+"snd!": 851
+},
+"lsnd|/Tracks|Alternate Loop": {
+"snd!": 106
+},
+"lsnd|/Tracks|Alternate Out": {
+"snd!": 18
+},
+"lsnd|/Tracks|Alternate Transition In": {
+"snd!": 32
+},
+"lsnd|/Tracks|Alternate Transition Out": {
+"snd!": 8
+},
+"lsnd|/Tracks|In": {
+"snd!": 302
+},
+"lsnd|/Tracks|Loop": {
+"snd!": 1206
+},
+"lsnd|/Tracks|Out": {
+"snd!": 168
+},
+"ltmp|/Lightmap Groups/Geometry Buckets|Owner Tag": {
+"ltmp": 2053
+},
+"ltmp|/Lightmap Groups|Bitmap Group": {
+"bitm": 123
+},
+"mach|/Attachments|Type": {
+"MGS2": 17,
+"cont": 8,
+"effe": 54,
+"lens": 26,
+"ligh": 6,
+"lsnd": 167,
+"snd!": 2
+},
+"mach|/Predicted Resources|Tag Index": {
+"bitm": 3019,
+"mode": 292
+},
+"mach|/Widgets|Type": {
+"tdtl": 8
+},
+"mach||Close (Down)": {
+"snd!": 18
+},
+"mach||Closed": {
+"snd!": 12
+},
+"mach||Crate Object": {
+"bloc": 2
+},
+"mach||Delay Effect": {
+"snd!": 18
+},
+"mach||Material Effects": {
+"foot": 2
+},
+"mach||Model": {
+"hlmt": 292
+},
+"mach||Open (Up)": {
+"snd!": 28
+},
+"mach||Opened": {
+"snd!": 14
+},
+"matg|/AI Globals|Global Dialogue Tag": {
+"adlg": 2
+},
+"matg|/Camera|Default Unit Camera Track": {
+"trak": 2
+},
+"matg|/Collision Damage|Collision Damage": {
+"jpt!": 2
+},
+"matg|/Falling Damage|Distance Damage": {
+"jpt!": 2
+},
+"matg|/Falling Damage|Falling Damage": {
+"jpt!": 2
+},
+"matg|/Falling Damage|Flaming Death Damage": {
+"jpt!": 2
+},
+"matg|/Falling Damage|Vehicle Collision Damage": {
+"jpt!": 2
+},
+"matg|/Falling Damage|Vehicle Environment Collision Damage Effect": {
+"jpt!": 2
+},
+"matg|/Falling Damage|Vehicle Killed Unit Damage Effect": {
+"jpt!": 2
+},
+"matg|/Grenades|Equipment": {
+"eqip": 4
+},
+"matg|/Grenades|Projectile": {
+"proj": 4
+},
+"matg|/Grenades|Throwing Effect": {
+"effe": 4
+},
+"matg|/Interface Tags|Dialog Color Table": {
+"colo": 2
+},
+"matg|/Interface Tags|Editor Color Table": {
+"colo": 2
+},
+"matg|/Interface Tags|HUD Color Table": {
+"colo": 2
+},
+"matg|/Interface Tags|HUD Globals": {
+"hudg": 2
+},
+"matg|/Interface Tags|Interface Goo Map 1": {
+"bitm": 2
+},
+"matg|/Interface Tags|Interface Goo Map 2": {
+"bitm": 2
+},
+"matg|/Interface Tags|Interface Goo Map 3": {
+"bitm": 2
+},
+"matg|/Interface Tags|Motion Sensor Blip Bitmap": {
+"bitm": 2
+},
+"matg|/Interface Tags|Motion Sensor Sweep Bitmap": {
+"bitm": 2
+},
+"matg|/Interface Tags|Motion Sensor Sweep Bitmap Mask": {
+"bitm": 2
+},
+"matg|/Interface Tags|Multiplayer HUD Bitmap": {
+"bitm": 2
+},
+"matg|/Interface Tags|Multiplayer UI Globals": {
+"wgtz": 2
+},
+"matg|/Interface Tags|Screen Color Table": {
+"colo": 2
+},
+"matg|/Interface Tags|Single Player UI Globals": {
+"wgtz": 2
+},
+"matg|/Materials|Breakable Surface": {
+"bsdt": 78
+},
+"matg|/Materials|Material Effects": {
+"foot": 363
+},
+"matg|/Materials|Sound Sweetener Large": {
+"snd!": 363
+},
+"matg|/Materials|Sound Sweetener Medium": {
+"snd!": 363
+},
+"matg|/Materials|Sound Sweetener Melee": {
+"snd!": 363
+},
+"matg|/Materials|Sound Sweetener Rolling": {
+"lsnd": 363
+},
+"matg|/Materials|Sound Sweetener Small": {
+"snd!": 363
+},
+"matg|/Player Information|Active Camouflage Error": {
+"snd!": 2
+},
+"matg|/Player Information|Active Camouflage Off": {
+"snd!": 2
+},
+"matg|/Player Information|Active Camouflage On": {
+"snd!": 2
+},
+"matg|/Player Information|Active Camouflage Ready": {
+"snd!": 2
+},
+"matg|/Player Information|Coop Respawn Effect": {
+"effe": 2
+},
+"matg|/Player Information|Flashlight Off": {
+"snd!": 2
+},
+"matg|/Player Information|Flashlight On": {
+"snd!": 2
+},
+"matg|/Player Information|Ice Cream": {
+"snd!": 2
+},
+"matg|/Player Information|Unused": {
+"bipd": 2
+},
+"matg|/Player Representation|First Person Body Model": {
+"mode": 8
+},
+"matg|/Player Representation|First Person Hands Model": {
+"mode": 8
+},
+"matg|/Player Representation|Third Person Unit": {
+"bipd": 8
+},
+"matg|/Rasterizer Data/Global Vertex Shaders|Vertex Shader": {
+"vrtx": 46
+},
+"matg|/Rasterizer Data|Default 2D": {
+"bitm": 2
+},
+"matg|/Rasterizer Data|Default 3D": {
+"bitm": 2
+},
+"matg|/Rasterizer Data|Default Cube Map": {
+"bitm": 2
+},
+"matg|/Rasterizer Data|Distance Attenuation": {
+"bitm": 2
+},
+"matg|/Rasterizer Data|Global Shader": {
+"shad": 2
+},
+"matg|/Rasterizer Data|Glow": {
+"bitm": 2
+},
+"matg|/Rasterizer Data|Gradients": {
+"bitm": 2
+},
+"matg|/Rasterizer Data|Unused": {
+"bitm": 10
+},
+"matg|/Rasterizer Data|Vector Normalization": {
+"bitm": 2
+},
+"matg|/Sound Globals|Sound Classes": {
+"sncl": 2
+},
+"matg|/Sound Globals|Sound Combat Dialogue Constants": {
+"spk!": 2
+},
+"matg|/Sound Globals|Sound Effects": {
+"sfx+": 2
+},
+"matg|/Sound Globals|Sound Gestalt": {
+"ugh!": 2
+},
+"matg|/Sound Globals|Sound Mix": {
+"snmx": 2
+},
+"matg||Default Global Lighting": {
+"gldf": 2
+},
+"matg||Multiplayer Globals": {
+"mulg": 2
+},
+"mcsr|/Mouse Cursor Bitmaps|Bitmap": {
+"bitm": 4
+},
+"mdlg|/Lines/Variants|Sound": {
+"snd!": 1932
+},
+"mode|/Materials|Shader": {
+"shad": 5941
+},
+"mode|/PRT Info|Owner Tag": {
+"mode": 54
+},
+"mode|/Sections|Owner Tag": {
+"mode": 6197
+},
+"mulg|/Runtime/Assault Events|Chinese Sound": {
+"snd!": 30
+},
+"mulg|/Runtime/Assault Events|French Sound": {
+"snd!": 30
+},
+"mulg|/Runtime/Assault Events|German Sound": {
+"snd!": 30
+},
+"mulg|/Runtime/Assault Events|Italian Sound": {
+"snd!": 30
+},
+"mulg|/Runtime/Assault Events|Japanese Sound": {
+"snd!": 30
+},
+"mulg|/Runtime/Assault Events|Korean Sound": {
+"snd!": 30
+},
+"mulg|/Runtime/Assault Events|Sound": {
+"snd!": 40
+},
+"mulg|/Runtime/Assault Events|Spanish Sound": {
+"snd!": 30
+},
+"mulg|/Runtime/CTF Events|Chinese Sound": {
+"snd!": 26
+},
+"mulg|/Runtime/CTF Events|French Sound": {
+"snd!": 26
+},
+"mulg|/Runtime/CTF Events|German Sound": {
+"snd!": 26
+},
+"mulg|/Runtime/CTF Events|Italian Sound": {
+"snd!": 26
+},
+"mulg|/Runtime/CTF Events|Japanese Sound": {
+"snd!": 26
+},
+"mulg|/Runtime/CTF Events|Korean Sound": {
+"snd!": 26
+},
+"mulg|/Runtime/CTF Events|Sound": {
+"snd!": 36
+},
+"mulg|/Runtime/CTF Events|Spanish Sound": {
+"snd!": 26
+},
+"mulg|/Runtime/Flavor Events|Chinese Sound": {
+"snd!": 22
+},
+"mulg|/Runtime/Flavor Events|French Sound": {
+"snd!": 22
+},
+"mulg|/Runtime/Flavor Events|German Sound": {
+"snd!": 22
+},
+"mulg|/Runtime/Flavor Events|Italian Sound": {
+"snd!": 22
+},
+"mulg|/Runtime/Flavor Events|Japanese Sound": {
+"snd!": 22
+},
+"mulg|/Runtime/Flavor Events|Korean Sound": {
+"snd!": 22
+},
+"mulg|/Runtime/Flavor Events|Sound": {
+"snd!": 22
+},
+"mulg|/Runtime/Flavor Events|Spanish Sound": {
+"snd!": 22
+},
+"mulg|/Runtime/General Events|Chinese Sound": {
+"snd!": 70
+},
+"mulg|/Runtime/General Events|French Sound": {
+"snd!": 70
+},
+"mulg|/Runtime/General Events|German Sound": {
+"snd!": 70
+},
+"mulg|/Runtime/General Events|Italian Sound": {
+"snd!": 70
+},
+"mulg|/Runtime/General Events|Japanese Sound": {
+"snd!": 70
+},
+"mulg|/Runtime/General Events|Korean Sound": {
+"snd!": 70
+},
+"mulg|/Runtime/General Events|Sound": {
+"snd!": 80
+},
+"mulg|/Runtime/General Events|Spanish Sound": {
+"snd!": 70
+},
+"mulg|/Runtime/Grenades|Grenade": {
+"eqip": 4
+},
+"mulg|/Runtime/Juggernaut Events|Chinese Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Juggernaut Events|French Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Juggernaut Events|German Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Juggernaut Events|Italian Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Juggernaut Events|Japanese Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Juggernaut Events|Korean Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Juggernaut Events|Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Juggernaut Events|Spanish Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/King Of The Hill Events|Chinese Sound": {
+"snd!": 16
+},
+"mulg|/Runtime/King Of The Hill Events|French Sound": {
+"snd!": 16
+},
+"mulg|/Runtime/King Of The Hill Events|German Sound": {
+"snd!": 16
+},
+"mulg|/Runtime/King Of The Hill Events|Italian Sound": {
+"snd!": 16
+},
+"mulg|/Runtime/King Of The Hill Events|Japanese Sound": {
+"snd!": 16
+},
+"mulg|/Runtime/King Of The Hill Events|Korean Sound": {
+"snd!": 16
+},
+"mulg|/Runtime/King Of The Hill Events|Sound": {
+"snd!": 16
+},
+"mulg|/Runtime/King Of The Hill Events|Spanish Sound": {
+"snd!": 16
+},
+"mulg|/Runtime/Multiplayer Constants|Bomb Explode Damage Effect": {
+"jpt!": 2
+},
+"mulg|/Runtime/Multiplayer Constants|Bomb Explode Effect": {
+"effe": 2
+},
+"mulg|/Runtime/Multiplayer Constants|Hill Shader": {
+"shad": 2
+},
+"mulg|/Runtime/Oddball Events|Chinese Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Oddball Events|French Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Oddball Events|German Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Oddball Events|Italian Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Oddball Events|Japanese Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Oddball Events|Korean Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Oddball Events|Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Oddball Events|Spanish Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Powerups|Equipment": {
+"eqip": 4
+},
+"mulg|/Runtime/Slayer Events|Chinese Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Slayer Events|French Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Slayer Events|German Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Slayer Events|Italian Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Slayer Events|Japanese Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Slayer Events|Korean Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Slayer Events|Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Slayer Events|Spanish Sound": {
+"snd!": 4
+},
+"mulg|/Runtime/Sounds|Sound": {
+"snd!": 6
+},
+"mulg|/Runtime/Territories Events|Chinese Sound": {
+"snd!": 20
+},
+"mulg|/Runtime/Territories Events|French Sound": {
+"snd!": 20
+},
+"mulg|/Runtime/Territories Events|German Sound": {
+"snd!": 20
+},
+"mulg|/Runtime/Territories Events|Italian Sound": {
+"snd!": 20
+},
+"mulg|/Runtime/Territories Events|Japanese Sound": {
+"snd!": 20
+},
+"mulg|/Runtime/Territories Events|Korean Sound": {
+"snd!": 20
+},
+"mulg|/Runtime/Territories Events|Sound": {
+"snd!": 20
+},
+"mulg|/Runtime/Territories Events|Spanish Sound": {
+"snd!": 20
+},
+"mulg|/Runtime/Vehicles|Vehicle": {
+"vehi": 16
+},
+"mulg|/Runtime/Weapons|Weapon": {
+"weap": 31
+},
+"mulg|/Runtime|Ball": {
+"weap": 2
+},
+"mulg|/Runtime|Bomb": {
+"weap": 2
+},
+"mulg|/Runtime|Flag": {
+"weap": 2
+},
+"mulg|/Runtime|In Game Text": {
+"unic": 2
+},
+"mulg|/Runtime|Juggernaut Powerup": {
+"weap": 2
+},
+"mulg|/Runtime|Scoreboard Dead Emblem Bitmap": {
+"bitm": 2
+},
+"mulg|/Runtime|Scoreboard Dead Emblem Shader": {
+"shad": 2
+},
+"mulg|/Runtime|Scoreboard Emblem Bitmap": {
+"bitm": 2
+},
+"mulg|/Runtime|Scoreboard Emblem Shader": {
+"shad": 2
+},
+"mulg|/Runtime|Scoreboard HUD Definition": {
+"nhdt": 2
+},
+"mulg|/Runtime|Unit": {
+"bipd": 2
+},
+"mulg|/Universal|Multiplayer Text": {
+"unic": 2
+},
+"mulg|/Universal|Random Player Names": {
+"unic": 2
+},
+"mulg|/Universal|Team Names": {
+"unic": 2
+},
+"nhdt|/Bitmap Widgets|Bitmap": {
+"bitm": 447
+},
+"nhdt|/Bitmap Widgets|Shader": {
+"shad": 447
+},
+"nhdt|/Screen Effect Widgets|Bitmap": {
+"bitm": 2
+},
+"nhdt|/Text Widgets|Shader": {
+"shad": 116
+},
+"pmov||Template": {
+"pmov": 180
+},
+"proj|/Attachments|Type": {
+"MGS2": 24,
+"cont": 58,
+"effe": 26,
+"lens": 16,
+"ligh": 20,
+"lsnd": 24
+},
+"proj|/Material Responses|DO NOT USE (OLD Effect)": {
+"effe": 94
+},
+"proj|/Predicted Resources|Tag Index": {
+"bitm": 118,
+"mode": 22
+},
+"proj|/Widgets|Type": {
+"tdtl": 4
+},
+"proj||Airborne Detonation Effect": {
+"effe": 26
+},
+"proj||Attached Detonation Damage": {
+"jpt!": 4
+},
+"proj||Attached Super Detonation Damage": {
+"jpt!": 2
+},
+"proj||Boarding Attached Detonation Damage": {
+"jpt!": 4
+},
+"proj||Boarding Detonation Damage": {
+"jpt!": 4
+},
+"proj||Detonation Damage": {
+"jpt!": 34
+},
+"proj||Detonation Sound": {
+"snd!": 2
+},
+"proj||Detonation Started": {
+"effe": 2
+},
+"proj||Flyby Sound": {
+"snd!": 51
+},
+"proj||Ground Detonation Effect": {
+"effe": 26
+},
+"proj||Impact Damage": {
+"jpt!": 70
+},
+"proj||Impact Effect": {
+"effe": 12
+},
+"proj||Material Effects": {
+"foot": 82
+},
+"proj||Model": {
+"hlmt": 22
+},
+"proj||Super Detonation": {
+"effe": 2
+},
+"proj||Super Detonation Damage": {
+"jpt!": 2
+},
+"prt3|/Attached Particle Systems/Emitters|Particle Physics": {
+"pmov": 12
+},
+"prt3|/Attached Particle Systems|Particle": {
+"prt3": 42
+},
+"prt3|/Postprocess Definition/Bitmaps|Bitmap Group": {
+"bitm": 510
+},
+"prt3|/Postprocess Definition|Shader Template": {
+"stem": 510
+},
+"prt3|/Shader Parameters|Bitmap": {
+"bitm": 508
+},
+"prt3||Collision Effect": {
+"effe": 14,
+"foot": 14,
+"snd!": 19
+},
+"prt3||Death Effect": {
+"effe": 26,
+"snd!": 15
+},
+"prt3||Shader Template": {
+"stem": 510
+},
+"sbsp|/Background Sound Palette|Background Sound": {
+"lsnd": 1204
+},
+"sbsp|/Background Sound Palette|Inside Cluster Sound": {
+"lsnd": 28
+},
+"sbsp|/Clusters/Predicted Resources|Tag Index": {
+"bitm": 249675,
+"mode": 28048,
+"sbsp": 137799
+},
+"sbsp|/Clusters|Owner Tag": {
+"sbsp": 9243
+},
+"sbsp|/Collision Materials|New Shader": {
+"shad": 5965
+},
+"sbsp|/Decorators/Cache Blocks|Owner Tag": {
+"sbsp": 15519
+},
+"sbsp|/Instanced Geometry Definitions|Owner Tag": {
+"sbsp": 6827
+},
+"sbsp|/Materials|Shader": {
+"shad": 30327
+},
+"sbsp|/Sound Environment Palette|Sound Environment": {
+"snde": 861
+},
+"sbsp|/Water Definitions|Owner Tag": {
+"sbsp": 34
+},
+"sbsp|/Water Definitions|Shader": {
+"shad": 30
+},
+"sbsp|/Weather Palette|Weather System": {
+"weat": 89
+},
+"scen|/Attachments|Type": {
+"MGS2": 36,
+"cont": 2,
+"effe": 260,
+"lens": 93,
+"ligh": 65,
+"lsnd": 104
+},
+"scen|/Predicted Resources|Tag Index": {
+"bitm": 8846,
+"mode": 1074
+},
+"scen|/Widgets|Type": {
+"tdtl": 4
+},
+"scen||Model": {
+"hlmt": 1080
+},
+"scnr|/Atmospheric Fog Palette|Patchy Fog": {
+"fpch": 22
+},
+"scnr|/Background Sound Palette|Background Sound": {
+"lsnd": 376
+},
+"scnr|/Background Sound Palette|Inside Cluster Sound": {
+"lsnd": 10
+},
+"scnr|/Biped Palette|Biped": {
+"bipd": 328
+},
+"scnr|/Character Palette|Character": {
+"char": 418
+},
+"scnr|/Control Palette|Control": {
+"ctrl": 58
+},
+"scnr|/Crates Palette|Crate": {
+"bloc": 801
+},
+"scnr|/Creatures Palette|Creature": {
+"crea": 6
+},
+"scnr|/Decals Palette|Decal": {
+"deca": 561
+},
+"scnr|/Decorator Palette|Decorator Set": {
+"DECR": 224
+},
+"scnr|/Equipment Palette|Equipment": {
+"eqip": 124
+},
+"scnr|/Flocks|Creature": {
+"crea": 62
+},
+"scnr|/Level Data/Campaign Level Data|Bitmap": {
+"bitm": 30
+},
+"scnr|/Level Data/Multiplayer|Bitmap": {
+"bitm": 39
+},
+"scnr|/Level Data|Level Description": {
+"unic": 69
+},
+"scnr|/Light Volumes Palette|Light Volume": {
+"ligh": 386
+},
+"scnr|/Machine Palette|Machine": {
+"mach": 439
+},
+"scnr|/Mission Dialogue|Mission Dialogue": {
+"mdlg": 24
+},
+"scnr|/Netgame Equipment|Item/Vehicle Collection": {
+"itmc": 1799,
+"vehc": 115
+},
+"scnr|/Planar Fog Palette|Planar Fog": {
+"fog ": 101
+},
+"scnr|/Player Starting Profile|Primary Weapon": {
+"weap": 91
+},
+"scnr|/Player Starting Profile|Secondary Weapon": {
+"weap": 50
+},
+"scnr|/Predicted Resources|Tag Index": {
+"bitm": 2355
+},
+"scnr|/Scenario Resources/AI Resources|Reference": {
+"ai**": 24
+},
+"scnr|/Scenario Resources/References|Reference": {
+"*cen": 29,
+"*eap": 29,
+"*ehi": 29,
+"*igh": 29,
+"*ipd": 29,
+"*qip": 29,
+"*rea": 29,
+"*sce": 29,
+"/**/": 29,
+"cin*": 29,
+"clu*": 29,
+"dc*s": 29,
+"dec*": 29,
+"dgr*": 29,
+"sslt": 29,
+"trg*": 29
+},
+"scnr|/Scenario Resources/Script Source|Reference": {
+"hsc*": 77
+},
+"scnr|/Scenery Palette|Scenery": {
+"scen": 1894
+},
+"scnr|/Screen Effect References|Screen Effect": {
+"egor": 10
+},
+"scnr|/Script References|Reference": {
+"bipd": 12,
+"effe": 172,
+"jmad": 740,
+"jpt!": 18,
+"lsnd": 216,
+"mach": 6,
+"mode": 1474,
+"scen": 2,
+"snd!": 1918,
+"vehi": 2,
+"weap": 58
+},
+"scnr|/Simulation Definition Table|Tag": {
+"bipd": 531,
+"bloc": 3383,
+"crea": 36,
+"ctrl": 58,
+"eqip": 1346,
+"garb": 150,
+"jpt!": 6888,
+"mach": 447,
+"proj": 3788,
+"scen": 1902,
+"ssce": 431,
+"vehi": 1077,
+"weap": 6441
+},
+"scnr|/Skies|Sky": {
+"sky ": 219
+},
+"scnr|/Sound Environment Palette|Sound Environment": {
+"snde": 305
+},
+"scnr|/Sound Scenery Palette|Sound Scenery": {
+"ssce": 431
+},
+"scnr|/Starting Equipment|Item Collection 1": {
+"itmc": 39
+},
+"scnr|/Structure BSPs|Structure BSP": {
+"sbsp": 175
+},
+"scnr|/Structure BSPs|Structure Lightmap": {
+"ltmp": 171
+},
+"scnr|/Style Palette|Style": {
+"styl": 162
+},
+"scnr|/Unit Seats Mapping|Unit": {
+"vehi": 210
+},
+"scnr|/Vehicle Palette|Vehicle": {
+"vehi": 234
+},
+"scnr|/Weapon Palette|Weapon": {
+"weap": 457
+},
+"scnr|/Weather Palette|Weather System": {
+"weat": 27
+},
+"scnr||Chapter Title Text": {
+"unic": 30
+},
+"scnr||Global Lighting": {
+"gldf": 8
+},
+"scnr||Objectives": {
+"unic": 29
+},
+"scnr||Subtitles": {
+"unic": 28
+},
+"scnr||Territory Location Names": {
+"unic": 39
+},
+"sfx+|/Sound Effects/Sound Effect/Components|Sound": {
+"lsnd": 24
+},
+"sfx+|/Sound Effects/Sound Effect|Template": {
+"<fx>": 33
+},
+"shad|/Postprocess Definition/Bitmaps|Bitmap Group": {
+"bitm": 24343
+},
+"shad|/Postprocess Definition|Shader Template": {
+"stem": 5259
+},
+"shad|/Predicted Resources|Tag Index": {
+"bitm": 28337
+},
+"shad|/Runtime Properties|Alpha Test Map": {
+"bitm": 263
+},
+"shad|/Runtime Properties|Diffuse Map": {
+"bitm": 3935
+},
+"shad|/Runtime Properties|Lightmap Emissive Map": {
+"bitm": 868
+},
+"shad|/Runtime Properties|Translucent Map": {
+"bitm": 269
+},
+"shad||Template": {
+"stem": 5259
+},
+"sily||String List": {
+"unic": 184
+},
+"skin|/Bitmap Blocks|Bitmap Tag": {
+"bitm": 190
+},
+"skin|/HUD Blocks|Bitmap": {
+"bitm": 25
+},
+"skin|/HUD Blocks|Shader": {
+"shad": 25
+},
+"skin|/Player Blocks|Skin": {
+"skin": 18
+},
+"skin||Arrows Bitmap": {
+"bitm": 72
+},
+"sky |/Lights|Lens Flare": {
+"lens": 75
+},
+"sky |/Patchy Fog|Patchy Fog": {
+"fpch": 19
+},
+"sky ||Render Model": {
+"mode": 107
+},
+"spas|/Postprocess Definition/Implementations|Vertex Shader": {
+"vrtx": 527
+},
+"ssce|/Attachments|Type": {
+"lsnd": 285
+},
+"stem|/Postprocess Definition/Passes|Pass": {
+"spas": 1996
+},
+"tdtl|/Arcs|Bitmap": {
+"bitm": 2
+},
+"tdtl|/Arcs|Material Effects": {
+"foot": 4
+},
+"udlg|/Vocalizations|Sound": {
+"snd!": 5322
+},
+"ugh!|/Extra Info|Owner Tag": {
+"ugh!": 97
+},
+"vehc|/Vehicle Permutations|Vehicle": {
+"vehi": 15
+},
+"vehi|/Attachments|Type": {
+"MGS2": 10,
+"cont": 10,
+"effe": 12,
+"lens": 30,
+"ligh": 18,
+"lsnd": 98
+},
+"vehi|/Camera Tracks|Track": {
+"trak": 24
+},
+"vehi|/Predicted Resources|Tag Index": {
+"bitm": 917,
+"mode": 74
+},
+"vehi|/Seats/Camera Tracks|Track": {
+"trak": 120
+},
+"vehi|/Seats/Unit HUD Interface|New Unit HUD Interface": {
+"nhdt": 6
+},
+"vehi|/Seats|Built-In Gunner": {
+"char": 8
+},
+"vehi|/Weapons|Weapon": {
+"weap": 64
+},
+"vehi|/Widgets|Type": {
+"ant!": 10
+},
+"vehi||Crash Sound": {
+"snd!": 20
+},
+"vehi||Material Effects": {
+"foot": 56
+},
+"vehi||Model": {
+"hlmt": 74
+},
+"vehi||Spawned Turret Character": {
+"char": 6
+},
+"vehi||Special Effect": {
+"effe": 16
+},
+"vehi||Unknown Effect": {
+"effe": 2
+},
+"weap|/Attachments|Type": {
+"effe": 4,
+"lens": 16,
+"ligh": 54,
+"lsnd": 36
+},
+"weap|/Barrels/Firing Effects|Empty Damage": {
+"jpt!": 2
+},
+"weap|/Barrels/Firing Effects|Empty Effect": {
+"effe": 7,
+"snd!": 24
+},
+"weap|/Barrels/Firing Effects|Firing Damage": {
+"jpt!": 95
+},
+"weap|/Barrels/Firing Effects|Firing Effect": {
+"effe": 103,
+"snd!": 2
+},
+"weap|/Barrels/Firing Effects|Misfire Damage": {
+"jpt!": 14
+},
+"weap|/Barrels/Firing Effects|Misfire Effect": {
+"effe": 6
+},
+"weap|/Barrels|Projectile": {
+"proj": 109
+},
+"weap|/First Person|First Person Animations": {
+"jmad": 104
+},
+"weap|/First Person|First Person Model": {
+"mode": 106
+},
+"weap|/Magazines/Magazine Equipment|Equipment": {
+"eqip": 14
+},
+"weap|/Magazines|Reloading Effect": {
+"effe": 5
+},
+"weap|/New Triggers|Charging Damage Effect": {
+"jpt!": 4
+},
+"weap|/New Triggers|Charging Effect": {
+"effe": 12
+},
+"weap|/Predicted Bitmaps|Bitmap": {
+"bitm": 122
+},
+"weap|/Predicted Resources|Tag Index": {
+"bitm": 1066,
+"mode": 132,
+"snd!": 146
+},
+"weap|/Widgets|Type": {
+"clwd": 2,
+"tdtl": 4
+},
+"weap||1st Hit Melee Damage": {
+"jpt!": 59
+},
+"weap||1st Hit Melee Response": {
+"jpt!": 59
+},
+"weap||2nd Hit Melee Damage": {
+"jpt!": 21
+},
+"weap||2nd Hit Melee Response": {
+"jpt!": 21
+},
+"weap||3rd Hit Melee Damage": {
+"jpt!": 21
+},
+"weap||3rd Hit Melee Response": {
+"jpt!": 21
+},
+"weap||Age Effect": {
+"effe": 2
+},
+"weap||Aged Weapon": {
+"weap": 2
+},
+"weap||Deployed Vehicle": {
+"vehi": 4
+},
+"weap||Lunge Melee Damage": {
+"jpt!": 4
+},
+"weap||Lunge Melee Response": {
+"jpt!": 2
+},
+"weap||Material Effects": {
+"foot": 59
+},
+"weap||Model": {
+"hlmt": 69
+},
+"weap||New HUD Interface": {
+"nhdt": 85
+},
+"weap||Overheated": {
+"effe": 28
+},
+"weap||Pickup Sound": {
+"snd!": 22
+},
+"weap||Ready Effect": {
+"effe": 7
+},
+"weap||Zoom-In Sound": {
+"snd!": 16
+},
+"weap||Zoom-Out Sound": {
+"snd!": 16
+},
+"weat|/Background Plates|Texture 0": {
+"bitm": 15
+},
+"weat|/Background Plates|Texture 1": {
+"bitm": 15
+},
+"weat|/Background Plates|Texture 2": {
+"bitm": 15
+},
+"weat|/Particle System|Owner Tag": {
+"weat": 20
+},
+"weat|/Particle System|Sprites": {
+"bitm": 14
+},
+"wgit|/Local Bitmaps|Bitmap": {
+"bitm": 37
+},
+"wgit|/Panes/Bitmap Blocks|Bitmap Tag": {
+"bitm": 2355
+},
+"wgit|/Panes/Buttons|Bitmap": {
+"bitm": 119
+},
+"wgit|/Panes/Player Blocks|Skin": {
+"skin": 28
+},
+"wgit||Mouse Cursor Definition": {
+"mcsr": 145
+},
+"wgit||Screen String List Tag": {
+"unic": 227
+},
+"wgtz|/Screen Widgets|Widget Tag": {
+"wgit": 438
+},
+"wgtz||Game Hopper Descriptions": {
+"unic": 2
+},
+"wgtz||MP Variant Settings UI": {
+"goof": 2
+},
+"wgtz||Shared Globals": {
+"wigl": 6
+},
+"wigl|/Errors|String Tag": {
+"unic": 15
+},
+"wigl|/List Item Skins|List Item Skins": {
+"skin": 49
+},
+"wigl||Advancing Sound": {
+"snd!": 2
+},
+"wigl||Button Key Type Strings": {
+"unic": 2
+},
+"wigl||Cursor Sound": {
+"snd!": 2
+},
+"wigl||Error Sound": {
+"snd!": 2
+},
+"wigl||Game Type Strings": {
+"unic": 2
+},
+"wigl||Global Bitmaps Tag": {
+"bitm": 2
+},
+"wigl||Initial Login Sound": {
+"snd!": 2
+},
+"wigl||Main Menu Music": {
+"lsnd": 2
+},
+"wigl||Matchmaking Advance Sound": {
+"snd!": 2
+},
+"wigl||Online Notification Sound": {
+"snd!": 2
+},
+"wigl||Pregame Countdown Timer Sound": {
+"snd!": 2
+},
+"wigl||Retreating Sound": {
+"snd!": 2
+},
+"wigl||Selection Sound": {
+"snd!": 2
+},
+"wigl||Tabbed View Pane Tabbing Sound": {
+"snd!": 2
+},
+"wigl||Unicode String List Tag": {
+"unic": 2
+},
+"wigl||VKBD Character Insertion Sound": {
+"snd!": 2
+},
+"wigl||VKBD Cursor Sound": {
+"snd!": 2
+}
+}
+}
